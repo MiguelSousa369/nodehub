@@ -1,0 +1,12 @@
+{
+  "teste-srv": {
+    "cliente": "Testes",
+    "utilizador": "LitiOne",
+    "notas": "Máquina de teste (servidor)"
+  },
+  "teste-posto1": {
+    "cliente": "Testes",
+    "utilizador": "Administrador",
+    "notas": "Máquina de teste (posto)"
+  }
+}
