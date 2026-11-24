@@ -123,14 +123,29 @@ Tudo por SSH, sem interromper o utilizador e sem ferramentas de acesso remoto ao
 
 Para abrir uma máquina sem o painel: `.\lancador\abrir.ps1 <maquina>`.
 
+### Preparar o instalador (uma vez)
+
+1. Na consola do Tailscale (**Settings → Keys → Generate auth key**), criar uma chave **reutilizável**, **pré-aprovada** e com a tag **`tag:cliente`**.
+2. Copiar `config.local.example.json` para `config.local.json` (fica fora do git) e colar lá a chave:
+   ```json
+   { "tailscale_authkey": "tskey-auth-..." }
+   ```
+3. As chaves SSH públicas dos técnicos ficam em `chaves-publicas/*.pub` (uma por técnico).
+
 ### Adicionar uma máquina
 
-1. A máquina entra na tailnet com a tag `tag:cliente` e SSH só por chave.
-2. Acrescentar a entrada em `maquinas.json`:
-   ```json
-   "nome-da-maquina": { "cliente": "Nome do cliente", "utilizador": "admin", "notas": "" }
-   ```
-   Máquinas com `tag:cliente` que ainda não estão no ficheiro aparecem no painel em **Sem cliente atribuído**, sem botões.
+1. No painel: **+ Adicionar máquina → Descarregar instalador**. O ficheiro já leva a chave do Tailscale e as chaves SSH.
+2. No PC do cliente: **botão direito → Executar com o PowerShell** e aceitar o pedido de administrador. Não é preciso escrever nada. O instalador:
+   - instala o Tailscale e liga-o à tailnet com a `tag:cliente`;
+   - cria o utilizador local **`nodehub`** (administrador, escondido do ecrã de login, sem password conhecida);
+   - instala o OpenSSH Server, só com autenticação por chave;
+   - limita o SSH à rede Tailscale na firewall;
+   - apaga-se a si próprio no fim e deixa um registo em `C:\ProgramData\nodehub\instalacao.log`.
+3. A máquina aparece sozinha no painel em **Sem cliente atribuído**. Carregar em **Configurar**, escolher o cliente (ou escrever um novo) e **Guardar**.
+
+Para mudar ou tirar uma máquina: menu **⋯ → Editar / Remover**. O `maquinas.json` é gerido pelo painel.
+
+As máquinas são identificadas pelo nome único na tailnet (dois clientes podem ter um PC chamado "SERVIDOR"; o Tailscale distingue-os).
 
 ---
 
@@ -139,8 +154,12 @@ Para abrir uma máquina sem o painel: `.\lancador\abrir.ps1 <maquina>`.
 ```
 nodehub/
 ├── CLAUDE.md                 regras de helpdesk para o Claude Code
-├── maquinas.json             máquina → cliente, utilizador SSH, notas
+├── maquinas.json             máquina → cliente, utilizador SSH, notas (gerido pelo painel)
+├── config.local.json         chave do Tailscale (fora do git; ver config.local.example.json)
+├── chaves-publicas/          chaves SSH públicas dos técnicos
 ├── iniciar-painel.cmd        abre o painel
+├── instalador/
+│   └── instalar-cliente.ps1  modelo do instalador do PC do cliente (o painel preenche as chaves)
 ├── painel/
 │   ├── servidor.py           servidor local (só 127.0.0.1), lê o `tailscale status --json`
 │   └── index.html            o painel
@@ -155,6 +174,8 @@ nodehub/
 ### Notas de segurança da implementação
 
 - O painel só escuta em `127.0.0.1` e recusa pedidos com outro `Host` (proteção contra DNS rebinding).
+- Pedidos que alteram dados só são aceites vindos do próprio painel (`Origin` + JSON), para uma página web não conseguir mexer no `maquinas.json`.
+- Só se configuram máquinas que existam na tailnet com a `tag:cliente`.
 - O lançador só aceita nomes de máquina simples e que existam em `maquinas.json`, porque um link `nodehub://` pode vir de qualquer página web.
 - Não é preciso token da API do Tailscale: os dados vêm do cliente Tailscale local.
 
@@ -162,5 +183,14 @@ nodehub/
 
 ## Estado
 
-Primeira versão funcional: painel local, lançador `nodehub://` e regras de helpdesk.
-Por fazer: painel partilhado pela equipa (API do Tailscale + servidor).
+Funcional: painel local (adicionar, configurar, editar e remover máquinas), instalador do cliente, lançador `nodehub://` e regras de helpdesk.
+
+## A fazer
+
+- [ ] **Converter para os padrões `fullstack-ts-standards`**: backend Node + Express + TypeScript (Zod, Winston, Swagger) e frontend React + Vite + Tailwind. Passar o projeto **todo para inglês** (código, interface e documentação).
+- [ ] **Base de dados PostgreSQL** (Prisma) em vez do `maquinas.json`.
+- [ ] **Tudo a correr em containers** (Docker Compose: backend, frontend e Postgres). Ter em conta:
+  - o painel em container não vê o Tailscale do PC: usar a API do Tailscale ou um container Tailscale ao lado;
+  - o lançador `nodehub://` e o Claude Code continuam a correr no PC do técnico.
+- [ ] **Painel partilhado pela equipa** (consequência dos pontos acima).
+- [ ] **Desinstalador do cliente**: remover o utilizador `nodehub`, as chaves, a regra de firewall e tirar a máquina da tailnet.
