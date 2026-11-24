@@ -44,7 +44,7 @@ def lista_maquinas():
         peers, erro = {}, f"Não foi possível ler o Tailscale: {e}"
 
     for p in peers.values():
-        nome = p.get("HostName", "")
+        nome = (p.get("DNSName") or "").split(".")[0] or p.get("HostName", "")
         tags = p.get("Tags") or []
         chave = nome.lower()
         if chave not in config_lower and TAG_CLIENTE not in tags:
