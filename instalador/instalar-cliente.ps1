@@ -14,10 +14,12 @@
 
 .NOTES
     Executar com: botão direito > "Executar com o PowerShell". Pede elevação sozinho.
+    Por SSH (já elevado): powershell -ExecutionPolicy Bypass -File nodehub-instalar.ps1 -SemPausa
 #>
 param(
     [string]   $AuthKey    = '__NODEHUB_AUTHKEY__',
-    [string[]] $PublicKeys = @('__NODEHUB_PUBKEYS__')
+    [string[]] $PublicKeys = @('__NODEHUB_PUBKEYS__'),
+    [switch]   $SemPausa   # não esperar por Enter no fim (execução remota/automática)
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,8 +39,10 @@ function Terminar($ok) {
     if ($PSCommandPath -and (Test-Path $PSCommandPath) -and $PSCommandPath -notmatch '\\instalador\\instalar-cliente\.ps1$') {
         Remove-Item $PSCommandPath -Force -ErrorAction SilentlyContinue
     }
-    Write-Host ''
-    Read-Host 'Carregue Enter para fechar'
+    if (-not $SemPausa) {
+        Write-Host ''
+        Read-Host 'Carregue Enter para fechar'
+    }
     if ($ok) { exit 0 } else { exit 1 }
 }
 
