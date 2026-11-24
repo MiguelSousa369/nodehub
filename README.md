@@ -109,6 +109,58 @@ Tudo por SSH, sem interromper o utilizador e sem ferramentas de acesso remoto ao
 
 ---
 
+## Como usar
+
+**Requisitos no PC do técnico:** Tailscale ligado, Python 3, Claude Code, chave SSH aceite nas máquinas dos clientes.
+
+1. **Registar o protocolo `nodehub://`** (uma vez, não precisa de admin):
+   ```powershell
+   .\lancador\instalar-protocolo.ps1
+   ```
+2. **Configurar as máquinas** em `maquinas.json` (cliente, utilizador SSH, notas).
+3. **Abrir o painel:** duplo clique em `iniciar-painel.cmd`. Abre em `http://127.0.0.1:8737`.
+4. Escolher a máquina e carregar em **Abrir no Claude** (ou **Copiar** e colar numa sessão do Claude Code aberta nesta pasta).
+
+Para abrir uma máquina sem o painel: `.\lancador\abrir.ps1 <maquina>`.
+
+### Adicionar uma máquina
+
+1. A máquina entra na tailnet com a tag `tag:cliente` e SSH só por chave.
+2. Acrescentar a entrada em `maquinas.json`:
+   ```json
+   "nome-da-maquina": { "cliente": "Nome do cliente", "utilizador": "admin", "notas": "" }
+   ```
+   Máquinas com `tag:cliente` que ainda não estão no ficheiro aparecem no painel em **Sem cliente atribuído**, sem botões.
+
+---
+
+## Estrutura
+
+```
+nodehub/
+├── CLAUDE.md                 regras de helpdesk para o Claude Code
+├── maquinas.json             máquina → cliente, utilizador SSH, notas
+├── iniciar-painel.cmd        abre o painel
+├── painel/
+│   ├── servidor.py           servidor local (só 127.0.0.1), lê o `tailscale status --json`
+│   └── index.html            o painel
+├── lancador/
+│   ├── abrir.ps1             abre o Claude Code ligado a uma máquina
+│   └── instalar-protocolo.ps1  regista / remove (-Remover) o protocolo nodehub://
+└── clientes/
+    ├── _modelo.md            modelo da ficha de cada máquina
+    └── <Cliente>/<host>.md   ficha e histórico de intervenções
+```
+
+### Notas de segurança da implementação
+
+- O painel só escuta em `127.0.0.1` e recusa pedidos com outro `Host` (proteção contra DNS rebinding).
+- O lançador só aceita nomes de máquina simples e que existam em `maquinas.json`, porque um link `nodehub://` pode vir de qualquer página web.
+- Não é preciso token da API do Tailscale: os dados vêm do cliente Tailscale local.
+
+---
+
 ## Estado
 
-Ideia documentada. Implementação por começar.
+Primeira versão funcional: painel local, lançador `nodehub://` e regras de helpdesk.
+Por fazer: painel partilhado pela equipa (API do Tailscale + servidor).
