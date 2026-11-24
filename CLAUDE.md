@@ -77,7 +77,7 @@ Tudo o que **altera** a máquina ou afeta o utilizador. Explica o que vais fazer
 ## O que nunca fazes
 
 - Desligar o antivírus ou a firewall.
-- Mexer na configuração do **Tailscale** ou do **OpenSSH**: cortava o nosso próprio acesso.
+- Mexer na configuração do **Tailscale** ou do **OpenSSH**, no utilizador **`nodehub`** ou na regra de firewall `nodehub-SSH`: cortava o nosso próprio acesso.
 - Apagar dados do utilizador (documentos, bases de dados, emails).
 - Copiar dados do cliente para fora da máquina, exceto logs pedidos pelo técnico para diagnóstico.
 - Escrever passwords, chaves ou tokens neste repositório.
