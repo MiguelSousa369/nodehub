@@ -1,0 +1,10 @@
+# Segredos
+*.key
+id_*
+.env
+*.env
+tailscale-token*
+
+# Sistema
+Thumbs.db
+.DS_Store
