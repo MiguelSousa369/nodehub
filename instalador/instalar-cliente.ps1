@@ -67,12 +67,23 @@ try {
         Passo 'Tailscale já instalado'
     }
 
-    $hostname = ($env:COMPUTERNAME.ToLower() -replace '[^a-z0-9-]', '-').Trim('-')
-    if ($hostname.Length -gt 63) { $hostname = $hostname.Substring(0, 63) }
+    # Já ligada à rede do suporte (Running + tag:cliente)? Então não mexer: um novo
+    # "tailscale up" mudava-lhe o nome na tailnet e o histórico deixava de bater certo.
+    $estado = $null
+    try { $estado = (& $tsExe status --json 2>$null | Out-String) | ConvertFrom-Json } catch { }
+    $jaLigada = $estado -and $estado.BackendState -eq 'Running' -and (@($estado.Self.Tags) -contains 'tag:cliente')
 
-    Passo "A ligar à rede do suporte como '$hostname'"
-    & $tsExe up --authkey=$AuthKey --unattended --hostname=$hostname --reset
-    if ($LASTEXITCODE -ne 0) { throw 'Não foi possível ligar o Tailscale (tailscale up falhou).' }
+    if ($jaLigada) {
+        $hostname = ($estado.Self.DNSName -split '\.')[0]
+        Passo "Já ligada à rede do suporte como '$hostname' (sem alterações)"
+    } else {
+        $hostname = ($env:COMPUTERNAME.ToLower() -replace '[^a-z0-9-]', '-').Trim('-')
+        if ($hostname.Length -gt 63) { $hostname = $hostname.Substring(0, 63) }
+
+        Passo "A ligar à rede do suporte como '$hostname'"
+        & $tsExe up --authkey=$AuthKey --unattended --hostname=$hostname --reset
+        if ($LASTEXITCODE -ne 0) { throw 'Não foi possível ligar o Tailscale (tailscale up falhou).' }
+    }
     $tsIp = (& $tsExe ip -4).Trim()
 
     # --- 2. Utilizador nodehub -------------------------------------------------
