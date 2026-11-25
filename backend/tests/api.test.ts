@@ -211,32 +211,40 @@ describe('installer', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Personal access tokens
+// Personal access token (one per user)
 // ---------------------------------------------------------------------------
 
-async function createToken(token: string, name = 'laptop'): Promise<string> {
-  const res = await request(app).post('/api/tokens').set(as(token)).send({ name });
+async function createToken(token: string): Promise<string> {
+  const res = await request(app).post('/api/token').set(as(token));
   expect(res.status).toBe(201);
   return res.body.token;
 }
 
-describe('access tokens', () => {
-  it('creates a token shown once, usable as a bearer token, and lists it without the secret', async () => {
+describe('access token', () => {
+  it('generates a token shown once, usable as a bearer token, and shows it without the secret', async () => {
+    expect((await request(app).get('/api/token').set(as(techToken))).body).toBeNull();
+
     const token = await createToken(techToken);
     expect(token).toMatch(/^nhk_/);
+    expect((await request(app).get('/api/auth/me').set(as(token))).body.username).toBe('tech');
 
-    const me = await request(app).get('/api/auth/me').set(as(token));
-    expect(me.body.username).toBe('tech');
-
-    const list = await request(app).get('/api/tokens').set(as(techToken));
-    expect(list.body).toHaveLength(1);
-    expect(list.body[0].token).toBeUndefined();
-    expect(list.body[0].prefix).toBe(token.slice(0, 12));
+    const info = await request(app).get('/api/token').set(as(techToken));
+    expect(info.body.token).toBeUndefined();
+    expect(info.body.prefix).toBe(token.slice(0, 12));
   });
 
-  it('cannot manage tokens, users or passwords (needs a dashboard session)', async () => {
+  it('replaces the previous token when generating a new one', async () => {
+    const first = await createToken(techToken);
+    const second = await createToken(techToken);
+    expect(second).not.toBe(first);
+    expect((await request(app).get('/api/machines').set(as(first))).status).toBe(401);
+    expect((await request(app).get('/api/machines').set(as(second))).status).toBe(200);
+    expect(await prisma.apiToken.count()).toBe(1);
+  });
+
+  it('cannot manage the token, users or passwords (needs a dashboard session)', async () => {
     const token = await createToken(adminToken);
-    for (const [method, url] of [['get', '/api/tokens'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
+    for (const [method, url] of [['get', '/api/token'], ['post', '/api/token'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
       const res = await request(app)[method](url).set(as(token)).send({});
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('SESSION_REQUIRED');
@@ -245,19 +253,13 @@ describe('access tokens', () => {
 
   it('stops working when revoked or when the user is deactivated', async () => {
     const token = await createToken(techToken);
-    const [{ id }] = (await request(app).get('/api/tokens').set(as(techToken))).body;
-    expect((await request(app).delete(`/api/tokens/${id}`).set(as(techToken))).status).toBe(204);
+    expect((await request(app).delete('/api/token').set(as(techToken))).status).toBe(204);
     expect((await request(app).get('/api/machines').set(as(token))).status).toBe(401);
+    expect((await request(app).delete('/api/token').set(as(techToken))).status).toBe(404);
 
-    const other = await createToken(techToken, 'second');
+    const other = await createToken(techToken);
     await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
     expect((await request(app).get('/api/machines').set(as(other))).status).toBe(401);
-  });
-
-  it("can't revoke someone else's token", async () => {
-    await createToken(techToken);
-    const [{ id }] = (await request(app).get('/api/tokens').set(as(techToken))).body;
-    expect((await request(app).delete(`/api/tokens/${id}`).set(as(adminToken))).status).toBe(404);
   });
 });
 
