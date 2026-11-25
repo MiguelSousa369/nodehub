@@ -1,15 +1,15 @@
 # <host>
 
-**Cliente:** <Cliente>
+**Client:** <Client>
 
-## Ficha
+## Profile
 
-- **Função:** servidor / posto
-- **SO:**
+- **Role:** server / workstation
+- **OS:**
 - **Hardware:**
-- **Software importante:**
-- **Particularidades:**
+- **Important software:**
+- **Quirks:**
 
-## Intervenções
+## Sessions
 
-<!-- Entradas mais recentes primeiro. Formato em CLAUDE.md. -->
+<!-- Most recent first. Format in CLAUDE.md. -->
