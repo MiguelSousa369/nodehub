@@ -38,9 +38,9 @@ nodehub/
 │   └── .env.example
 ├── frontend/
 │   └── src/
-│       ├── App.tsx            manual router (Machines / History / Users)
-│       ├── pages/             DashboardPage, HistoryPage, UsersPage, LoginPage
-│       ├── components/        cards, dialogs, header
+│       ├── App.tsx            manual router (Machines / History / Users / Connect)
+│       ├── pages/             Dashboard, History, Users, Login, Connect (PC approval)
+│       ├── components/        machine cards, dialogs, header, session items
 │       ├── hooks/             useMachines, useToast
 │       ├── services/api.ts    fetch-based API client
 │       └── types/index.ts     shared types
