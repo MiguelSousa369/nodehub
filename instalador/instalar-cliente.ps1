@@ -140,7 +140,9 @@ try {
     # Chaves públicas dos técnicos (acrescenta, não apaga as que já existam)
     $ak = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
     $existentes = if (Test-Path $ak) { @(Get-Content $ak) } else { @() }
-    $novas = $PublicKeys | Where-Object { $existentes -notcontains $_ }
+    # Compara só o tipo + chave (ignora o comentário no fim da linha)
+    $corpos = @($existentes | ForEach-Object { ($_ -split '\s+')[0..1] -join ' ' })
+    $novas = $PublicKeys | Where-Object { $corpos -notcontains (($_ -split '\s+')[0..1] -join ' ') }
     Set-Content -Path $ak -Value (@($existentes) + @($novas) | Where-Object { $_ }) -Encoding ascii
     icacls $ak /inheritance:r /grant '*S-1-5-32-544:F' /grant '*S-1-5-18:F' | Out-Null
 
