@@ -13,10 +13,10 @@ fs.writeFileSync(path.join(keysDir, 'tech.pub'), 'ssh-ed25519 AAAATEST tech\n');
 process.env.PUBLIC_KEYS_DIR = keysDir;
 
 vi.mock('../src/lib/tailscale', () => ({
-  CLIENT_TAG: 'tag:cliente',
+  clientTag: () => 'tag:client',
   getPeers: vi.fn(async () => [
-    { host: 'srv-a',     ip: '100.64.0.1', os: 'windows', online: true, lastSeen: null, tags: ['tag:cliente'] },
-    { host: 'new-pc',    ip: '100.64.0.2', os: 'windows', online: true, lastSeen: null, tags: ['tag:cliente'] },
+    { host: 'srv-a',     ip: '100.64.0.1', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'] },
+    { host: 'new-pc',    ip: '100.64.0.2', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'] },
     { host: 'my-laptop', ip: '100.64.0.3', os: 'windows', online: true, lastSeen: null, tags: [] },
   ]),
 }));
@@ -44,6 +44,8 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  await prisma.session.deleteMany();
+  await prisma.apiToken.deleteMany();
   await prisma.machine.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
@@ -203,6 +205,119 @@ describe('installer', () => {
     const text = body.toString('utf-8');
     expect(text).toContain("'tskey-auth-kTEST123-abcDEF'");
     expect(text).toContain("'ssh-ed25519 AAAATEST tech'");
+    expect(text).toContain("$ClientTag  = 'tag:client'");
     expect(text).not.toContain('__NODEHUB_');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Personal access tokens
+// ---------------------------------------------------------------------------
+
+async function createToken(token: string, name = 'laptop'): Promise<string> {
+  const res = await request(app).post('/api/tokens').set(as(token)).send({ name });
+  expect(res.status).toBe(201);
+  return res.body.token;
+}
+
+describe('access tokens', () => {
+  it('creates a token shown once, usable as a bearer token, and lists it without the secret', async () => {
+    const token = await createToken(techToken);
+    expect(token).toMatch(/^nhk_/);
+
+    const me = await request(app).get('/api/auth/me').set(as(token));
+    expect(me.body.username).toBe('tech');
+
+    const list = await request(app).get('/api/tokens').set(as(techToken));
+    expect(list.body).toHaveLength(1);
+    expect(list.body[0].token).toBeUndefined();
+    expect(list.body[0].prefix).toBe(token.slice(0, 12));
+  });
+
+  it('cannot manage tokens, users or passwords (needs a dashboard session)', async () => {
+    const token = await createToken(adminToken);
+    for (const [method, url] of [['get', '/api/tokens'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
+      const res = await request(app)[method](url).set(as(token)).send({});
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('SESSION_REQUIRED');
+    }
+  });
+
+  it('stops working when revoked or when the user is deactivated', async () => {
+    const token = await createToken(techToken);
+    const [{ id }] = (await request(app).get('/api/tokens').set(as(techToken))).body;
+    expect((await request(app).delete(`/api/tokens/${id}`).set(as(techToken))).status).toBe(204);
+    expect((await request(app).get('/api/machines').set(as(token))).status).toBe(401);
+
+    const other = await createToken(techToken, 'second');
+    await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
+    expect((await request(app).get('/api/machines').set(as(other))).status).toBe(401);
+  });
+
+  it("can't revoke someone else's token", async () => {
+    await createToken(techToken);
+    const [{ id }] = (await request(app).get('/api/tokens').set(as(techToken))).body;
+    expect((await request(app).delete(`/api/tokens/${id}`).set(as(adminToken))).status).toBe(404);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sessions and profile
+// ---------------------------------------------------------------------------
+
+describe('sessions', () => {
+  const session = { summary: 'Disk full', problem: 'Slow PC', diagnosis: 'Temp files', actions: 'Cleaned temp', result: 'fixed' };
+
+  it('records a session as the token owner and shows it in the machine detail', async () => {
+    const token = await createToken(techToken);
+    const res = await request(app).post('/api/machines/SRV-A/sessions').set(as(token)).send(session);
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ host: 'srv-a', client: 'Client A', result: 'FIXED', technician: { name: 'Tech' } });
+
+    const detail = await request(app).get('/api/machines/srv-a').set(as(token));
+    expect(detail.body).toMatchObject({ client: 'Client A', totalSessions: 1 });
+    expect(detail.body.recentSessions[0].summary).toBe('Disk full');
+  });
+
+  it('refuses sessions for machines that are not configured, and validates input', async () => {
+    const missing = await request(app).post('/api/machines/new-pc/sessions').set(as(techToken)).send(session);
+    expect(missing.body.code).toBe('MACHINE_NOT_CONFIGURED');
+
+    const bad = await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send({ ...session, result: 'maybe' });
+    expect(bad.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('filters the history by result, technician and text', async () => {
+    await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
+    await request(app).post('/api/machines/srv-a/sessions').set(as(adminToken))
+      .send({ summary: 'Printer offline', result: 'unresolved', pending: 'Order a new cable' });
+
+    const all = await request(app).get('/api/sessions').set(as(techToken));
+    expect(all.body.total).toBe(2);
+    expect(all.body.sessions[0].summary).toBe('Printer offline'); // newest first
+
+    const unresolved = await request(app).get('/api/sessions?result=unresolved').set(as(techToken));
+    expect(unresolved.body.sessions.map((s: { summary: string }) => s.summary)).toEqual(['Printer offline']);
+
+    const byText = await request(app).get('/api/sessions?q=cable').set(as(techToken));
+    expect(byText.body.total).toBe(1);
+
+    const byTech = await request(app).get(`/api/sessions?technicianId=${adminId}`).set(as(techToken));
+    expect(byTech.body.sessions[0].technician.name).toBe('Admin');
+  });
+
+  it('keeps the history when the machine is removed and added back', async () => {
+    await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
+    await request(app).delete('/api/machines/srv-a').set(as(techToken));
+    await request(app).put('/api/machines/srv-a').set(as(techToken)).send({ client: 'Client A' });
+    const res = await request(app).get('/api/machines/srv-a/sessions').set(as(techToken));
+    expect(res.body.total).toBe(1);
+  });
+
+  it('updates the machine profile', async () => {
+    const res = await request(app).put('/api/machines/srv-a/profile').set(as(techToken)).send({ profile: '- **Role:** server' });
+    expect(res.status).toBe(200);
+    const detail = await request(app).get('/api/machines/srv-a').set(as(techToken));
+    expect(detail.body.profile).toBe('- **Role:** server');
   });
 });
