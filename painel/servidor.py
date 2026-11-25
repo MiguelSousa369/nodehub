@@ -274,8 +274,8 @@ class Handler(BaseHTTPRequestHandler):
             raise ErroPedido(413, "Pedido demasiado grande.")
         try:
             corpo = json.loads(self.rfile.read(n) or b"{}")
-        except json.JSONDecodeError:
-            raise ErroPedido(400, "JSON inválido.")
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise ErroPedido(400, "JSON inválido (tem de ser UTF-8).")
         if not isinstance(corpo, dict):
             raise ErroPedido(400, "JSON inválido.")
         return corpo
