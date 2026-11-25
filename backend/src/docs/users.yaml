@@ -1,0 +1,110 @@
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:        { type: integer }
+        username:  { type: string }
+        name:      { type: string }
+        role:      { type: string, enum: [ADMIN, TECHNICIAN] }
+        active:    { type: boolean }
+        createdAt: { type: string, format: date-time }
+  responses:
+    Forbidden:
+      description: FORBIDDEN (admins only)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UserConflict:
+      description: USERNAME_TAKEN, LAST_ADMIN, CANNOT_DEMOTE_SELF or CANNOT_DELETE_SELF
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+
+paths:
+  /api/users:
+    get:
+      summary: List users (admins only)
+      responses:
+        '200':
+          description: Users.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/User' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      summary: Create a user (admins only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, name, password]
+              properties:
+                username: { type: string, pattern: '^[a-z0-9._-]{3,32}$' }
+                name:     { type: string }
+                password: { type: string, format: password, minLength: 10 }
+                role:     { type: string, enum: [ADMIN, TECHNICIAN], default: TECHNICIAN }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/UserConflict' }
+
+  /api/users/{id}:
+    patch:
+      summary: Edit a user (admins only)
+      description: You can't remove your own admin access, and there is always at least one active admin.
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:     { type: string }
+                password: { type: string, format: password, minLength: 10 }
+                role:     { type: string, enum: [ADMIN, TECHNICIAN] }
+                active:   { type: boolean }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409': { $ref: '#/components/responses/UserConflict' }
+    delete:
+      summary: Delete a user (admins only)
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '204': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409': { $ref: '#/components/responses/UserConflict' }

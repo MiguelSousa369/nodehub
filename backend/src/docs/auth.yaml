@@ -1,0 +1,74 @@
+components:
+  schemas:
+    AuthUser:
+      type: object
+      properties:
+        id:       { type: integer }
+        username: { type: string, example: miguel }
+        name:     { type: string, example: Miguel }
+        role:     { type: string, enum: [ADMIN, TECHNICIAN] }
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: JWT and the signed-in user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user:  { $ref: '#/components/schemas/AuthUser' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/auth/me:
+    get:
+      summary: Current user
+      responses:
+        '200':
+          description: The signed-in user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/auth/password:
+    post:
+      summary: Change your own password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string, format: password }
+                newPassword:     { type: string, format: password, minLength: 10 }
+      responses:
+        '204': { description: Changed. }
+        '400':
+          description: VALIDATION_ERROR or WRONG_PASSWORD
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

@@ -3,16 +3,19 @@ info:
   title: nodehub API
   version: 1.0.0
   description: |
-    Client machines on the Tailscale network, their configuration (client, SSH user, notes)
-    and the client installer. Errors always use `{ error, code, details? }`.
+    Client machines on the Tailscale network, their configuration (client, SSH user, notes),
+    the client installer and the technicians who use the dashboard.
+    Sign in with `POST /api/auth/login` and send the token as `Authorization: Bearer <token>`.
+    Errors always use `{ error, code, details? }`.
 servers:
   - url: /
 components:
   securitySchemes:
-    apiKey:
+    bearerAuth:
       type: http
       scheme: bearer
-      description: Static API key from `API_KEY` in backend/.env.
+      bearerFormat: JWT
+      description: Token returned by `POST /api/auth/login`.
   schemas:
     Error:
       type: object
@@ -23,7 +26,7 @@ components:
         details: { type: array, items: {} }
   responses:
     Unauthorized:
-      description: Missing or invalid API key.
+      description: Not signed in or session expired.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -33,7 +36,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
 security:
-  - apiKey: []
+  - bearerAuth: []
 paths:
   /api/health:
     get:

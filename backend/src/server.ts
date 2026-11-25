@@ -8,11 +8,13 @@ import swaggerUi from 'swagger-ui-express';
 
 import prisma from './lib/prisma';
 import { swaggerSpec } from './lib/swagger';
-import { apiKeyGuard } from './middlewares/auth.middleware';
+import { authGuard } from './middlewares/auth.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { localHostOnly } from './middlewares/local-host.middleware';
+import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
 import machinesRoutes from './routes/machines.routes';
+import usersRoutes from './routes/users.routes';
 import logger from './utils/logger';
 
 const app = express();
@@ -35,8 +37,10 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-app.use('/api/machines', apiKeyGuard, machinesRoutes);
-app.use('/api/installer', apiKeyGuard, installerRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes); // admins only
+app.use('/api/machines', authGuard, machinesRoutes);
+app.use('/api/installer', authGuard, installerRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route not found.', code: 'NOT_FOUND' }));
 
 // ---------------------------------------------------------------------------
@@ -57,8 +61,10 @@ app.use(errorMiddleware); // ALWAYS mounted last
 
 async function start() {
   try {
-    if (!process.env.API_KEY) throw new Error('API_KEY is not set (see backend/.env.example).');
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not set (see backend/.env.example).');
     await prisma.$connect();
+    const users = await prisma.user.count();
+    if (users === 0) logger.warn('No users yet: run "npm run seed" in backend/ to create the first admin.');
     app.listen(PORT, HOST, () => logger.info(`nodehub running on http://${HOST}:${PORT}`));
   } catch (err) {
     logger.error('Failed to start server', { err: (err as Error).message });
