@@ -1,17 +1,9 @@
-# Segredos
+# Secrets
 *.key
 id_*
 .env
 *.env
-tailscale-token*
 
-# Sistema
+# OS
 Thumbs.db
 .DS_Store
-
-# Python
-__pycache__/
-
-# Chave do Tailscale e outros dados locais
-config.local.json
-*.json.tmp
