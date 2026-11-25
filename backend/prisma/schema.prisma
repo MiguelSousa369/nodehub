@@ -26,25 +26,24 @@ model User {
   active       Boolean    @default(true)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
-  apiTokens    ApiToken[]
+  apiToken     ApiToken?
   sessions     Session[]
 
   @@map("users")
 }
 
-/// Personal access tokens, used by the nodehub CLI (and therefore by Claude Code).
-/// Only a SHA-256 hash is stored; the token itself is shown once when created.
+/// Personal access token (one per user), used by the nodehub CLI and therefore by Claude Code.
+/// Generating a new one replaces the old. Only a SHA-256 hash is stored; the token itself is
+/// shown once when generated.
 model ApiToken {
   id         Int       @id @default(autoincrement())
-  userId     Int       @map("user_id")
+  userId     Int       @unique @map("user_id")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String
-  prefix     String    // first characters, to recognise the token in the list
+  prefix     String    // first characters, to recognise the token
   tokenHash  String    @unique @map("token_hash")
   createdAt  DateTime  @default(now()) @map("created_at")
   lastUsedAt DateTime? @map("last_used_at")
 
-  @@index([userId])
   @@map("api_tokens")
 }
 
