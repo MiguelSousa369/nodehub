@@ -44,6 +44,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  await prisma.cliLoginRequest.deleteMany();
   await prisma.session.deleteMany();
   await prisma.apiToken.deleteMany();
   await prisma.machine.deleteMany();
@@ -211,55 +212,107 @@ describe('installer', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Personal access token (one per user)
+// Connected PCs: browser authorisation (nodehub login) and one token per PC
 // ---------------------------------------------------------------------------
 
-async function createToken(token: string): Promise<string> {
-  const res = await request(app).post('/api/token').set(as(token));
+async function startLogin(deviceName = 'TECH-LAPTOP') {
+  const res = await request(app).post('/api/cli-login').set(HOST).send({ deviceName });
   expect(res.status).toBe(201);
+  return res.body as { deviceCode: string; userCode: string; interval: number };
+}
+
+const poll = (deviceCode: string) => request(app).post('/api/cli-login/poll').set(HOST).send({ deviceCode });
+
+/** Runs the whole flow: the PC asks, the signed-in user approves, the PC collects its token. */
+async function createToken(sessionToken: string, deviceName = 'TECH-LAPTOP'): Promise<string> {
+  const { deviceCode, userCode } = await startLogin(deviceName);
+  expect((await request(app).post(`/api/cli-login/${userCode}/approve`).set(as(sessionToken))).status).toBe(204);
+  const res = await poll(deviceCode);
+  expect(res.status).toBe(200);
   return res.body.token;
 }
 
-describe('access token', () => {
-  it('generates a token shown once, usable as a bearer token, and shows it without the secret', async () => {
-    expect((await request(app).get('/api/token').set(as(techToken))).body).toBeNull();
+describe('connecting a PC (nodehub login)', () => {
+  it('stays pending until approved, then hands the token out exactly once', async () => {
+    const { deviceCode, userCode } = await startLogin();
+    expect(userCode).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+    expect((await poll(deviceCode)).status).toBe(202);
 
-    const token = await createToken(techToken);
-    expect(token).toMatch(/^nhk_/);
-    expect((await request(app).get('/api/auth/me').set(as(token))).body.username).toBe('tech');
+    const shown = await request(app).get(`/api/cli-login/${userCode.toLowerCase()}`).set(as(techToken));
+    expect(shown.body).toMatchObject({ deviceName: 'TECH-LAPTOP', status: 'PENDING' });
 
-    const info = await request(app).get('/api/token').set(as(techToken));
-    expect(info.body.token).toBeUndefined();
-    expect(info.body.prefix).toBe(token.slice(0, 12));
+    await request(app).post(`/api/cli-login/${userCode}/approve`).set(as(techToken));
+    const approved = await poll(deviceCode);
+    expect(approved.status).toBe(200);
+    expect(approved.body).toMatchObject({ status: 'approved', deviceName: 'TECH-LAPTOP', user: { username: 'tech' } });
+    expect(approved.body.token).toMatch(/^nhk_/);
+    expect((await request(app).get('/api/auth/me').set(as(approved.body.token))).body.username).toBe('tech');
+
+    const again = await poll(deviceCode);
+    expect(again.body.code).toBe('LOGIN_EXPIRED');
   });
 
-  it('replaces the previous token when generating a new one', async () => {
-    const first = await createToken(techToken);
-    const second = await createToken(techToken);
-    expect(second).not.toBe(first);
-    expect((await request(app).get('/api/machines').set(as(first))).status).toBe(401);
-    expect((await request(app).get('/api/machines').set(as(second))).status).toBe(200);
-    expect(await prisma.apiToken.count()).toBe(1);
+  it('reports denied and expired requests, and unknown codes', async () => {
+    const denied = await startLogin();
+    await request(app).post(`/api/cli-login/${denied.userCode}/deny`).set(as(techToken));
+    expect((await poll(denied.deviceCode)).body.code).toBe('LOGIN_DENIED');
+
+    const expired = await startLogin();
+    await prisma.cliLoginRequest.updateMany({ where: { userCode: expired.userCode }, data: { expiresAt: new Date(0) } });
+    expect((await poll(expired.deviceCode)).body.code).toBe('LOGIN_EXPIRED');
+    expect((await request(app).get(`/api/cli-login/${expired.userCode}`).set(as(techToken))).body.code).toBe('LOGIN_NOT_FOUND');
+
+    expect((await poll('x'.repeat(43))).body.code).toBe('LOGIN_EXPIRED');
   });
 
-  it('cannot manage the token, users or passwords (needs a dashboard session)', async () => {
-    const token = await createToken(adminToken);
-    for (const [method, url] of [['get', '/api/token'], ['post', '/api/token'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
+  it('can only be answered once, by a signed-in dashboard session', async () => {
+    const { userCode } = await startLogin();
+    expect((await request(app).post(`/api/cli-login/${userCode}/approve`).set(HOST)).status).toBe(401);
+
+    const token = await createToken(techToken, 'OTHER-PC');
+    const viaToken = await request(app).post(`/api/cli-login/${userCode}/approve`).set(as(token));
+    expect(viaToken.body.code).toBe('SESSION_REQUIRED');
+
+    await request(app).post(`/api/cli-login/${userCode}/approve`).set(as(techToken));
+    const twice = await request(app).post(`/api/cli-login/${userCode}/deny`).set(as(techToken));
+    expect(twice.body.code).toBe('LOGIN_ALREADY_DECIDED');
+  });
+
+  it('keeps one token per PC: connecting the same PC again replaces its token', async () => {
+    const laptop1 = await createToken(techToken, 'LAPTOP');
+    const desktop = await createToken(techToken, 'DESKTOP');
+    const laptop2 = await createToken(techToken, 'LAPTOP');
+
+    expect((await request(app).get('/api/machines').set(as(laptop1))).status).toBe(401);
+    expect((await request(app).get('/api/machines').set(as(laptop2))).status).toBe(200);
+    expect((await request(app).get('/api/machines').set(as(desktop))).status).toBe(200);
+
+    const list = await request(app).get('/api/tokens').set(as(techToken));
+    expect(list.body.map((t: { name: string }) => t.name).sort()).toEqual(['DESKTOP', 'LAPTOP']);
+    expect(list.body[0].token).toBeUndefined();
+  });
+
+  it('disconnects one PC without affecting the others, and not someone else\'s', async () => {
+    const laptop = await createToken(techToken, 'LAPTOP');
+    const desktop = await createToken(techToken, 'DESKTOP');
+    const { id } = (await request(app).get('/api/tokens').set(as(techToken))).body.find((t: { name: string }) => t.name === 'LAPTOP');
+
+    expect((await request(app).delete(`/api/tokens/${id}`).set(as(adminToken))).status).toBe(404);
+    expect((await request(app).delete(`/api/tokens/${id}`).set(as(techToken))).status).toBe(204);
+    expect((await request(app).get('/api/machines').set(as(laptop))).status).toBe(401);
+    expect((await request(app).get('/api/machines').set(as(desktop))).status).toBe(200);
+  });
+
+  it('PC tokens cannot manage PCs, users or passwords, and stop working when the user is deactivated', async () => {
+    const token = await createToken(adminToken, 'ADMIN-PC');
+    for (const [method, url] of [['get', '/api/tokens'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
       const res = await request(app)[method](url).set(as(token)).send({});
-      expect(res.status).toBe(403);
       expect(res.body.code).toBe('SESSION_REQUIRED');
     }
-  });
 
-  it('stops working when revoked or when the user is deactivated', async () => {
-    const token = await createToken(techToken);
-    expect((await request(app).delete('/api/token').set(as(techToken))).status).toBe(204);
-    expect((await request(app).get('/api/machines').set(as(token))).status).toBe(401);
-    expect((await request(app).delete('/api/token').set(as(techToken))).status).toBe(404);
-
-    const other = await createToken(techToken);
+    const techPc = await createToken(techToken);
     await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
-    expect((await request(app).get('/api/machines').set(as(other))).status).toBe(401);
+    expect((await request(app).get('/api/machines').set(as(techPc))).status).toBe(401);
   });
 });
 
