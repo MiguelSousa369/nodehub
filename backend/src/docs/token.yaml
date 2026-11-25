@@ -3,8 +3,6 @@ components:
     AccessToken:
       type: object
       properties:
-        id:         { type: integer }
-        name:       { type: string, example: Office laptop }
         prefix:     { type: string, example: nhk_4fJ2kQ9x, description: First characters, to recognise the token. }
         createdAt:  { type: string, format: date-time }
         lastUsedAt: { type: string, format: date-time, nullable: true }
@@ -16,33 +14,28 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
 paths:
-  /api/tokens:
+  /api/token:
     get:
-      summary: Your personal access tokens
-      description: Requires a dashboard session (an access token can't manage tokens).
+      summary: Your personal access token (without the secret)
+      description: Each user has at most one token. Requires a dashboard session.
       responses:
         '200':
-          description: Your tokens (without the secret).
+          description: Your token, or `null` if you have none.
           content:
             application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/AccessToken' } }
+              schema:
+                nullable: true
+                allOf: [{ $ref: '#/components/schemas/AccessToken' }]
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }
     post:
-      summary: Create a personal access token
-      description: The token (`nhk_...`) is returned only once. It acts as you, except for account-level actions.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name: { type: string, maxLength: 60 }
+      summary: Generate your access token (replaces the previous one)
+      description: |
+        The token (`nhk_...`) is returned only once. Any PC still using the previous token stops
+        working. The token acts as you, except for account-level actions.
       responses:
         '201':
-          description: Created; `token` is shown only now.
+          description: Generated; `token` is shown only now.
           content:
             application/json:
               schema:
@@ -51,21 +44,16 @@ paths:
                   - type: object
                     properties:
                       token: { type: string, example: nhk_... }
-        '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }
-
-  /api/tokens/{id}:
     delete:
-      summary: Revoke one of your tokens
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+      summary: Revoke your access token
       responses:
         '204': { description: Revoked. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }
         '404':
-          description: NOT_FOUND (or not yours)
+          description: NOT_FOUND (you have no token)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }

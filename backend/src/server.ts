@@ -15,7 +15,7 @@ import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
 import machinesRoutes from './routes/machines.routes';
 import sessionsRoutes from './routes/sessions.routes';
-import tokensRoutes from './routes/tokens.routes';
+import tokenRoutes from './routes/token.routes';
 import usersRoutes from './routes/users.routes';
 import logger from './utils/logger';
 
@@ -41,7 +41,7 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes); // admins only
-app.use('/api/tokens', tokensRoutes); // your own personal access tokens
+app.use('/api/token', tokenRoutes); // your own personal access token
 app.use('/api/machines', authGuard, machinesRoutes);
 app.use('/api/sessions', authGuard, sessionsRoutes);
 app.use('/api/installer', authGuard, installerRoutes);

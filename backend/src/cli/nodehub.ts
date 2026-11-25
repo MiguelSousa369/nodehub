@@ -129,7 +129,7 @@ function printSession(s: Session): void {
 
 async function cmdLogin(flags: Record<string, string | true>) {
   const url = (flag(flags, 'url') ?? loadConfig()?.url ?? DEFAULT_URL).replace(/\/+$/, '');
-  const token = flag(flags, 'token') ?? await ask('Personal access token (dashboard → Access tokens): ');
+  const token = flag(flags, 'token') ?? await ask('Personal access token (dashboard → Access token): ');
   if (!token.startsWith('nhk_')) throw new CliError('That does not look like a nodehub access token (nhk_...).');
 
   saveConfig({ url, token });

@@ -1,32 +1,30 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { CreateTokenSchema, TokenIdParamsSchema } from '../schemas/token.schema';
 import * as tokenService from '../services/token.service';
 
-// GET /api/tokens  (your own tokens)
-export async function list(req: Request, res: Response, next: NextFunction) {
+// GET /api/token  (your token, without the secret; null if you have none)
+export async function get(req: Request, res: Response, next: NextFunction) {
   try {
-    res.json(await tokenService.listTokens(req.user!.id));
+    res.json(await tokenService.getToken(req.user!.id));
   } catch (err) {
     next(err);
   }
 }
 
-// POST /api/tokens
-export async function create(req: Request, res: Response, next: NextFunction) {
+// POST /api/token  (generate, replacing the previous one)
+export async function generate(req: Request, res: Response, next: NextFunction) {
   try {
-    res.status(201).json(await tokenService.createToken(req.user!.id, CreateTokenSchema.parse(req.body ?? {})));
+    res.status(201).json(await tokenService.generateToken(req.user!.id));
   } catch (err) {
     next(err);
   }
 }
 
-// DELETE /api/tokens/:id
+// DELETE /api/token
 export async function revoke(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = TokenIdParamsSchema.parse(req.params);
-    if (!(await tokenService.revokeToken(req.user!.id, id))) {
-      res.status(404).json({ error: 'Token not found.', code: 'NOT_FOUND' });
+    if (!(await tokenService.revokeToken(req.user!.id))) {
+      res.status(404).json({ error: 'You have no access token.', code: 'NOT_FOUND' });
       return;
     }
     res.status(204).end();

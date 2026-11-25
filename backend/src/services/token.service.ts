@@ -1,37 +1,41 @@
 import crypto from 'crypto';
 
 import prisma from '../lib/prisma';
-import { CreateTokenInput, PublicToken } from '../schemas/token.schema';
+import { PublicToken } from '../schemas/token.schema';
 import { Role } from '../schemas/user.schema';
 
 // ---------------------------------------------------------------------------
-// Personal access tokens: "nhk_" + 32 random bytes. Only the SHA-256 hash is stored.
+// Personal access token: one per user, "nhk_" + 32 random bytes.
+// Only the SHA-256 hash is stored. Generating a new one replaces the old.
 // ---------------------------------------------------------------------------
 
 export const TOKEN_PREFIX = 'nhk_';
 
-const publicFields = { id: true, name: true, prefix: true, createdAt: true, lastUsedAt: true } as const;
+const publicFields = { prefix: true, createdAt: true, lastUsedAt: true } as const;
 
 function hash(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export function listTokens(userId: number): Promise<PublicToken[]> {
-  return prisma.apiToken.findMany({ where: { userId }, select: publicFields, orderBy: { createdAt: 'desc' } });
+export function getToken(userId: number): Promise<PublicToken | null> {
+  return prisma.apiToken.findUnique({ where: { userId }, select: publicFields });
 }
 
-/** Returns the token in clear text: the only time it is ever shown. */
-export async function createToken(userId: number, { name }: CreateTokenInput): Promise<PublicToken & { token: string }> {
+/** Creates the user's token, replacing any previous one. Returns it in clear text: the only time it is shown. */
+export async function generateToken(userId: number): Promise<PublicToken & { token: string }> {
   const token = TOKEN_PREFIX + crypto.randomBytes(32).toString('base64url');
-  const created = await prisma.apiToken.create({
-    data  : { userId, name, prefix: token.slice(0, 12), tokenHash: hash(token) },
+  const data = { prefix: token.slice(0, 12), tokenHash: hash(token), createdAt: new Date(), lastUsedAt: null };
+  const saved = await prisma.apiToken.upsert({
+    where : { userId },
+    create: { userId, ...data },
+    update: data,
     select: publicFields,
   });
-  return { ...created, token };
+  return { ...saved, token };
 }
 
-export async function revokeToken(userId: number, id: number): Promise<boolean> {
-  const { count } = await prisma.apiToken.deleteMany({ where: { id, userId } });
+export async function revokeToken(userId: number): Promise<boolean> {
+  const { count } = await prisma.apiToken.deleteMany({ where: { userId } });
   return count > 0;
 }
 

@@ -1,14 +1,14 @@
 import { Router } from 'express';
 
-import * as tokens from '../controllers/tokens.controller';
+import * as token from '../controllers/token.controller';
 import { authGuard, sessionOnly } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 router.use(authGuard, sessionOnly);
 
-router.get('/', tokens.list);
-router.post('/', tokens.create);
-router.delete('/:id', tokens.revoke);
+router.get('/', token.get);
+router.post('/', token.generate);
+router.delete('/', token.revoke);
 
 export default router;
