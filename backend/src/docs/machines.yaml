@@ -1,0 +1,107 @@
+components:
+  schemas:
+    Machine:
+      type: object
+      properties:
+        host:       { type: string, example: srv-bakery }
+        client:     { type: string, nullable: true, example: Silva Bakery }
+        sshUser:    { type: string, nullable: true, example: nodehub }
+        notes:      { type: string }
+        configured: { type: boolean }
+        inTailnet:  { type: boolean }
+        online:     { type: boolean }
+        ip:         { type: string, nullable: true, example: 100.98.12.4 }
+        os:         { type: string, nullable: true, example: windows }
+        lastSeen:   { type: string, nullable: true, format: date-time }
+    MachineConfig:
+      type: object
+      required: [client]
+      properties:
+        client:  { type: string, maxLength: 100, description: 'No quotes, ; or $.' }
+        sshUser: { type: string, default: nodehub }
+        notes:   { type: string, maxLength: 500, default: '' }
+  parameters:
+    Host:
+      name: host
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9-]{1,63}$' }
+
+paths:
+  /api/machines:
+    get:
+      summary: List client machines (Tailscale state + configuration)
+      responses:
+        '200':
+          description: Machines, known clients and any Tailscale error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  machines:       { type: array, items: { $ref: '#/components/schemas/Machine' } }
+                  clients:        { type: array, items: { type: string } }
+                  tailscaleError: { type: string, nullable: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/machines/{host}:
+    put:
+      summary: Configure or edit a machine
+      description: New machines must be in the tailnet with `tag:cliente`.
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MachineConfig' }
+      responses:
+        '200':
+          description: Saved configuration.
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: MACHINE_NOT_IN_TAILNET
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: TAILSCALE_UNAVAILABLE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    delete:
+      summary: Remove a machine's configuration
+      description: The machine keeps its access; if it is still in the tailnet it shows up as unassigned again.
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      responses:
+        '204': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/machines/{host}/ssh-test:
+    post:
+      summary: Test the SSH connection (runs `hostname`)
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sshUser: { type: string, default: nodehub }
+      responses:
+        '200':
+          description: Result of the test.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:      { type: boolean }
+                  message: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }

@@ -1,0 +1,32 @@
+paths:
+  /api/installer/status:
+    get:
+      summary: Whether the client installer can be generated
+      responses:
+        '200':
+          description: Installer status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:   { type: boolean }
+                  missing: { type: array, items: { type: string } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/installer:
+    get:
+      summary: Download the client installer
+      description: PowerShell script with the Tailscale auth key and the SSH public keys filled in.
+      responses:
+        '200':
+          description: nodehub-install.ps1
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: INSTALLER_NOT_CONFIGURED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

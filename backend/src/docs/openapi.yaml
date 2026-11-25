@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: nodehub API
+  version: 1.0.0
+  description: |
+    Client machines on the Tailscale network, their configuration (client, SSH user, notes)
+    and the client installer. Errors always use `{ error, code, details? }`.
+servers:
+  - url: /
+components:
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: Static API key from `API_KEY` in backend/.env.
+  schemas:
+    Error:
+      type: object
+      required: [error, code]
+      properties:
+        error:   { type: string }
+        code:    { type: string, example: VALIDATION_ERROR }
+        details: { type: array, items: {} }
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Invalid request.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+security:
+  - apiKey: []
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
