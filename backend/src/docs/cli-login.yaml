@@ -1,0 +1,157 @@
+components:
+  schemas:
+    CliLoginRequest:
+      type: object
+      properties:
+        userCode:   { type: string, example: WDJB-MJHT }
+        deviceName: { type: string, example: MIGUEL-LAPTOP }
+        status:     { type: string, enum: [PENDING, APPROVED, DENIED, CONSUMED] }
+        createdAt:  { type: string, format: date-time }
+        expiresAt:  { type: string, format: date-time }
+  parameters:
+    UserCode:
+      name: userCode
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$' }
+
+paths:
+  /api/cli-login:
+    post:
+      summary: Start connecting a PC (called by `nodehub login`)
+      description: |
+        Device authorisation flow. The CLI keeps the secret `deviceCode` and polls
+        `/api/cli-login/poll`; a signed-in user approves `userCode` on the dashboard page
+        `/connect?code=<userCode>`. Requests expire after 10 minutes.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceName]
+              properties:
+                deviceName: { type: string, maxLength: 64, example: MIGUEL-LAPTOP }
+      responses:
+        '201':
+          description: Request created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deviceCode: { type: string, description: Secret; only the CLI knows it. }
+                  userCode:   { type: string, example: WDJB-MJHT }
+                  expiresIn:  { type: integer, example: 600 }
+                  interval:   { type: integer, example: 2, description: Seconds between polls. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '429':
+          description: TOO_MANY_REQUESTS (too many pending requests)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/cli-login/poll:
+    post:
+      summary: Wait for approval (called by `nodehub login`)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceCode]
+              properties:
+                deviceCode: { type: string }
+      responses:
+        '200':
+          description: Approved. The token for this PC, returned exactly once.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:     { type: string, example: approved }
+                  token:      { type: string, example: nhk_... }
+                  deviceName: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      name:     { type: string }
+                      username: { type: string }
+        '202':
+          description: Still pending.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: pending }
+        '403':
+          description: LOGIN_DENIED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '410':
+          description: LOGIN_EXPIRED (expired, unknown or already collected)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/cli-login/{userCode}:
+    get:
+      summary: Show a connection request (dashboard)
+      parameters: [{ $ref: '#/components/parameters/UserCode' }]
+      responses:
+        '200':
+          description: The request.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CliLoginRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+        '404':
+          description: LOGIN_NOT_FOUND (unknown or expired)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/cli-login/{userCode}/approve:
+    post:
+      summary: Approve a connection request, connecting the PC to your account (dashboard)
+      parameters: [{ $ref: '#/components/parameters/UserCode' }]
+      responses:
+        '204': { description: Approved; the CLI collects its token on the next poll. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+        '404':
+          description: LOGIN_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: LOGIN_ALREADY_DECIDED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/cli-login/{userCode}/deny:
+    post:
+      summary: Deny a connection request (dashboard)
+      parameters: [{ $ref: '#/components/parameters/UserCode' }]
+      responses:
+        '204': { description: Denied. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+        '404':
+          description: LOGIN_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: LOGIN_ALREADY_DECIDED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
