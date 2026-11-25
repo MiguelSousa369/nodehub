@@ -7,6 +7,7 @@ interface MachineCardProps {
   onConfigure: (m: Machine) => void
   onRemove   : (m: Machine) => void
   onCopy     : (m: Machine) => void
+  onHistory  : (m: Machine) => void
 }
 
 function timeAgo(iso: string | null): string {
@@ -29,7 +30,7 @@ function statusText(m: Machine): string {
   return 'not found in the tailnet'
 }
 
-export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy }: MachineCardProps) {
+export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy, onHistory }: MachineCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -60,6 +61,8 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
             >⋯</button>
             {menuOpen && (
               <div className="card absolute right-0 top-7 z-10 min-w-[130px] p-1 shadow-xl">
+                <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-surface dark:hover:bg-surface-dark"
+                        onClick={() => { setMenuOpen(false); onHistory(m) }}>History &amp; profile</button>
                 <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-surface dark:hover:bg-surface-dark"
                         onClick={() => { setMenuOpen(false); onConfigure(m) }}>Edit</button>
                 <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-danger hover:bg-surface dark:text-danger-dark dark:hover:bg-surface-dark"

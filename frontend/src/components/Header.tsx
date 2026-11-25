@@ -2,17 +2,18 @@ import { ReactNode, useState } from 'react'
 
 import type { AuthUser, Page } from '../types'
 import ChangePasswordDialog from './ChangePasswordDialog'
+import TokensDialog from './TokensDialog'
 
 interface HeaderProps {
-  user    : AuthUser
-  page    : Page
-  onNav   : (page: Page) => void
-  onLogout: () => void
+  user     : AuthUser
+  page     : Page
+  onNav    : (page: Page) => void
+  onLogout : () => void
   children?: ReactNode   // page-specific controls (summary, filter, actions)
 }
 
 export default function Header({ user, page, onNav, onLogout, children }: HeaderProps) {
-  const [changingPassword, setChangingPassword] = useState(false)
+  const [dialog, setDialog] = useState<'password' | 'tokens' | null>(null)
 
   const tab = (target: Page, label: string) => (
     <button
@@ -29,15 +30,18 @@ export default function Header({ user, page, onNav, onLogout, children }: Header
       <h1 className="mr-2 text-xl font-semibold">node<span className="text-brand dark:text-brand-dark">hub</span></h1>
       <nav className="flex gap-1">
         {tab('dashboard', 'Machines')}
+        {tab('history', 'History')}
         {user.role === 'ADMIN' && tab('users', 'Users')}
       </nav>
       {children}
       <div className="flex items-center gap-2 text-sm">
         <span className="text-slate-500 dark:text-slate-400" title={user.username}>{user.name}</span>
-        <button className="btn" onClick={() => setChangingPassword(true)}>Password</button>
+        <button className="btn" onClick={() => setDialog('tokens')}>Access tokens</button>
+        <button className="btn" onClick={() => setDialog('password')}>Password</button>
         <button className="btn" onClick={onLogout}>Sign out</button>
       </div>
-      <ChangePasswordDialog open={changingPassword} onClose={() => setChangingPassword(false)} />
+      <ChangePasswordDialog open={dialog === 'password'} onClose={() => setDialog(null)} />
+      <TokensDialog open={dialog === 'tokens'} onClose={() => setDialog(null)} />
     </header>
   )
 }

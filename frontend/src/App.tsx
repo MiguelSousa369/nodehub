@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import DashboardPage from './pages/DashboardPage'
+import HistoryPage from './pages/HistoryPage'
 import LoginPage from './pages/LoginPage'
 import UsersPage from './pages/UsersPage'
 import { getMe } from './services/api'
@@ -41,6 +42,7 @@ export default function App() {
   }
 
   if (page === 'login' || !user) return <LoginPage onLogin={login} />
+  if (page === 'history') return <HistoryPage user={user} onNav={setPage} onLogout={logout} />
   if (page === 'users' && user.role === 'ADMIN') return <UsersPage user={user} onNav={setPage} onLogout={logout} />
   return <DashboardPage user={user} onNav={setPage} onLogout={logout} />
 }

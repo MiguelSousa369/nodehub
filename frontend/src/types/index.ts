@@ -72,4 +72,57 @@ export interface UserInput {
 // Navigation (manual router in App.tsx)
 // ---------------------------------------------------------------------------
 
-export type Page = 'login' | 'dashboard' | 'users'
+export type Page = 'login' | 'dashboard' | 'history' | 'users'
+
+// ---------------------------------------------------------------------------
+// Sessions, machine detail and access tokens
+// ---------------------------------------------------------------------------
+
+export type SessionResult = 'FIXED' | 'PARTIAL' | 'UNRESOLVED'
+
+export interface Session {
+  id        : number
+  host      : string
+  client    : string | null
+  technician: { id: number; name: string } | null
+  summary   : string
+  problem   : string
+  diagnosis : string
+  actions   : string
+  result    : SessionResult
+  pending   : string
+  createdAt : string
+}
+
+export interface SessionList {
+  sessions: Session[]
+  total   : number
+}
+
+export interface SessionFilters {
+  q?           : string
+  result?      : SessionResult | ''
+  technicianId?: number
+  host?        : string
+  limit?       : number
+  offset?      : number
+}
+
+export interface MachineDetail {
+  host          : string
+  client        : string
+  sshUser       : string
+  notes         : string
+  profile       : string
+  updatedAt     : string
+  recentSessions: Session[]
+  totalSessions : number
+}
+
+export interface AccessToken {
+  id        : number
+  name      : string
+  prefix    : string
+  createdAt : string
+  lastUsedAt: string | null
+}

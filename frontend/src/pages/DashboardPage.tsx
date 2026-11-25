@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import AddMachineDialog from '../components/AddMachineDialog'
 import ClientGroup from '../components/ClientGroup'
 import Header from '../components/Header'
+import MachineDetailDialog from '../components/MachineDetailDialog'
 import MachineFormDialog from '../components/MachineFormDialog'
 import Toast from '../components/Toast'
 import { useMachines } from '../hooks/useMachines'
@@ -29,6 +30,7 @@ export default function DashboardPage({ user, onNav, onLogout }: DashboardPagePr
   const [filter, setFilter]     = useState('')
   const [adding, setAdding]     = useState(false)
   const [editing, setEditing]   = useState<Machine | null>(null)
+  const [detailHost, setDetailHost] = useState<string | null>(null)
 
   // ---------------------------------------------------------------------------
   // Grouping and filtering
@@ -105,11 +107,13 @@ export default function DashboardPage({ user, onNav, onLogout }: DashboardPagePr
         )}
         {groups.map(([name, list]) => (
           <ClientGroup key={name} name={name} unassigned={name === UNASSIGNED} machines={list}
-                       onConfigure={setEditing} onRemove={remove} onCopy={copy} />
+                       onConfigure={setEditing} onRemove={remove} onCopy={copy}
+                       onHistory={(m) => setDetailHost(m.host)} />
         ))}
       </main>
 
       <AddMachineDialog open={adding} onClose={() => setAdding(false)} />
+      <MachineDetailDialog host={detailHost} onClose={() => setDetailHost(null)} />
       <MachineFormDialog machine={editing} clients={clients} onClose={() => setEditing(null)} onSaved={saved} />
       <Toast message={toast.message} />
     </>

@@ -1,5 +1,6 @@
 import type {
-  AuthUser, InstallerStatus, LoginResponse, MachineConfigInput, MachineList, SshTestResult, User, UserInput,
+  AccessToken, AuthUser, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
+  SessionFilters, SessionList, SshTestResult, User, UserInput,
 } from '../types'
 
 const BASE = '/api'
@@ -93,6 +94,46 @@ export async function testSsh(host: string, sshUser: string): Promise<SshTestRes
   return handleResponse(await fetch(`${machinePath(host)}/ssh-test`, {
     method: 'POST', headers: headers(json), body: JSON.stringify({ sshUser }),
   }))
+}
+
+export async function getMachine(host: string): Promise<MachineDetail> {
+  return handleResponse(await fetch(machinePath(host), { headers: headers() }))
+}
+
+export async function updateProfile(host: string, profile: string): Promise<void> {
+  await handleResponse(await fetch(`${machinePath(host)}/profile`, {
+    method: 'PUT', headers: headers(json), body: JSON.stringify({ profile }),
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// Sessions (helpdesk history)
+// ---------------------------------------------------------------------------
+
+export async function listSessions(filters: SessionFilters = {}): Promise<SessionList> {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '') params.set(key, String(value))
+  }
+  return handleResponse(await fetch(`${BASE}/sessions?${params}`, { headers: headers() }))
+}
+
+// ---------------------------------------------------------------------------
+// Personal access tokens (for the nodehub CLI / Claude Code)
+// ---------------------------------------------------------------------------
+
+export async function listTokens(): Promise<AccessToken[]> {
+  return handleResponse(await fetch(`${BASE}/tokens`, { headers: headers() }))
+}
+
+export async function createToken(name: string): Promise<AccessToken & { token: string }> {
+  return handleResponse(await fetch(`${BASE}/tokens`, {
+    method: 'POST', headers: headers(json), body: JSON.stringify({ name }),
+  }))
+}
+
+export async function revokeToken(id: number): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/tokens/${id}`, { method: 'DELETE', headers: headers() }))
 }
 
 // ---------------------------------------------------------------------------
