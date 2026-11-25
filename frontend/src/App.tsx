@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import ConnectPage from './pages/ConnectPage'
 import DashboardPage from './pages/DashboardPage'
 import HistoryPage from './pages/HistoryPage'
 import LoginPage from './pages/LoginPage'
@@ -15,15 +16,21 @@ function storedUser(): AuthUser | null {
   }
 }
 
+/** "nodehub login" opens /connect?code=XXXX-XXXX; remember the code across the sign-in page. */
+function connectCodeFromUrl(): string | null {
+  if (window.location.pathname !== '/connect') return null
+  return new URLSearchParams(window.location.search).get('code')
+}
+
 export default function App() {
-  const [user, setUser] = useState<AuthUser | null>(storedUser)
-  const [page, setPage] = useState<Page>(() => (storedUser() ? 'dashboard' : 'login'))
+  const [user, setUser]               = useState<AuthUser | null>(storedUser)
+  const [connectCode, setConnectCode] = useState<string | null>(connectCodeFromUrl)
+  const [page, setPage]               = useState<Page>(() => (connectCodeFromUrl() ? 'connect' : 'dashboard'))
 
   const logout = useCallback(() => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)
-    setPage('login')
   }, [])
 
   // Refresh the stored user (role or name may have changed); sign out if the session is no longer valid
@@ -38,10 +45,18 @@ export default function App() {
     localStorage.setItem('token', token)
     localStorage.setItem('user', JSON.stringify(u))
     setUser(u)
+  }
+
+  function leaveConnect() {
+    window.history.replaceState(null, '', '/')
+    setConnectCode(null)
     setPage('dashboard')
   }
 
-  if (page === 'login' || !user) return <LoginPage onLogin={login} />
+  if (!user) return <LoginPage onLogin={login} />
+  if (page === 'connect' && connectCode) {
+    return <ConnectPage user={user} code={connectCode} onDone={leaveConnect} onLogout={logout} />
+  }
   if (page === 'history') return <HistoryPage user={user} onNav={setPage} onLogout={logout} />
   if (page === 'users' && user.role === 'ADMIN') return <UsersPage user={user} onNav={setPage} onLogout={logout} />
   return <DashboardPage user={user} onNav={setPage} onLogout={logout} />

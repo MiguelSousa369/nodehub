@@ -1,52 +1,46 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { generateToken, getToken, revokeToken } from '../services/api'
+import { listTokens, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
 import Dialog from './Dialog'
 
-interface AccessTokenDialogProps {
+interface ConnectedPcsDialogProps {
   open   : boolean
   onClose: () => void
 }
 
-/** Your personal access token for the nodehub CLI, which Claude Code uses to read and record history. */
-export default function AccessTokenDialog({ open, onClose }: AccessTokenDialogProps) {
-  const [token, setToken]     = useState<AccessToken | null>(null)
-  const [created, setCreated] = useState<string | null>(null)
+function timeAgo(iso: string): string {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min} min ago`
+  if (min < 1440) return `${Math.round(min / 60)} h ago`
+  return `${Math.round(min / 1440)} days ago`
+}
+
+/** PCs where the nodehub CLI (used by Claude Code) is connected with your account. */
+export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialogProps) {
+  const [pcs, setPcs]         = useState<AccessToken[]>([])
   const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(() => {
     setLoading(true)
-    getToken()
-      .then(setToken)
+    listTokens()
+      .then(setPcs)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     if (!open) return
-    setCreated(null); setError(null)
+    setError(null)
     reload()
   }, [open, reload])
 
-  async function generate() {
-    if (token && !confirm('Generate a new token?\n\nThe current one stops working on every PC that uses it. ' +
-                          'Run ".\\nodehub.cmd login" again on those PCs with the new token.')) return
+  async function disconnect(pc: AccessToken) {
+    if (!confirm(`Disconnect ${pc.name}?\n\nClaude on that PC can no longer read or record history until it connects again.`)) return
     try {
-      const t = await generateToken()
-      setCreated(t.token)
-      setToken(t)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
-
-  async function revoke() {
-    if (!confirm('Revoke your token?\n\nThe nodehub CLI stops working on every PC that uses it.')) return
-    try {
-      await revokeToken()
-      setCreated(null)
+      await revokeToken(pc.id)
       reload()
     } catch (e) {
       setError((e as Error).message)
@@ -54,46 +48,32 @@ export default function AccessTokenDialog({ open, onClose }: AccessTokenDialogPr
   }
 
   return (
-    <Dialog open={open} title="Access token" onClose={onClose}>
+    <Dialog open={open} title="Connected PCs" onClose={onClose}>
       <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-        Claude Code uses the <code>nodehub</code> CLI to read each machine's history and record sessions under your
-        name. Generate your token, then run <code>.\nodehub.cmd login</code> in the nodehub folder on each PC you work
-        from and paste it.
+        PCs where Claude Code can read machine history and record sessions in your name. A PC connects the first time
+        you click <b>Open in Claude</b> on it (or with <code>.\nodehub.cmd login</code>): you approve it in the browser.
       </p>
-
-      {created && (
-        <div className="mb-4 rounded-lg border border-online/40 bg-online/10 p-3 text-sm">
-          <div className="mb-1 font-medium">Copy it now: it won't be shown again.</div>
-          <div className="flex gap-2">
-            <code className="flex-1 break-all rounded bg-surface px-2 py-1 dark:bg-surface-dark">{created}</code>
-            <button className="btn" onClick={() => navigator.clipboard.writeText(created)}>Copy</button>
-          </div>
-        </div>
-      )}
 
       {error && <div className="mb-3 text-sm text-danger dark:text-danger-dark">{error}</div>}
 
-      {!loading && (
-        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm dark:border-slate-700/60">
-          {token ? (
-            <>
-              <div className="font-medium"><code>{token.prefix}…</code></div>
+      <ul className="space-y-2">
+        {!loading && pcs.length === 0 && <li className="text-sm text-slate-500">No PCs connected yet.</li>}
+        {pcs.map((pc) => (
+          <li key={pc.id} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700/60">
+            <div className="flex-1">
+              <div className="font-medium">{pc.name}</div>
               <div className="text-[13px] text-slate-500 dark:text-slate-400">
-                Generated {new Date(token.createdAt).toLocaleString()}
-                {' · '}{token.lastUsedAt ? `last used ${new Date(token.lastUsedAt).toLocaleString()}` : 'never used'}
+                Connected {new Date(pc.createdAt).toLocaleDateString()}
+                {' · '}{pc.lastUsedAt ? `last used ${timeAgo(pc.lastUsedAt)}` : 'never used'}
               </div>
-            </>
-          ) : (
-            <div className="text-slate-500">You don't have a token yet.</div>
-          )}
-        </div>
-      )}
+            </div>
+            <button className="btn text-danger dark:text-danger-dark" onClick={() => disconnect(pc)}>Disconnect</button>
+          </li>
+        ))}
+      </ul>
 
-      <div className="mt-5 flex gap-2">
-        {token && <button className="btn text-danger dark:text-danger-dark" onClick={revoke}>Revoke</button>}
-        <span className="flex-1" />
+      <div className="mt-5 flex justify-end">
         <button className="btn" onClick={onClose}>Close</button>
-        <button className="btn-primary" onClick={generate}>{token ? 'Generate new token' : 'Generate token'}</button>
       </div>
     </Dialog>
   )

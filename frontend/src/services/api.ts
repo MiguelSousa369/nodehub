@@ -1,5 +1,5 @@
 import type {
-  AccessToken, AuthUser, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
+  AccessToken, AuthUser, CliLoginRequest, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
   SessionFilters, SessionList, SshTestResult, User, UserInput,
 } from '../types'
 
@@ -119,20 +119,25 @@ export async function listSessions(filters: SessionFilters = {}): Promise<Sessio
 }
 
 // ---------------------------------------------------------------------------
-// Personal access token (one per user, for the nodehub CLI / Claude Code)
+// Connected PCs (one access token per PC, created by "nodehub login")
 // ---------------------------------------------------------------------------
 
-export async function getToken(): Promise<AccessToken | null> {
-  return handleResponse(await fetch(`${BASE}/token`, { headers: headers() }))
+export async function listTokens(): Promise<AccessToken[]> {
+  return handleResponse(await fetch(`${BASE}/tokens`, { headers: headers() }))
 }
 
-/** Generates a new token, replacing the previous one. The token is returned only now. */
-export async function generateToken(): Promise<AccessToken & { token: string }> {
-  return handleResponse(await fetch(`${BASE}/token`, { method: 'POST', headers: headers() }))
+export async function revokeToken(id: number): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/tokens/${id}`, { method: 'DELETE', headers: headers() }))
 }
 
-export async function revokeToken(): Promise<void> {
-  return handleResponse(await fetch(`${BASE}/token`, { method: 'DELETE', headers: headers() }))
+export async function getCliLogin(userCode: string): Promise<CliLoginRequest> {
+  return handleResponse(await fetch(`${BASE}/cli-login/${encodeURIComponent(userCode)}`, { headers: headers() }))
+}
+
+export async function decideCliLogin(userCode: string, approve: boolean): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/cli-login/${encodeURIComponent(userCode)}/${approve ? 'approve' : 'deny'}`, {
+    method: 'POST', headers: headers(),
+  }))
 }
 
 // ---------------------------------------------------------------------------

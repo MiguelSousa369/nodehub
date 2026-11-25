@@ -72,7 +72,7 @@ export interface UserInput {
 // Navigation (manual router in App.tsx)
 // ---------------------------------------------------------------------------
 
-export type Page = 'login' | 'dashboard' | 'history' | 'users'
+export type Page = 'login' | 'dashboard' | 'history' | 'users' | 'connect'
 
 // ---------------------------------------------------------------------------
 // Sessions, machine detail and access tokens
@@ -119,8 +119,20 @@ export interface MachineDetail {
   totalSessions : number
 }
 
+/** A PC connected with "nodehub login" (its access token, without the secret). */
 export interface AccessToken {
+  id        : number
+  name      : string
   prefix    : string
   createdAt : string
   lastUsedAt: string | null
+}
+
+/** A pending "nodehub login" request, shown on the /connect page. */
+export interface CliLoginRequest {
+  userCode  : string
+  deviceName: string
+  status    : 'PENDING' | 'APPROVED' | 'DENIED' | 'CONSUMED'
+  createdAt : string
+  expiresAt : string
 }
