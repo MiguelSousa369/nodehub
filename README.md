@@ -45,8 +45,8 @@ Follows [`fullstack-ts-standards`](https://github.com/MiguelSousa369/fullstack-t
 |---|---|
 | `backend/` | Node.js, Express, TypeScript, Zod, Winston, Swagger (`/api/docs`), helmet, cors |
 | `frontend/` | React, Vite, TypeScript, Tailwind CSS |
-| Data | JSON file store: `backend/data/machines/<host>/entity.json` |
-| Auth | Static API key (`Authorization: Bearer <API_KEY>`) |
+| Data | PostgreSQL (Docker Compose) with Prisma: `users`, `clients`, `machines` |
+| Auth | Users with JWT sign-in and roles: **Admin** (everything, including users) and **Technician** (machines and clients) |
 | Machine status | Local Tailscale client (`tailscale status --json`); no Tailscale API token needed |
 
 The backend serves the built dashboard on the same origin: **http://127.0.0.1:8737**.
@@ -55,19 +55,21 @@ The backend serves the built dashboard on the same origin: **http://127.0.0.1:87
 
 ## Setup (technician's PC)
 
-**Requirements:** Node.js 20+, Tailscale (logged in to the support tailnet), Claude Code, an SSH key accepted on the client machines.
+**Requirements:** Node.js 20+, Docker Desktop, Tailscale (logged in to the support tailnet), Claude Code, an SSH key accepted on the client machines.
 
 1. **Backend config:** copy `backend/.env.example` to `backend/.env` and fill in:
-   - `API_KEY`: any long random string (the dashboard asks for it once).
+   - `JWT_SECRET`: a long random string (the command is in the file).
    - `TAILSCALE_AUTHKEY`: in the Tailscale console (**Settings → Keys → Generate auth key**), a **reusable**, **pre-approved** key tagged **`tag:cliente`**.
+   - Optionally `ADMIN_USERNAME` / `ADMIN_PASSWORD` for the first admin.
 2. **SSH public keys:** each technician's key in `public-keys/<name>.pub`.
-3. **`nodehub://` protocol** (once, no admin needed):
+3. **`nodehub://` protocol** (once per technician PC, no admin needed):
    ```powershell
    .\launcher\register-protocol.ps1
    ```
-4. **Start:** double-click `start.cmd` (installs dependencies the first time, builds and opens the dashboard).
+4. **Start:** double-click `start.cmd`. It starts PostgreSQL (`docker compose up -d`), applies the migrations, creates the first admin if there are no users yet (the password is printed once if you didn't set `ADMIN_PASSWORD`), builds and opens the dashboard.
+5. **Add your colleagues:** sign in as admin, go to **Users → + Add user**. Each person changes their own password under **Password**.
 
-Development: `npm run dev` in `backend/` and in `frontend/` (Vite on http://127.0.0.1:5173, proxying `/api`).
+Development: `docker compose up -d`, then `npm run dev` in `backend/` and in `frontend/` (Vite on http://127.0.0.1:5173, proxying `/api`). Schema changes: edit `backend/prisma/schema.prisma` and run `npm run db:migrate`.
 
 ---
 
@@ -92,9 +94,18 @@ Machines are identified by their unique tailnet name: two clients can both have 
 
 Documented with Swagger at **http://127.0.0.1:8737/api/docs**.
 
+All routes except `health` and `auth/login` need `Authorization: Bearer <token>` (from `POST /api/auth/login`).
+
 | Method | Path | |
 |---|---|---|
 | `GET` | `/api/health` | Health check (no auth) |
+| `POST` | `/api/auth/login` | Sign in `{ username, password }` → `{ token, user }` |
+| `GET` | `/api/auth/me` | Current user |
+| `POST` | `/api/auth/password` | Change your own password |
+| `GET` | `/api/users` | List users (admin) |
+| `POST` | `/api/users` | Create a user (admin) |
+| `PATCH` | `/api/users/:id` | Edit name, role, password, active (admin) |
+| `DELETE` | `/api/users/:id` | Delete a user (admin) |
 | `GET` | `/api/machines` | Machines (Tailscale + configuration), known clients |
 | `PUT` | `/api/machines/:host` | Configure / edit `{ client, sshUser, notes }` |
 | `DELETE` | `/api/machines/:host` | Remove the configuration |
@@ -108,15 +119,22 @@ Errors always use `{ "error": "...", "code": "...", "details": [...] }`:
 |---|---|---|
 | `VALIDATION_ERROR` | 400 | Invalid body or params (Zod issues in `details`) |
 | `INVALID_JSON` | 400 | Malformed JSON body |
-| `UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `WRONG_PASSWORD` | 400 | Current password is wrong when changing it |
+| `UNAUTHORIZED` | 401 | Not signed in, session expired or user deactivated |
+| `INVALID_CREDENTIALS` | 401 | Wrong username or password (or deactivated user) |
+| `FORBIDDEN` | 403 | Admin-only action |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to localhost |
-| `NOT_FOUND` | 404 | Unknown route or machine not configured |
+| `NOT_FOUND` | 404 | Unknown route, machine not configured or user not found |
 | `MACHINE_NOT_IN_TAILNET` | 404 | Machine not in the tailnet with `tag:cliente` |
+| `USERNAME_TAKEN` | 409 | Username already exists |
+| `LAST_ADMIN` | 409 | The change would leave no active admin |
+| `CANNOT_DEMOTE_SELF` | 409 | Admins can't remove their own admin access |
+| `CANNOT_DELETE_SELF` | 409 | You can't delete your own account |
 | `INSTALLER_NOT_CONFIGURED` | 409 | Missing auth key or public keys |
 | `TAILSCALE_UNAVAILABLE` | 503 | Could not read Tailscale status |
 | `INTERNAL_ERROR` | 500 | Anything else |
 
-Tests: `npm test` in `backend/`.
+Tests: `npm test` in `backend/` (uses a separate `nodehub_test` database, created by Docker Compose).
 
 ---
 
@@ -125,11 +143,12 @@ Tests: `npm test` in `backend/`.
 ```
 nodehub/
 ├── CLAUDE.md                   helpdesk rules for Claude Code
-├── start.cmd                   builds and starts everything
+├── start.cmd                   starts the database, builds and starts everything
+├── docker-compose.yml          PostgreSQL (127.0.0.1:5433)
 ├── backend/                    Express API (+ serves the built dashboard)
 │   ├── src/                    routes → controllers → services → schemas, middlewares, lib, utils, docs
+│   ├── prisma/                 schema, migrations, seed (first admin)
 │   ├── tests/
-│   ├── data/                   machine configuration store (gitignored)
 │   └── .env.example
 ├── frontend/                   React dashboard
 ├── installer/
@@ -149,20 +168,21 @@ nodehub/
 
 - **Client isolation:** Tailscale ACLs only let the technicians' devices reach the client machines, and no client sees another.
 - **SSH key only:** no passwords, and only from the Tailscale network.
-- **Local-only dashboard:** listens on `127.0.0.1`, rejects requests addressed to any other host (DNS rebinding) and requires the API key.
-- **Launcher input:** only simple machine names configured in the dashboard are accepted, because a `nodehub://` link can come from any web page.
+- **Local-only dashboard:** listens on `127.0.0.1` and rejects requests addressed to any other host (DNS rebinding).
+- **Users and roles:** every technician has their own account (passwords hashed with scrypt). Only admins manage users; there is always at least one active admin, and deactivating a user cuts their access immediately.
+- **Launcher input:** a `nodehub://` link can come from any web page, so the launcher validates every value and only opens machines that are in the tailnet with `tag:cliente`.
 - **Only tagged machines:** new machines can only be configured if they are in the tailnet with `tag:cliente`.
 - **Session log:** every session is recorded in the client's folder.
 - **Rules for Claude:** `CLAUDE.md` defines what it may do without asking and what needs the technician's confirmation.
-- **No secrets in git:** `backend/.env` (API key, Tailscale auth key) and `backend/data/` stay out of the repository.
+- **No secrets in git:** `backend/.env` (JWT secret, Tailscale auth key, database URL) stays out of the repository. The database only listens on `127.0.0.1`.
 
 ---
 
 ## To do
 
-- [ ] **PostgreSQL database** (Prisma) instead of the JSON store.
-- [ ] **Everything in containers** (Docker Compose: backend, frontend, Postgres). Notes:
+- [ ] **Backend and frontend in containers too** (PostgreSQL already runs in Docker Compose). Notes:
   - a containerised backend can't see the PC's Tailscale: use the Tailscale API or a Tailscale sidecar container;
   - the `nodehub://` launcher and Claude Code keep running on the technician's PC.
-- [ ] **Shared dashboard** for the whole team (follows from the above).
+- [ ] **Shared dashboard** for the whole team on a server (users and roles are ready; needs the point above).
+- [ ] **Audit log**: who configured, edited or removed each machine, and when.
 - [ ] **Client uninstaller**: remove the `nodehub` user, the keys and the firewall rule, and take the machine off the tailnet.

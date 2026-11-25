@@ -24,7 +24,7 @@ When that happens:
    If it fails, run `tailscale status` and tell the technician whether the machine is offline or it's an SSH problem.
 3. **Ask what the problem is** (if not stated yet) and only then start.
 
-Each machine's configuration (client, SSH user, notes) is in `backend/data/machines/<host>/entity.json`, managed by the dashboard. Don't edit it by hand.
+The client, SSH user and IP come in that first message. Machine configuration lives in the dashboard's database; change it through the dashboard, not by hand.
 
 ---
 
