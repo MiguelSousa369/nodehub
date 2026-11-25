@@ -1,7 +1,7 @@
 {
   "teste-posto1": {
     "cliente": "Testes",
-    "utilizador": "Administrador",
+    "utilizador": "nodehub",
     "notas": "Máquina de teste (posto)"
   },
   "teste-srv": {
