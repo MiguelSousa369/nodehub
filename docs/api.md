@@ -11,7 +11,8 @@ Send `Authorization: Bearer <token>` with either:
 - a **dashboard session** token from `POST /api/auth/login` (expires after `JWT_EXPIRES_IN`), or
 - a **personal access token** (`nhk_…`) created in the dashboard.
 
-Routes marked *session* reject access tokens with `403 SESSION_REQUIRED`.
+Routes marked *session* reject access tokens with `403 SESSION_REQUIRED`. Each user has at most
+one access token.
 
 ## Endpoints
 
@@ -22,10 +23,10 @@ Routes marked *session* reject access tokens with `403 SESSION_REQUIRED`.
 | `POST` | `/api/auth/login` | – | `{ username, password }` → `{ token, user }` |
 | `GET` | `/api/auth/me` | any | Current user |
 | `POST` | `/api/auth/password` | session | `{ currentPassword, newPassword }` |
-| **Access tokens** | | | |
-| `GET` | `/api/tokens` | session | Your tokens (without the secret) |
-| `POST` | `/api/tokens` | session | `{ name }` → token, shown once |
-| `DELETE` | `/api/tokens/:id` | session | Revoke one of your tokens |
+| **Access token** | | | |
+| `GET` | `/api/token` | session | Your token without the secret (`null` if none) |
+| `POST` | `/api/token` | session | Generate your token, replacing the previous one; shown once |
+| `DELETE` | `/api/token` | session | Revoke your token |
 | **Users** | | | |
 | `GET` | `/api/users` | session, admin | List users |
 | `POST` | `/api/users` | session, admin | `{ username, name, password, role }` |
@@ -64,7 +65,7 @@ Every error has the same shape; branch on `code`, not on the message:
 | `FORBIDDEN` | 403 | Admin-only action |
 | `SESSION_REQUIRED` | 403 | Account-level action attempted with an access token |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
-| `NOT_FOUND` | 404 | Unknown route, or machine/user/token not found |
+| `NOT_FOUND` | 404 | Unknown route, machine/user not found, or no token to revoke |
 | `MACHINE_NOT_IN_TAILNET` | 404 | Configuring a machine that isn't in the tailnet with `CLIENT_TAG` |
 | `MACHINE_NOT_CONFIGURED` | 404 | Recording a session or profile for an unconfigured machine |
 | `USERNAME_TAKEN` | 409 | Username already exists |

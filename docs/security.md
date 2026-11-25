@@ -23,7 +23,7 @@ protects against and how, and the responsibilities that stay with you.
 | **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors don't reveal whether a username exists. |
 | **Roles** | Only admins manage users. You can't remove your own admin access or delete yourself; there is always one active admin. |
 | **Immediate revocation** | Each request reloads the user: deactivating someone ends their dashboard sessions and access tokens at once. |
-| **Access tokens** | Stored only as SHA-256 hashes, shown once, revocable, with *last used* tracking. They **cannot** manage users, tokens or passwords (`SESSION_REQUIRED`), so a token leaked from a Claude session can't take over the account. |
+| **Access tokens** | One per user, stored only as a SHA-256 hash, shown once, revocable or replaceable, with *last used* tracking. They **cannot** manage users, the token or passwords (`SESSION_REQUIRED`), so a token leaked from a Claude session can't take over the account. If a PC is lost, generate a new token: the old one stops working everywhere. |
 | **Input validation** | Every request body, parameter and query is validated with Zod. Values that end up on a command line (client name, notes, SSH user, hostname) can't contain quotes, `;` or `$`. |
 | **Only tagged machines** | Machines can only be configured if they are in the tailnet with `CLIENT_TAG`. |
 | **Security headers** | `helmet()` defaults; CORS restricted in production. |

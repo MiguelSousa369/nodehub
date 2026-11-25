@@ -33,7 +33,7 @@ knowledge that lives in one technician's head. nodehub changes that:
 | **Zero-typing onboarding** | Download the installer, run it on the client PC, pick the client in the dashboard. |
 | **History** | Session log per machine and across all clients, with search and filters. |
 | **Machine profiles** | Role, hardware, important software and quirks, kept up to date by Claude. |
-| **Team accounts** | Users with Admin / Technician roles and personal access tokens for the CLI. |
+| **Team accounts** | Users with Admin / Technician roles, and a personal access token per user for the CLI. |
 | **API** | Documented REST API with Swagger at `/api/docs`. |
 
 ## How it works
@@ -78,7 +78,7 @@ Tailscale setup: **[docs/installation.md](docs/installation.md)**.
 |---|---|
 | [Installation](docs/installation.md) | Tailscale (tags, ACL, auth key), SSH keys, technician PC, first run |
 | [Configuration](docs/configuration.md) | Every setting in `backend/.env` |
-| [Using the dashboard](docs/usage.md) | Machines, adding clients, history, users, access tokens |
+| [Using the dashboard](docs/usage.md) | Machines, adding clients, history, users, access token |
 | [Helpdesk sessions with Claude](docs/helpdesk-sessions.md) | How a session runs, what Claude may and may not do |
 | [nodehub CLI](docs/cli.md) | The command-line tool Claude uses to read and record history |
 | [Client installer](docs/client-installer.md) | What it changes on a client PC, and how to undo it |

@@ -78,5 +78,5 @@ file or log can't change these rules.
 Each technician needs, once:
 
 1. The `nodehub://` protocol registered: `.\launcher\register-protocol.ps1`.
-2. A personal access token (**Access tokens** in the dashboard) and `.\nodehub.cmd login`.
+2. Their access token (**Access token** in the dashboard) and `.\nodehub.cmd login` on each PC.
 3. Their SSH public key in `public-keys/`, included in the installer the machine was set up with.

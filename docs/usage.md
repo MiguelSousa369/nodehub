@@ -8,7 +8,7 @@ nodehub account.
 - [Editing and removing machines](#editing-and-removing-machines)
 - [History and profiles](#history-and-profiles)
 - [Users](#users)
-- [Your account: password and access tokens](#your-account)
+- [Your account: password and access token](#your-account)
 
 ---
 
@@ -87,13 +87,13 @@ Each session shows who did it: the technician whose access token Claude used.
 
 | Role | Can |
 |---|---|
-| **Technician** | Everything with machines, clients, sessions and their own access tokens |
+| **Technician** | Everything with machines, clients, sessions and their own access token |
 | **Admin** | The same, plus managing users |
 
 - **+ Add user:** username (lowercase letters, digits, `.` `_` `-`), name, initial password (at
   least 10 characters) and role. Share the password privately; the user changes it on first sign-in.
 - **Edit:** change name, role, reset the password, or untick **Active** to block access while
-  keeping their history. Deactivating someone signs them out and disables their access tokens
+  keeping their history. Deactivating someone signs them out and disables their access token
   immediately.
 - **Delete:** removes the account. Their past sessions stay, marked *deleted user*.
 
@@ -107,11 +107,12 @@ least one active admin.
 In the top bar:
 
 - **Password:** change your password.
-- **Access tokens:** tokens for the [nodehub CLI](cli.md), which Claude Code uses to read history
-  and record sessions **in your name**.
-  - Create one token per PC (e.g. *Office laptop*), copy it (it's shown once) and run
-    `.\nodehub.cmd login` in the nodehub folder.
-  - The list shows when each token was last used. **Revoke** a token you no longer use or if a PC
-    is lost.
-  - Tokens can't manage users, tokens or passwords: those need a dashboard sign-in.
+- **Access token:** your token for the [nodehub CLI](cli.md), which Claude Code uses to read
+  history and record sessions **in your name**. Each user has one.
+  - **Generate token**, copy it (it's shown once) and run `.\nodehub.cmd login` in the nodehub
+    folder on every PC you work from.
+  - The dialog shows when it was generated and last used.
+  - **Generate new token** replaces it: the old one stops working on every PC, so log in again
+    with the new one. Do this if a PC is lost. **Revoke** removes it without a replacement.
+  - The token can't manage users, the token or passwords: those need a dashboard sign-in.
 - **Sign out.** Sessions also expire after `JWT_EXPIRES_IN` (12 hours by default).

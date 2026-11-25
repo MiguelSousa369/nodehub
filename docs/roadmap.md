@@ -3,8 +3,8 @@
 ## Next
 
 - [ ] **Shared server for the team.** Run the backend and dashboard on one server (with its own
-  Tailscale node) instead of on each technician PC. Users, roles and access tokens are already in
-  place. Needs:
+  Tailscale node) instead of on each technician PC. Users, roles and access tokens are already
+  in place. Needs:
   - backend and frontend in containers (PostgreSQL already is);
   - machine status from the Tailscale API or a Tailscale sidecar container, instead of the local
     CLI;

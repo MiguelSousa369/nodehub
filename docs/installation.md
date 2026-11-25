@@ -135,7 +135,7 @@ It:
 Then:
 
 1. Sign in as `admin` and change the password (**Password**).
-2. Create an access token for Claude (**Access tokens → Create token**) and sign the CLI in:
+2. Generate your access token for Claude (**Access token → Generate token**) and sign the CLI in:
    ```powershell
    .\nodehub.cmd login
    ```
@@ -150,7 +150,7 @@ For each new technician:
 1. An admin creates their account (**Users → + Add user**).
 2. Their public key goes into `public-keys/` (step 3). Re-run the installer on existing client
    machines so they accept the new key.
-3. They set up their own PC (step 4) and create their own access token.
+3. They set up their own PC (step 4) and generate their own access token.
 
 > Today each technician runs nodehub on their own PC, all pointing at the same tailnet. A shared
 > server for the whole team is on the [roadmap](roadmap.md).

@@ -7,11 +7,11 @@ The CLI is built together with the backend (`start.cmd` or `npm run build` in `b
 
 ## Signing in
 
-The CLI authenticates with a **personal access token**, so everything it records is attributed to
-you.
+The CLI authenticates with your **personal access token** (one per user), so everything it records
+is attributed to you.
 
-1. In the dashboard: **Access tokens → Create token** (e.g. *Office laptop*). Copy the token
-   (`nhk_...`); it's shown only once.
+1. In the dashboard: **Access token → Generate token**. Copy the token (`nhk_...`); it's shown only
+   once. Use the same token on every PC you work from.
 2. In the nodehub folder:
    ```powershell
    .\nodehub.cmd login
@@ -86,7 +86,7 @@ Notes:    Back office server
 | Message | Fix |
 |---|---|
 | *Not signed in* | Run `.\nodehub.cmd login` |
-| *Token rejected* | The token was revoked or your user deactivated: create a new token |
+| *Token rejected* | The token was revoked or replaced, or your user deactivated: generate a new one and log in again |
 | *Cannot reach nodehub* | Start the dashboard (`start.cmd`) or check `--url` |
 | *Machine ... is not configured* | Configure the machine in the dashboard first |
 | *The nodehub CLI is not built yet* | Run `start.cmd` or `npm run build` in `backend/` |

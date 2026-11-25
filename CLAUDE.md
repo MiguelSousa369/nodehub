@@ -20,7 +20,7 @@ When that happens:
    ```
    .\nodehub.cmd machine <host>
    ```
-   If it says *Not signed in* or *Token rejected*, ask the technician to create an access token in the dashboard (**Access tokens**) and run `.\nodehub.cmd login` themselves. Don't ask them to paste the token into the chat.
+   If it says *Not signed in* or *Token rejected*, ask the technician to generate their access token in the dashboard (**Access token**) and run `.\nodehub.cmd login` themselves. Don't ask them to paste the token into the chat.
 2. **Check that the machine responds:**
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes <user>@<host> hostname

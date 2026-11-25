@@ -22,7 +22,7 @@ This file holds secrets and is never committed.
 
 | Setting | Default | Description |
 |---|---|---|
-| `JWT_EXPIRES_IN` | `12h` | How long a dashboard sign-in lasts (`8h`, `7d`, ...). Access tokens don't expire; revoke them instead. |
+| `JWT_EXPIRES_IN` | `12h` | How long a dashboard sign-in lasts (`8h`, `7d`, ...). Access tokens don't expire; revoke or replace them instead. |
 | `ADMIN_USERNAME` | `admin` | First admin, created by `npm run seed` only when there are no users. |
 | `ADMIN_PASSWORD` | random, printed once | Password of that first admin. Remove it from the file after signing in. |
 

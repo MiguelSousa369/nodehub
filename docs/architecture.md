@@ -28,7 +28,7 @@ flowchart TB
 | Component | Location | Role |
 |---|---|---|
 | **Backend** | `backend/` | REST API, authentication, business rules; serves the built dashboard on the same origin. |
-| **Dashboard** | `frontend/` | React single-page app: machines, history, users, tokens. |
+| **Dashboard** | `frontend/` | React single-page app: machines, history, users, access token. |
 | **Database** | `docker-compose.yml` | PostgreSQL 17 with Prisma migrations (`backend/prisma/`). |
 | **Tailscale** | technician PC | Source of truth for which machines exist and whether they're online. No Tailscale API token is needed. |
 | **Launcher** | `launcher/` | Handles `nodehub://` links: validates them and opens Claude Code with the machine context. |
@@ -40,7 +40,7 @@ flowchart TB
 
 ```mermaid
 erDiagram
-  users ||--o{ api_tokens : owns
+  users ||--o| api_tokens : "has (0 or 1)"
   users |o--o{ sessions : "recorded by"
   clients ||--o{ machines : has
   machines ||..o{ sessions : "host (no FK)"
@@ -55,8 +55,7 @@ erDiagram
   }
   api_tokens {
     int id PK
-    int user_id FK
-    string name
+    int user_id FK,UK "one per user"
     string prefix
     string token_hash UK "SHA-256"
     datetime last_used_at
@@ -138,7 +137,7 @@ sequenceDiagram
 | Credential | Created by | Used by | Lifetime | Can manage users/tokens/password |
 |---|---|---|---|---|
 | **Dashboard session** (JWT) | `POST /api/auth/login` | Browser | `JWT_EXPIRES_IN` (12 h) | Yes (by role) |
-| **Access token** (`nhk_…`) | Dashboard → Access tokens | CLI / Claude | Until revoked | **No** |
+| **Access token** (`nhk_…`), one per user | Dashboard → Access token | CLI / Claude | Until revoked or replaced | **No** |
 
 Both are sent as `Authorization: Bearer …`. Every request reloads the user, so deactivating a user
 cuts all their credentials immediately.
