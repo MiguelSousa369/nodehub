@@ -1,196 +1,168 @@
 # nodehub
 
-Painel central com todos os PCs dos clientes ligados por **Tailscale**, organizados por cliente, a partir do qual se faz **helpdesk remoto com o Claude Code**: diagnóstico, resolução de problemas e deteção de vírus, sem o cliente ter de fazer nada.
+A central dashboard of all client PCs connected through **Tailscale**, organised by client, from which you do **remote helpdesk with Claude Code**: diagnostics, troubleshooting and malware checks, without the client having to do anything.
 
 ---
 
-## A ideia
+## The idea
 
-Os PCs dos clientes já estão na nossa rede privada Tailscale, com um servidor SSH que só aceita a nossa chave. Isso dá-nos acesso direto e seguro a cada máquina, sem portas abertas na internet.
+Client PCs join our private Tailscale network with an SSH server that only accepts our keys. That gives us direct, secure access to every machine, with no ports open to the internet.
 
-O **nodehub** aproveita esse acesso para duas coisas:
+nodehub uses that access for two things:
 
-1. **Ver tudo organizado:** um painel com todas as máquinas, agrupadas por cliente, com o estado de cada uma.
-2. **Agir com o Claude Code:** escolhe-se uma máquina no painel e o Claude Code liga-se a ela por SSH para diagnosticar e resolver o problema.
+1. **See everything organised:** a dashboard with every machine, grouped by client, with its status.
+2. **Act with Claude Code:** pick a machine in the dashboard and Claude Code connects to it over SSH to diagnose and fix the problem.
 
 ```
- PC do técnico                                             PCs dos clientes
+ Technician's PC                                           Client PCs
  ┌──────────────────────────────┐                          ┌───────────────────────┐
- │ nodehub (painel)             │                          │ Cliente A             │
- │   lista de máquinas          │                          │   srv-a   ● online    │
- │   [Abrir no Claude] [Copiar] │                          │   posto1  ● online    │
+ │ nodehub (dashboard)          │                          │ Client A              │
+ │   machine list               │                          │   srv-a   ● online    │
+ │   [Open in Claude] [Copy]    │                          │   pc1     ● online    │
  │            │                 │                          ├───────────────────────┤
- │            ▼                 │   tailnet (WireGuard)    │ Cliente B             │
+ │            ▼                 │   tailnet (WireGuard)    │ Client B              │
  │ Claude Code ── ssh ──────────┼═════════════════════════▶│   srv-b   ○ offline   │
- │                              │   sem portas abertas     │   ...                 │
+ │                              │   no open ports          │   ...                 │
  └──────────────────────────────┘                          └───────────────────────┘
 ```
 
----
+### Connecting to Claude Code
 
-## O painel
+Each configured machine has two buttons:
 
-Para cada máquina mostra:
+- **Open in Claude**: a `nodehub://open?host=<machine>` link, registered in Windows, opens a terminal with Claude Code already working on that machine.
+- **Copy**: copies a ready-made prompt to paste into any Claude Code session opened in this folder.
 
-| Campo | Origem |
-|-------|--------|
-| Cliente | Tag / nome no Tailscale |
-| Nome da máquina | Tailscale |
-| IP Tailscale (100.x) | Tailscale |
-| Online / offline | Tailscale |
-| Último contacto | Tailscale |
-| Sistema operativo | Tailscale |
-| Utilizador SSH | Configuração do nodehub |
-| Notas | Configuração do nodehub |
-
-A lista de máquinas e o estado vêm da **API do Tailscale**, por isso o painel está sempre atualizado sem registo manual. O que o Tailscale não sabe (cliente a que pertence, utilizador SSH, notas) fica num ficheiro de configuração do nodehub.
+The dashboard only identifies the machine. What Claude needs to know to work lives in the repository: [`CLAUDE.md`](CLAUDE.md) (helpdesk rules: how to connect, what it may do alone, when to ask, how to log) and `clients/<Client>/<host>.md` (each machine's history).
 
 ---
 
-## Ligação ao Claude Code
+## Stack
 
-Cada máquina no painel tem dois botões.
+Follows [`fullstack-ts-standards`](https://github.com/MiguelSousa369/fullstack-ts-standards):
 
-### 1. Abrir no Claude (principal)
+| Part | Tech |
+|---|---|
+| `backend/` | Node.js, Express, TypeScript, Zod, Winston, Swagger (`/api/docs`), helmet, cors |
+| `frontend/` | React, Vite, TypeScript, Tailwind CSS |
+| Data | JSON file store: `backend/data/machines/<host>/entity.json` |
+| Auth | Static API key (`Authorization: Bearer <API_KEY>`) |
+| Machine status | Local Tailscale client (`tailscale status --json`); no Tailscale API token needed |
 
-Um clique abre um terminal com o Claude Code já a trabalhar nessa máquina.
-
-Funciona com um **protocolo próprio registado no Windows**:
-
-```
-nodehub://open?host=srv-a
-```
-
-Ao clicar, o Windows corre um pequeno lançador que:
-
-1. Abre o Windows Terminal na pasta do nodehub.
-2. Inicia o `claude` com o contexto da máquina (cliente, host, IP, utilizador SSH) já indicado.
-3. O técnico só tem de descrever o problema.
-
-### 2. Copiar para o Claude (alternativa)
-
-Para quando o lançador não está instalado ou se quer usar outro terminal. Copia um texto pronto a colar numa sessão do Claude Code:
-
-```
-Helpdesk: cliente A, máquina srv-a (100.x.x.x, utilizador admin).
-Problema: <descrever aqui>
-```
-
-### O contexto vem do repositório, não do painel
-
-O painel só identifica a máquina. O que o Claude precisa de saber para trabalhar está no próprio repositório:
-
-- **`CLAUDE.md`** com as regras de helpdesk: como se liga por SSH, o que pode fazer sozinho, quando tem de perguntar e onde regista o que fez.
-- **Uma pasta por cliente** com o histórico de intervenções em cada máquina, que o Claude lê antes de começar.
-
-Assim, abrir pelo botão ou colar à mão dá o mesmo resultado.
+The backend serves the built dashboard on the same origin: **http://127.0.0.1:8737**.
 
 ---
 
-## O que se faz com isto
+## Setup (technician's PC)
 
-- **Diagnóstico:** "o PC está lento", "não imprime", "a aplicação não arranca".
-- **Resolução:** reiniciar serviços, limpar disco, corrigir configurações, aplicar atualizações.
-- **Segurança:** verificar o antivírus, procurar ameaças, processos ou software suspeito, contas estranhas.
-- **Consulta:** estado do disco, memória, eventos de erro, software instalado.
+**Requirements:** Node.js 20+, Tailscale (logged in to the support tailnet), Claude Code, an SSH key accepted on the client machines.
 
-Tudo por SSH, sem interromper o utilizador e sem ferramentas de acesso remoto ao ecrã.
-
----
-
-## Segurança
-
-- **Isolamento entre clientes:** as ACLs do Tailscale garantem que só o PC do técnico chega às máquinas e que nenhum cliente vê outro.
-- **SSH só por chave:** sem passwords, e só aceite a partir da rede Tailscale.
-- **Registo de intervenções:** cada sessão fica registada na pasta do cliente (problema, o que foi feito, resultado).
-- **Regras claras para o Claude:** o `CLAUDE.md` define o que pode fazer sem perguntar e o que exige confirmação do técnico.
-- **Consentimento do cliente:** o acesso permanente para suporte tem de estar acordado com o cliente.
-- **Nada de segredos no repositório:** chaves SSH e tokens da API do Tailscale ficam fora do git.
-
----
-
-## Como usar
-
-**Requisitos no PC do técnico:** Tailscale ligado, Python 3, Claude Code, chave SSH aceite nas máquinas dos clientes.
-
-1. **Registar o protocolo `nodehub://`** (uma vez, não precisa de admin):
+1. **Backend config:** copy `backend/.env.example` to `backend/.env` and fill in:
+   - `API_KEY`: any long random string (the dashboard asks for it once).
+   - `TAILSCALE_AUTHKEY`: in the Tailscale console (**Settings → Keys → Generate auth key**), a **reusable**, **pre-approved** key tagged **`tag:cliente`**.
+2. **SSH public keys:** each technician's key in `public-keys/<name>.pub`.
+3. **`nodehub://` protocol** (once, no admin needed):
    ```powershell
-   .\lancador\instalar-protocolo.ps1
+   .\launcher\register-protocol.ps1
    ```
-2. **Configurar as máquinas** em `maquinas.json` (cliente, utilizador SSH, notas).
-3. **Abrir o painel:** duplo clique em `iniciar-painel.cmd`. Abre em `http://127.0.0.1:8737`.
-4. Escolher a máquina e carregar em **Abrir no Claude** (ou **Copiar** e colar numa sessão do Claude Code aberta nesta pasta).
+4. **Start:** double-click `start.cmd` (installs dependencies the first time, builds and opens the dashboard).
 
-Para abrir uma máquina sem o painel: `.\lancador\abrir.ps1 <maquina>`.
-
-### Preparar o instalador (uma vez)
-
-1. Na consola do Tailscale (**Settings → Keys → Generate auth key**), criar uma chave **reutilizável**, **pré-aprovada** e com a tag **`tag:cliente`**.
-2. Copiar `config.local.example.json` para `config.local.json` (fica fora do git) e colar lá a chave:
-   ```json
-   { "tailscale_authkey": "tskey-auth-..." }
-   ```
-3. As chaves SSH públicas dos técnicos ficam em `chaves-publicas/*.pub` (uma por técnico).
-
-### Adicionar uma máquina
-
-1. No painel: **+ Adicionar máquina → Descarregar instalador**. O ficheiro já leva a chave do Tailscale e as chaves SSH.
-2. No PC do cliente: **botão direito → Executar com o PowerShell** e aceitar o pedido de administrador. Não é preciso escrever nada. O instalador:
-   - instala o Tailscale e liga-o à tailnet com a `tag:cliente`;
-   - cria o utilizador local **`nodehub`** (administrador, escondido do ecrã de login, sem password conhecida);
-   - instala o OpenSSH Server, só com autenticação por chave;
-   - limita o SSH à rede Tailscale na firewall;
-   - apaga-se a si próprio no fim e deixa um registo em `C:\ProgramData\nodehub\instalacao.log`.
-3. A máquina aparece sozinha no painel em **Sem cliente atribuído**. Carregar em **Configurar**, escolher o cliente (ou escrever um novo) e **Guardar**.
-
-Para mudar ou tirar uma máquina: menu **⋯ → Editar / Remover**. O `maquinas.json` é gerido pelo painel.
-
-As máquinas são identificadas pelo nome único na tailnet (dois clientes podem ter um PC chamado "SERVIDOR"; o Tailscale distingue-os).
+Development: `npm run dev` in `backend/` and in `frontend/` (Vite on http://127.0.0.1:5173, proxying `/api`).
 
 ---
 
-## Estrutura
+## Adding a machine
+
+1. In the dashboard: **+ Add machine → Download installer**. The file already contains the Tailscale auth key and the SSH keys.
+2. On the client PC: **right-click → Run with PowerShell** and accept the administrator prompt. Nothing needs to be typed. The installer:
+   - installs Tailscale and joins the tailnet with `tag:cliente` (left untouched if the machine is already on it);
+   - creates the local user **`nodehub`** (administrator, hidden from the sign-in screen, no known password);
+   - installs OpenSSH Server, key authentication only;
+   - limits SSH to the Tailscale network in the firewall (`nodehub-SSH` rule);
+   - deletes itself and leaves a log in `C:\ProgramData\nodehub\install.log`.
+3. The machine shows up on its own under **Unassigned**. Click **Configure**, pick the client (or type a new one) and **Save**.
+
+To change or drop a machine: **⋯ → Edit / Remove**.
+
+Machines are identified by their unique tailnet name: two clients can both have a PC called "SERVIDOR"; Tailscale tells them apart.
+
+---
+
+## API
+
+Documented with Swagger at **http://127.0.0.1:8737/api/docs**.
+
+| Method | Path | |
+|---|---|---|
+| `GET` | `/api/health` | Health check (no auth) |
+| `GET` | `/api/machines` | Machines (Tailscale + configuration), known clients |
+| `PUT` | `/api/machines/:host` | Configure / edit `{ client, sshUser, notes }` |
+| `DELETE` | `/api/machines/:host` | Remove the configuration |
+| `POST` | `/api/machines/:host/ssh-test` | Test SSH `{ sshUser }` |
+| `GET` | `/api/installer/status` | Whether the installer can be generated |
+| `GET` | `/api/installer` | Download the client installer |
+
+Errors always use `{ "error": "...", "code": "...", "details": [...] }`:
+
+| Code | Status | When |
+|---|---|---|
+| `VALIDATION_ERROR` | 400 | Invalid body or params (Zod issues in `details`) |
+| `INVALID_JSON` | 400 | Malformed JSON body |
+| `UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `FORBIDDEN_HOST` | 403 | Request not addressed to localhost |
+| `NOT_FOUND` | 404 | Unknown route or machine not configured |
+| `MACHINE_NOT_IN_TAILNET` | 404 | Machine not in the tailnet with `tag:cliente` |
+| `INSTALLER_NOT_CONFIGURED` | 409 | Missing auth key or public keys |
+| `TAILSCALE_UNAVAILABLE` | 503 | Could not read Tailscale status |
+| `INTERNAL_ERROR` | 500 | Anything else |
+
+Tests: `npm test` in `backend/`.
+
+---
+
+## Structure
 
 ```
 nodehub/
-├── CLAUDE.md                 regras de helpdesk para o Claude Code
-├── maquinas.json             máquina → cliente, utilizador SSH, notas (gerido pelo painel)
-├── config.local.json         chave do Tailscale (fora do git; ver config.local.example.json)
-├── chaves-publicas/          chaves SSH públicas dos técnicos
-├── iniciar-painel.cmd        abre o painel
-├── instalador/
-│   └── instalar-cliente.ps1  modelo do instalador do PC do cliente (o painel preenche as chaves)
-├── painel/
-│   ├── servidor.py           servidor local (só 127.0.0.1), lê o `tailscale status --json`
-│   └── index.html            o painel
-├── lancador/
-│   ├── abrir.ps1             abre o Claude Code ligado a uma máquina
-│   └── instalar-protocolo.ps1  regista / remove (-Remover) o protocolo nodehub://
-└── clientes/
-    ├── _modelo.md            modelo da ficha de cada máquina
-    └── <Cliente>/<host>.md   ficha e histórico de intervenções
+├── CLAUDE.md                   helpdesk rules for Claude Code
+├── start.cmd                   builds and starts everything
+├── backend/                    Express API (+ serves the built dashboard)
+│   ├── src/                    routes → controllers → services → schemas, middlewares, lib, utils, docs
+│   ├── tests/
+│   ├── data/                   machine configuration store (gitignored)
+│   └── .env.example
+├── frontend/                   React dashboard
+├── installer/
+│   └── install-client.ps1      client installer template (the backend fills in the keys)
+├── launcher/
+│   ├── open.ps1                opens Claude Code connected to a machine
+│   └── register-protocol.ps1   registers / removes (-Remove) the nodehub:// protocol
+├── public-keys/                technicians' SSH public keys
+└── clients/
+    ├── _template.md            machine history template
+    └── <Client>/<host>.md      profile and session history
 ```
-
-### Notas de segurança da implementação
-
-- O painel só escuta em `127.0.0.1` e recusa pedidos com outro `Host` (proteção contra DNS rebinding).
-- Pedidos que alteram dados só são aceites vindos do próprio painel (`Origin` + JSON), para uma página web não conseguir mexer no `maquinas.json`.
-- Só se configuram máquinas que existam na tailnet com a `tag:cliente`.
-- O lançador só aceita nomes de máquina simples e que existam em `maquinas.json`, porque um link `nodehub://` pode vir de qualquer página web.
-- Não é preciso token da API do Tailscale: os dados vêm do cliente Tailscale local.
 
 ---
 
-## Estado
+## Security
 
-Funcional: painel local (adicionar, configurar, editar e remover máquinas), instalador do cliente, lançador `nodehub://` e regras de helpdesk.
+- **Client isolation:** Tailscale ACLs only let the technicians' devices reach the client machines, and no client sees another.
+- **SSH key only:** no passwords, and only from the Tailscale network.
+- **Local-only dashboard:** listens on `127.0.0.1`, rejects requests addressed to any other host (DNS rebinding) and requires the API key.
+- **Launcher input:** only simple machine names configured in the dashboard are accepted, because a `nodehub://` link can come from any web page.
+- **Only tagged machines:** new machines can only be configured if they are in the tailnet with `tag:cliente`.
+- **Session log:** every session is recorded in the client's folder.
+- **Rules for Claude:** `CLAUDE.md` defines what it may do without asking and what needs the technician's confirmation.
+- **No secrets in git:** `backend/.env` (API key, Tailscale auth key) and `backend/data/` stay out of the repository.
 
-## A fazer
+---
 
-- [ ] **Converter para os padrões `fullstack-ts-standards`**: backend Node + Express + TypeScript (Zod, Winston, Swagger) e frontend React + Vite + Tailwind. Passar o projeto **todo para inglês** (código, interface e documentação).
-- [ ] **Base de dados PostgreSQL** (Prisma) em vez do `maquinas.json`.
-- [ ] **Tudo a correr em containers** (Docker Compose: backend, frontend e Postgres). Ter em conta:
-  - o painel em container não vê o Tailscale do PC: usar a API do Tailscale ou um container Tailscale ao lado;
-  - o lançador `nodehub://` e o Claude Code continuam a correr no PC do técnico.
-- [ ] **Painel partilhado pela equipa** (consequência dos pontos acima).
-- [ ] **Desinstalador do cliente**: remover o utilizador `nodehub`, as chaves, a regra de firewall e tirar a máquina da tailnet.
+## To do
+
+- [ ] **PostgreSQL database** (Prisma) instead of the JSON store.
+- [ ] **Everything in containers** (Docker Compose: backend, frontend, Postgres). Notes:
+  - a containerised backend can't see the PC's Tailscale: use the Tailscale API or a Tailscale sidecar container;
+  - the `nodehub://` launcher and Claude Code keep running on the technician's PC.
+- [ ] **Shared dashboard** for the whole team (follows from the above).
+- [ ] **Client uninstaller**: remove the `nodehub` user, the keys and the firewall rule, and take the machine off the tailnet.
