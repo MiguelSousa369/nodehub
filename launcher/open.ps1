@@ -3,7 +3,7 @@
     Opens Claude Code connected to a nodehub machine.
 
 .EXAMPLE
-    .\open.ps1 "nodehub://open?host=teste-srv&client=Test&user=nodehub"
+    .\open.ps1 "nodehub://open?host=srv-bakery&client=Silva%20Bakery&user=nodehub"
 
     Called by the nodehub:// protocol (see register-protocol.ps1); the dashboard builds the link.
 #>
@@ -34,7 +34,14 @@ if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error "Invalid machine na
 if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error "Invalid SSH user: $sshUser" }
 if ($client.Length -lt 1 -or $client.Length -gt 100 -or $client -match '["`;$\r\n]') { Show-Error 'Invalid client name.' }
 
-# 2. The host must be in the tailnet with tag:cliente
+# 2. The host must be in the tailnet with the client tag (CLIENT_TAG in backend/.env, default tag:client)
+$clientTag = 'tag:client'
+$envFile = Join-Path $repo 'backend\.env'
+if (Test-Path $envFile) {
+    foreach ($line in Get-Content $envFile) {
+        if ($line -match '^\s*CLIENT_TAG\s*=\s*(tag:[A-Za-z0-9-]+)\s*$') { $clientTag = $Matches[1] }
+    }
+}
 try {
     $ts = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
     $status = & $ts status --json | ConvertFrom-Json
@@ -43,7 +50,7 @@ try {
 }
 $peer = $status.Peer.PSObject.Properties.Value |
     Where-Object { ($_.DNSName -split '\.')[0] -ieq $hostName } | Select-Object -First 1
-if (-not $peer -or @($peer.Tags) -notcontains 'tag:cliente') {
+if (-not $peer -or @($peer.Tags) -notcontains $clientTag) {
     Show-Error "Machine '$hostName' is not a client machine in the tailnet."
 }
 $ip = $peer.TailscaleIPs[0]

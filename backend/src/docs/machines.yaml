@@ -47,7 +47,7 @@ paths:
   /api/machines/{host}:
     put:
       summary: Configure or edit a machine
-      description: New machines must be in the tailnet with `tag:cliente`.
+      description: New machines must be in the tailnet with the client tag (`CLIENT_TAG`).
       parameters: [{ $ref: '#/components/parameters/Host' }]
       requestBody:
         required: true

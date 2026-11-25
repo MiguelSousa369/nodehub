@@ -3,7 +3,7 @@
     Prepares a client PC for nodehub helpdesk.
 
 .DESCRIPTION
-    - Installs Tailscale (unattended mode) and joins the tailnet with tag:cliente
+    - Installs Tailscale (unattended mode) and joins the tailnet (the auth key applies the client tag)
     - Creates the local user "nodehub" (administrator, hidden from the sign-in screen, no known password)
     - Installs OpenSSH Server, key authentication only
     - Firewall: SSH only from the tailnet (100.64.0.0/10)
@@ -19,6 +19,7 @@
 param(
     [string]   $AuthKey    = '__NODEHUB_AUTHKEY__',
     [string[]] $PublicKeys = @('__NODEHUB_PUBKEYS__'),
+    [string]   $ClientTag  = '__NODEHUB_CLIENT_TAG__',
     [switch]   $NoPause    # do not wait for Enter at the end (remote/automated runs)
 )
 
@@ -71,11 +72,11 @@ try {
         Step 'Tailscale already installed'
     }
 
-    # Already on the support tailnet (Running + tag:cliente)? Then leave it alone: another
+    # Already on the support tailnet (Running + client tag)? Then leave it alone: another
     # "tailscale up" would rename it in the tailnet and its history would no longer match.
     $status = $null
     try { $status = (& $tsExe status --json 2>$null | Out-String) | ConvertFrom-Json } catch { }
-    $alreadyJoined = $status -and $status.BackendState -eq 'Running' -and (@($status.Self.Tags) -contains 'tag:cliente')
+    $alreadyJoined = $status -and $status.BackendState -eq 'Running' -and (@($status.Self.Tags) -contains $ClientTag)
 
     if ($alreadyJoined) {
         $hostname = ($status.Self.DNSName -split '\.')[0]

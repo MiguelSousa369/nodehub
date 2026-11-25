@@ -5,7 +5,10 @@ import { z } from 'zod';
 
 const execFileAsync = promisify(execFile);
 
-export const CLIENT_TAG = 'tag:cliente';
+/** Tailscale tag that marks client machines (CLIENT_TAG in .env, default tag:client). */
+export function clientTag(): string {
+  return process.env.CLIENT_TAG ?? 'tag:client';
+}
 
 function tailscaleBin(): string {
   return process.env.TAILSCALE_BIN

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import { clientTag } from '../lib/tailscale';
 import { HttpError } from '../utils/http-error';
 
 // ---------------------------------------------------------------------------
@@ -47,6 +48,7 @@ export function getInstallerStatus(): InstallerStatus {
   if (!authKey()) missing.push('TAILSCALE_AUTHKEY in backend/.env.');
   if (publicKeys().length === 0) missing.push('At least one SSH public key in public-keys/*.pub.');
   if (!fs.existsSync(templatePath())) missing.push('Installer template (installer/install-client.ps1).');
+  if (!/^tag:[A-Za-z0-9-]+$/.test(clientTag())) missing.push('A valid CLIENT_TAG in backend/.env (e.g. tag:client).');
   return { ready: missing.length === 0, missing };
 }
 
@@ -62,6 +64,7 @@ export function buildInstaller(): Buffer {
     .replace(/^﻿/, '')
     .replace("'__NODEHUB_AUTHKEY__'", `'${authKey()}'`)
     .replace("'__NODEHUB_PUBKEYS__'", keys)
+    .replace("'__NODEHUB_CLIENT_TAG__'", `'${clientTag()}'`)
     .replace(/\r?\n/g, '\r\n');
 
   return Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(script, 'utf-8')]);

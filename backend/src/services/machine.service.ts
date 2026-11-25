@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { CLIENT_TAG, getPeers, TailscalePeer } from '../lib/tailscale';
+import { clientTag, getPeers, TailscalePeer } from '../lib/tailscale';
 import { Machine, MachineConfig } from '../schemas/machine.schema';
 import { HttpError } from '../utils/http-error';
 
@@ -35,7 +35,7 @@ export async function listMachines(): Promise<MachineList> {
 
   for (const peer of peers) {
     const config = storedByHost.get(peer.host.toLowerCase());
-    if (!config && !peer.tags.includes(CLIENT_TAG)) continue; // our own devices, not clients
+    if (!config && !peer.tags.includes(clientTag())) continue; // our own devices, not clients
     seen.add(peer.host.toLowerCase());
     machines.push({
       host      : config?.host ?? peer.host,
@@ -85,8 +85,8 @@ export async function saveMachine(host: string, config: MachineConfig): Promise<
       throw new HttpError(503, 'TAILSCALE_UNAVAILABLE', `Could not read Tailscale status: ${(err as Error).message}`);
     }
     const peer = peers.find((p) => p.host.toLowerCase() === host.toLowerCase());
-    if (!peer || !peer.tags.includes(CLIENT_TAG)) {
-      throw new HttpError(404, 'MACHINE_NOT_IN_TAILNET', `Machine '${host}' is not in the tailnet with ${CLIENT_TAG}.`);
+    if (!peer || !peer.tags.includes(clientTag())) {
+      throw new HttpError(404, 'MACHINE_NOT_IN_TAILNET', `Machine '${host}' is not in the tailnet with ${clientTag()}.`);
     }
     name = peer.host;
   }
