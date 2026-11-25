@@ -120,8 +120,6 @@ export interface MachineDetail {
 }
 
 export interface AccessToken {
-  id        : number
-  name      : string
   prefix    : string
   createdAt : string
   lastUsedAt: string | null

@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react'
 
 import type { AuthUser, Page } from '../types'
 import ChangePasswordDialog from './ChangePasswordDialog'
-import TokensDialog from './TokensDialog'
+import AccessTokenDialog from './AccessTokenDialog'
 
 interface HeaderProps {
   user     : AuthUser
@@ -13,7 +13,7 @@ interface HeaderProps {
 }
 
 export default function Header({ user, page, onNav, onLogout, children }: HeaderProps) {
-  const [dialog, setDialog] = useState<'password' | 'tokens' | null>(null)
+  const [dialog, setDialog] = useState<'password' | 'token' | null>(null)
 
   const tab = (target: Page, label: string) => (
     <button
@@ -36,12 +36,12 @@ export default function Header({ user, page, onNav, onLogout, children }: Header
       {children}
       <div className="flex items-center gap-2 text-sm">
         <span className="text-slate-500 dark:text-slate-400" title={user.username}>{user.name}</span>
-        <button className="btn" onClick={() => setDialog('tokens')}>Access tokens</button>
+        <button className="btn" onClick={() => setDialog('token')}>Access token</button>
         <button className="btn" onClick={() => setDialog('password')}>Password</button>
         <button className="btn" onClick={onLogout}>Sign out</button>
       </div>
       <ChangePasswordDialog open={dialog === 'password'} onClose={() => setDialog(null)} />
-      <TokensDialog open={dialog === 'tokens'} onClose={() => setDialog(null)} />
+      <AccessTokenDialog open={dialog === 'token'} onClose={() => setDialog(null)} />
     </header>
   )
 }

@@ -1,54 +1,64 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { createToken, listTokens, revokeToken } from '../services/api'
+import { generateToken, getToken, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
 import Dialog from './Dialog'
 
-interface TokensDialogProps {
+interface AccessTokenDialogProps {
   open   : boolean
   onClose: () => void
 }
 
-/** Personal access tokens for the nodehub CLI, which Claude Code uses to read and record history. */
-export default function TokensDialog({ open, onClose }: TokensDialogProps) {
-  const [tokens, setTokens]   = useState<AccessToken[]>([])
-  const [name, setName]       = useState('')
+/** Your personal access token for the nodehub CLI, which Claude Code uses to read and record history. */
+export default function AccessTokenDialog({ open, onClose }: AccessTokenDialogProps) {
+  const [token, setToken]     = useState<AccessToken | null>(null)
   const [created, setCreated] = useState<string | null>(null)
   const [error, setError]     = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const reload = useCallback(() => {
-    listTokens().then(setTokens).catch((e: Error) => setError(e.message))
+    setLoading(true)
+    getToken()
+      .then(setToken)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
     if (!open) return
-    setName(''); setCreated(null); setError(null)
+    setCreated(null); setError(null)
     reload()
   }, [open, reload])
 
-  async function submit(e: FormEvent) {
-    e.preventDefault()
+  async function generate() {
+    if (token && !confirm('Generate a new token?\n\nThe current one stops working on every PC that uses it. ' +
+                          'Run ".\\nodehub.cmd login" again on those PCs with the new token.')) return
     try {
-      const t = await createToken(name.trim())
+      const t = await generateToken()
       setCreated(t.token)
-      setName('')
-      reload()
-    } catch (err) {
-      setError((err as Error).message)
+      setToken(t)
+    } catch (e) {
+      setError((e as Error).message)
     }
   }
 
-  async function revoke(t: AccessToken) {
-    if (!confirm(`Revoke "${t.name}"? Anything using it (the nodehub CLI on that PC) stops working.`)) return
-    await revokeToken(t.id).catch((e: Error) => setError(e.message))
-    reload()
+  async function revoke() {
+    if (!confirm('Revoke your token?\n\nThe nodehub CLI stops working on every PC that uses it.')) return
+    try {
+      await revokeToken()
+      setCreated(null)
+      reload()
+    } catch (e) {
+      setError((e as Error).message)
+    }
   }
 
   return (
-    <Dialog open={open} title="Access tokens" onClose={onClose}>
+    <Dialog open={open} title="Access token" onClose={onClose}>
       <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
         Claude Code uses the <code>nodehub</code> CLI to read each machine's history and record sessions under your
-        name. Create one token per PC, then run <code>.\nodehub.cmd login</code> in the nodehub folder and paste it.
+        name. Generate your token, then run <code>.\nodehub.cmd login</code> in the nodehub folder on each PC you work
+        from and paste it.
       </p>
 
       {created && (
@@ -61,32 +71,29 @@ export default function TokensDialog({ open, onClose }: TokensDialogProps) {
         </div>
       )}
 
-      <form onSubmit={submit} className="mb-4 flex gap-2">
-        <input className="input" required maxLength={60} placeholder="Token name, e.g. Office laptop"
-               value={name} onChange={(e) => setName(e.target.value)} />
-        <button type="submit" className="btn-primary whitespace-nowrap">Create token</button>
-      </form>
-
       {error && <div className="mb-3 text-sm text-danger dark:text-danger-dark">{error}</div>}
 
-      <ul className="space-y-2">
-        {tokens.length === 0 && <li className="text-sm text-slate-500">No tokens yet.</li>}
-        {tokens.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700/60">
-            <div className="flex-1">
-              <div className="font-medium">{t.name}</div>
+      {!loading && (
+        <div className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm dark:border-slate-700/60">
+          {token ? (
+            <>
+              <div className="font-medium"><code>{token.prefix}…</code></div>
               <div className="text-[13px] text-slate-500 dark:text-slate-400">
-                <code>{t.prefix}…</code> · created {new Date(t.createdAt).toLocaleDateString()}
-                {' · '}{t.lastUsedAt ? `last used ${new Date(t.lastUsedAt).toLocaleString()}` : 'never used'}
+                Generated {new Date(token.createdAt).toLocaleString()}
+                {' · '}{token.lastUsedAt ? `last used ${new Date(token.lastUsedAt).toLocaleString()}` : 'never used'}
               </div>
-            </div>
-            <button className="btn text-danger dark:text-danger-dark" onClick={() => revoke(t)}>Revoke</button>
-          </li>
-        ))}
-      </ul>
+            </>
+          ) : (
+            <div className="text-slate-500">You don't have a token yet.</div>
+          )}
+        </div>
+      )}
 
-      <div className="mt-5 flex justify-end">
+      <div className="mt-5 flex gap-2">
+        {token && <button className="btn text-danger dark:text-danger-dark" onClick={revoke}>Revoke</button>}
+        <span className="flex-1" />
         <button className="btn" onClick={onClose}>Close</button>
+        <button className="btn-primary" onClick={generate}>{token ? 'Generate new token' : 'Generate token'}</button>
       </div>
     </Dialog>
   )

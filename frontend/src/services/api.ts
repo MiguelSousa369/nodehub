@@ -119,21 +119,20 @@ export async function listSessions(filters: SessionFilters = {}): Promise<Sessio
 }
 
 // ---------------------------------------------------------------------------
-// Personal access tokens (for the nodehub CLI / Claude Code)
+// Personal access token (one per user, for the nodehub CLI / Claude Code)
 // ---------------------------------------------------------------------------
 
-export async function listTokens(): Promise<AccessToken[]> {
-  return handleResponse(await fetch(`${BASE}/tokens`, { headers: headers() }))
+export async function getToken(): Promise<AccessToken | null> {
+  return handleResponse(await fetch(`${BASE}/token`, { headers: headers() }))
 }
 
-export async function createToken(name: string): Promise<AccessToken & { token: string }> {
-  return handleResponse(await fetch(`${BASE}/tokens`, {
-    method: 'POST', headers: headers(json), body: JSON.stringify({ name }),
-  }))
+/** Generates a new token, replacing the previous one. The token is returned only now. */
+export async function generateToken(): Promise<AccessToken & { token: string }> {
+  return handleResponse(await fetch(`${BASE}/token`, { method: 'POST', headers: headers() }))
 }
 
-export async function revokeToken(id: number): Promise<void> {
-  return handleResponse(await fetch(`${BASE}/tokens/${id}`, { method: 'DELETE', headers: headers() }))
+export async function revokeToken(): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/token`, { method: 'DELETE', headers: headers() }))
 }
 
 // ---------------------------------------------------------------------------
