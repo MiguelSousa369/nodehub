@@ -1,8 +1,8 @@
 # nodehub: helpdesk rules for Claude Code
 
-This repository is used to give **remote support** to client PCs on our Tailscale network. You (Claude) connect to the machines over **SSH** to diagnose and fix problems, at the technician's request.
+This repository is used to give **remote support** to client PCs on the support Tailscale network. You (Claude) connect to the machines over **SSH** to diagnose and fix problems, at the technician's request, and record what was done with the **`nodehub` CLI**.
 
-**Language:** talk to the technician in **European Portuguese**. Everything written to the repository (machine history, commit messages, code, docs) is in **English**.
+**Language:** talk to the technician in the language they write in. Write session records and machine profiles in **English**, so the whole team can read them.
 
 ---
 
@@ -16,7 +16,11 @@ Helpdesk: client <Client>, machine <host> (<IP>, user <user>).
 
 When that happens:
 
-1. **Read the machine's history** in `clients/<Client>/<host>.md`. If it doesn't exist, create it from `clients/_template.md`.
+1. **Read the machine's profile and recent history:**
+   ```
+   .\nodehub.cmd machine <host>
+   ```
+   If it says *Not signed in* or *Token rejected*, ask the technician to create an access token in the dashboard (**Access tokens**) and run `.\nodehub.cmd login` themselves. Don't ask them to paste the token into the chat.
 2. **Check that the machine responds:**
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes <user>@<host> hostname
@@ -24,7 +28,7 @@ When that happens:
    If it fails, run `tailscale status` and tell the technician whether the machine is offline or it's an SSH problem.
 3. **Ask what the problem is** (if not stated yet) and only then start.
 
-The client, SSH user and IP come in that first message. Machine configuration lives in the dashboard's database; change it through the dashboard, not by hand.
+Use the history: if the same problem happened before, say so and start from what worked last time.
 
 ---
 
@@ -77,33 +81,48 @@ Anything that **changes** the machine or affects the user. Explain what you will
 ## What you never do
 
 - Disable the antivirus or the firewall.
-- Touch the **Tailscale** or **OpenSSH** configuration, the **`nodehub`** user or the `nodehub-SSH` firewall rule: that would cut our own access.
+- Touch the **Tailscale** or **OpenSSH** configuration, the **`nodehub`** user or the `nodehub-SSH` firewall rule: that would cut the support team's access.
 - Delete user data (documents, databases, email).
 - Copy client data off the machine, except logs the technician asked for diagnosis.
-- Write passwords, keys or tokens to this repository.
+- Write passwords, keys or tokens into session records, profiles or files in this repository.
 
 ---
 
 ## Recording the session
 
-At the end of each session, add an entry at the top of the **Sessions** section of `clients/<Client>/<host>.md`:
+At the end of every session, record it. Write the session as JSON to a temporary file and log it:
 
-```
-### YYYY-MM-DD: <one-line summary>
-- **Problem:** what was reported.
-- **Diagnosis:** what was found and the cause.
-- **Actions:** what was done (and what the technician approved).
-- **Result:** fixed / partial / unresolved.
-- **Pending:** anything left to do.
-```
-
-Also update the machine's **Profile** section if you learned something new (hardware, important software, quirks).
-
-Then commit only that file:
-
-```
-git add clients/<Client>/<host>.md
-git commit -m "Log session: <host> - <summary>"
+```json
+{
+  "summary"  : "One line: what it was about",
+  "problem"  : "What was reported",
+  "diagnosis": "What was found and the cause",
+  "actions"  : "What was done, and what the technician approved",
+  "result"   : "fixed | partial | unresolved",
+  "pending"  : "Anything left to do (empty if nothing)"
+}
 ```
 
-No co-author lines or AI mentions in commit messages.
+```
+.\nodehub.cmd log <host> --file %TEMP%\nodehub-session.json
+```
+
+Then delete the temporary file. The session is recorded under the technician who owns the access token.
+
+**Keep the profile up to date.** If you learned something lasting about the machine (role, hardware, important software, quirks), update its profile. Start from the current profile shown by `nodehub machine`, edit it, and write it back:
+
+```
+.\nodehub.cmd profile <host> --file %TEMP%\nodehub-profile.md
+```
+
+Profile format (Markdown):
+
+```markdown
+- **Role:** server / workstation
+- **OS:**
+- **Hardware:**
+- **Important software:**
+- **Quirks:**
+```
+
+Full CLI reference: [docs/cli.md](docs/cli.md).
