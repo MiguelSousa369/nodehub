@@ -45,6 +45,31 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/machines/{host}:
+    get:
+      summary: Machine configuration, profile and the 10 most recent sessions
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      responses:
+        '200':
+          description: Machine detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  host:           { type: string }
+                  client:         { type: string }
+                  sshUser:        { type: string }
+                  notes:          { type: string }
+                  profile:        { type: string, description: Markdown. }
+                  updatedAt:      { type: string, format: date-time }
+                  recentSessions: { type: array, items: { $ref: '#/components/schemas/Session' } }
+                  totalSessions:  { type: integer }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: NOT_FOUND (machine not configured)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
     put:
       summary: Configure or edit a machine
       description: New machines must be in the tailnet with the client tag (`CLIENT_TAG`).
@@ -78,6 +103,29 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404':
           description: NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/machines/{host}/profile:
+    put:
+      summary: Replace the machine profile (Markdown)
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [profile]
+              properties:
+                profile: { type: string, maxLength: 20000 }
+      responses:
+        '200': { description: Updated. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: MACHINE_NOT_CONFIGURED
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }

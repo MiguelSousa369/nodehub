@@ -1,0 +1,96 @@
+components:
+  schemas:
+    Session:
+      type: object
+      properties:
+        id:         { type: integer }
+        host:       { type: string, example: srv-bakery }
+        client:     { type: string, nullable: true, description: Current client of the machine. }
+        technician:
+          type: object
+          nullable: true
+          description: Null if the user was deleted.
+          properties:
+            id:   { type: integer }
+            name: { type: string }
+        summary:    { type: string, example: Disk almost full }
+        problem:    { type: string }
+        diagnosis:  { type: string }
+        actions:    { type: string }
+        result:     { type: string, enum: [FIXED, PARTIAL, UNRESOLVED] }
+        pending:    { type: string }
+        createdAt:  { type: string, format: date-time }
+    SessionInput:
+      type: object
+      required: [summary, result]
+      properties:
+        summary:   { type: string, maxLength: 200 }
+        problem:   { type: string, maxLength: 10000 }
+        diagnosis: { type: string, maxLength: 10000 }
+        actions:   { type: string, maxLength: 10000 }
+        result:    { type: string, enum: [fixed, partial, unresolved], description: Case-insensitive. }
+        pending:   { type: string, maxLength: 10000 }
+    SessionList:
+      type: object
+      properties:
+        sessions: { type: array, items: { $ref: '#/components/schemas/Session' } }
+        total:    { type: integer, description: Total matching sessions (for pagination). }
+  parameters:
+    SessionLimit:  { name: limit,  in: query, schema: { type: integer, default: 50, maximum: 200 } }
+    SessionOffset: { name: offset, in: query, schema: { type: integer, default: 0 } }
+
+paths:
+  /api/sessions:
+    get:
+      summary: Helpdesk history across all machines (newest first)
+      parameters:
+        - { name: host,         in: query, schema: { type: string } }
+        - { name: technicianId, in: query, schema: { type: integer } }
+        - { name: result,       in: query, schema: { type: string, enum: [FIXED, PARTIAL, UNRESOLVED] } }
+        - { name: q,            in: query, schema: { type: string }, description: Text search in host, summary, problem, diagnosis, actions and pending. }
+        - { $ref: '#/components/parameters/SessionLimit' }
+        - { $ref: '#/components/parameters/SessionOffset' }
+      responses:
+        '200':
+          description: Matching sessions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionList' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/machines/{host}/sessions:
+    get:
+      summary: Session history of one machine
+      parameters:
+        - { $ref: '#/components/parameters/Host' }
+        - { $ref: '#/components/parameters/SessionLimit' }
+        - { $ref: '#/components/parameters/SessionOffset' }
+      responses:
+        '200':
+          description: Sessions of the machine.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      summary: Record a session (as the signed-in user)
+      parameters: [{ $ref: '#/components/parameters/Host' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionInput' }
+      responses:
+        '201':
+          description: Recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: MACHINE_NOT_CONFIGURED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
