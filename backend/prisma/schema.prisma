@@ -26,25 +26,52 @@ model User {
   active       Boolean    @default(true)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
-  apiToken     ApiToken?
+  apiTokens    ApiToken[]
+  cliLogins    CliLoginRequest[]
   sessions     Session[]
 
   @@map("users")
 }
 
-/// Personal access token (one per user), used by the nodehub CLI and therefore by Claude Code.
-/// Generating a new one replaces the old. Only a SHA-256 hash is stored; the token itself is
-/// shown once when generated.
+/// A connected PC: the access token the nodehub CLI (and therefore Claude Code) uses on one
+/// computer. Created by the browser authorisation flow (`nodehub login`), one per PC.
+/// Only a SHA-256 hash is stored.
 model ApiToken {
   id         Int       @id @default(autoincrement())
-  userId     Int       @unique @map("user_id")
+  userId     Int       @map("user_id")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String    // PC name reported by the CLI, e.g. MIGUEL-LAPTOP
   prefix     String    // first characters, to recognise the token
   tokenHash  String    @unique @map("token_hash")
   createdAt  DateTime  @default(now()) @map("created_at")
   lastUsedAt DateTime? @map("last_used_at")
 
+  @@index([userId])
   @@map("api_tokens")
+}
+
+enum CliLoginStatus {
+  PENDING   // waiting for someone to approve it in the dashboard
+  APPROVED  // approved; the CLI collects its token on the next poll
+  DENIED
+  CONSUMED  // token already handed to the CLI
+}
+
+/// Browser authorisation of a PC (device authorisation flow, like `gh auth login`).
+/// The CLI keeps the secret device code and polls with it; the user approves the short
+/// user code in the dashboard. Requests expire after a few minutes.
+model CliLoginRequest {
+  id             Int            @id @default(autoincrement())
+  deviceCodeHash String         @unique @map("device_code_hash")
+  userCode       String         @unique @map("user_code")
+  deviceName     String         @map("device_name")
+  status         CliLoginStatus @default(PENDING)
+  userId         Int?           @map("user_id")
+  user           User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime       @map("expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  @@map("cli_login_requests")
 }
 
 // ---------------------------------------------------------------------------
