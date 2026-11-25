@@ -4,8 +4,8 @@ components:
       type: object
       properties:
         id:       { type: integer }
-        username: { type: string, example: miguel }
-        name:     { type: string, example: Miguel }
+        username: { type: string, example: ana.costa }
+        name:     { type: string, example: Ana Costa }
         role:     { type: string, enum: [ADMIN, TECHNICIAN] }
 
 paths:
