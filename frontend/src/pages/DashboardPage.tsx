@@ -2,16 +2,19 @@ import { useMemo, useState } from 'react'
 
 import AddMachineDialog from '../components/AddMachineDialog'
 import ClientGroup from '../components/ClientGroup'
+import Header from '../components/Header'
 import MachineFormDialog from '../components/MachineFormDialog'
 import Toast from '../components/Toast'
 import { useMachines } from '../hooks/useMachines'
 import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
-import type { Machine } from '../types'
+import type { AuthUser, Machine, Page } from '../types'
 
 const UNASSIGNED = 'Unassigned'
 
 interface DashboardPageProps {
+  user    : AuthUser
+  onNav   : (page: Page) => void
   onLogout: () => void
 }
 
@@ -20,7 +23,7 @@ function claudePrompt(m: Machine): string {
          'Start the session as described in CLAUDE.md, then ask me what the problem is.'
 }
 
-export default function DashboardPage({ onLogout }: DashboardPageProps) {
+export default function DashboardPage({ user, onNav, onLogout }: DashboardPageProps) {
   const { machines, clients, tailscaleError, error, loading, reload } = useMachines(onLogout)
   const toast = useToast()
   const [filter, setFilter]     = useState('')
@@ -83,9 +86,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
 
   return (
     <>
-      <header className="flex flex-wrap items-center gap-4 border-b border-slate-200 bg-surface-card px-4 py-4 sm:px-6
-                         dark:border-slate-700/60 dark:bg-surface-card-dark">
-        <h1 className="text-xl font-semibold">node<span className="text-brand dark:text-brand-dark">hub</span></h1>
+      <Header user={user} page="dashboard" onNav={onNav} onLogout={onLogout}>
         <div className="text-sm text-slate-500 dark:text-slate-400">
           {loading ? 'loading…' : `${clients.length} clients · ${machines.length} machines · ${onlineCount} online`}
         </div>
@@ -93,8 +94,7 @@ export default function DashboardPage({ onLogout }: DashboardPageProps) {
         <input className="input w-full sm:w-56" type="search" placeholder="Filter client or machine"
                value={filter} onChange={(e) => setFilter(e.target.value)} />
         <button className="btn-primary" onClick={() => setAdding(true)}>+ Add machine</button>
-        <button className="btn" onClick={onLogout}>Sign out</button>
-      </header>
+      </Header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
         {(error || tailscaleError) && (

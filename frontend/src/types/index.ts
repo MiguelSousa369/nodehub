@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------
+// Machines
+// ---------------------------------------------------------------------------
+
 export interface Machine {
   host      : string
   client    : string | null   // null = not assigned to a client yet
@@ -33,4 +37,39 @@ export interface InstallerStatus {
   missing: string[]
 }
 
-export type Page = 'login' | 'dashboard'
+// ---------------------------------------------------------------------------
+// Users and auth
+// ---------------------------------------------------------------------------
+
+export type Role = 'ADMIN' | 'TECHNICIAN'
+
+export interface AuthUser {
+  id      : number
+  username: string
+  name    : string
+  role    : Role
+}
+
+export interface User extends AuthUser {
+  active   : boolean
+  createdAt: string
+}
+
+export interface LoginResponse {
+  token: string
+  user : AuthUser
+}
+
+export interface UserInput {
+  username?: string
+  name?    : string
+  password?: string
+  role?    : Role
+  active?  : boolean
+}
+
+// ---------------------------------------------------------------------------
+// Navigation (manual router in App.tsx)
+// ---------------------------------------------------------------------------
+
+export type Page = 'login' | 'dashboard' | 'users'

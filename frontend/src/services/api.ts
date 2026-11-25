@@ -1,4 +1,6 @@
-import type { InstallerStatus, MachineConfigInput, MachineList, SshTestResult } from '../types'
+import type {
+  AuthUser, InstallerStatus, LoginResponse, MachineConfigInput, MachineList, SshTestResult, User, UserInput,
+} from '../types'
 
 const BASE = '/api'
 
@@ -24,6 +26,50 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 const json = { 'Content-Type': 'application/json' }
 const machinePath = (host: string) => `${BASE}/machines/${encodeURIComponent(host)}`
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+export async function login(username: string, password: string): Promise<LoginResponse> {
+  return handleResponse(await fetch(`${BASE}/auth/login`, {
+    method: 'POST', headers: json, body: JSON.stringify({ username, password }),
+  }))
+}
+
+export async function getMe(): Promise<AuthUser> {
+  return handleResponse(await fetch(`${BASE}/auth/me`, { headers: headers() }))
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/auth/password`, {
+    method: 'POST', headers: headers(json), body: JSON.stringify({ currentPassword, newPassword }),
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// Users (admins only)
+// ---------------------------------------------------------------------------
+
+export async function listUsers(): Promise<User[]> {
+  return handleResponse(await fetch(`${BASE}/users`, { headers: headers() }))
+}
+
+export async function createUser(input: UserInput): Promise<User> {
+  return handleResponse(await fetch(`${BASE}/users`, {
+    method: 'POST', headers: headers(json), body: JSON.stringify(input),
+  }))
+}
+
+export async function updateUser(id: number, input: UserInput): Promise<User> {
+  return handleResponse(await fetch(`${BASE}/users/${id}`, {
+    method: 'PATCH', headers: headers(json), body: JSON.stringify(input),
+  }))
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/users/${id}`, { method: 'DELETE', headers: headers() }))
+}
 
 // ---------------------------------------------------------------------------
 // Machines
