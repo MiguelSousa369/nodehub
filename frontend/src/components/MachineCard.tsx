@@ -17,6 +17,12 @@ function timeAgo(iso: string | null): string {
   return `${Math.round(min / 1440)} days ago`
 }
 
+/** nodehub:// link handled by launcher/open.ps1 (which re-checks the host against Tailscale). */
+function launcherLink(m: Machine): string {
+  const params = new URLSearchParams({ host: m.host, client: m.client ?? '', user: m.sshUser ?? '' })
+  return `nodehub://open?${params.toString().replace(/\+/g, '%20')}`
+}
+
 function statusText(m: Machine): string {
   if (m.online) return 'online'
   if (m.inTailnet) return `offline ${timeAgo(m.lastSeen)}`.trim()
@@ -70,7 +76,7 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
       <div className="mt-1.5 flex gap-2">
         {m.configured ? (
           <>
-            <a className="btn-primary flex-1" href={`nodehub://open?host=${encodeURIComponent(m.host)}`}>Open in Claude</a>
+            <a className="btn-primary flex-1" href={launcherLink(m)}>Open in Claude</a>
             <button className="btn flex-1" onClick={() => onCopy(m)}>Copy</button>
           </>
         ) : (

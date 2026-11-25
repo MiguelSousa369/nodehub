@@ -3,16 +3,14 @@
     Opens Claude Code connected to a nodehub machine.
 
 .EXAMPLE
-    .\open.ps1 nodehub://open?host=teste-srv
-    .\open.ps1 teste-srv
+    .\open.ps1 "nodehub://open?host=teste-srv&client=Test&user=nodehub"
 
-    Called by the nodehub:// protocol (see register-protocol.ps1) or directly.
+    Called by the nodehub:// protocol (see register-protocol.ps1); the dashboard builds the link.
 #>
 param([Parameter(Mandatory)][string]$Target)
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$machinesDir = Join-Path $repo 'backend\data\machines'
 
 function Show-Error([string]$msg) {
     Add-Type -AssemblyName PresentationFramework
@@ -20,43 +18,37 @@ function Show-Error([string]$msg) {
     exit 1
 }
 
-# 1. Extract the host (accepts "nodehub://open?host=X", "nodehub://open/?host=X" or just "X")
-if ($Target -match '^nodehub:') {
-    if ($Target -notmatch '[?&]host=([^&/]+)') { Show-Error "Invalid link: $Target" }
-    $hostName = [uri]::UnescapeDataString($Matches[1])
-} else {
-    $hostName = $Target
+function Get-Param([string]$name) {
+    if ($Target -match "[?&]$name=([^&]*)") { return [uri]::UnescapeDataString($Matches[1].Replace('+', ' ')) }
+    return ''
 }
 
-# 2. Validate: links can come from any web page, so only simple names of
-#    machines configured in the dashboard are accepted.
+# 1. Read and validate the link. Links can come from any web page, so every value is
+#    checked and the host must be a client machine in our tailnet (step 2).
+if ($Target -notmatch '^nodehub://open/?\?') { Show-Error "Invalid link: $Target" }
+$hostName = Get-Param 'host'
+$client   = Get-Param 'client'
+$sshUser  = Get-Param 'user'
+
 if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error "Invalid machine name: $hostName" }
+if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error "Invalid SSH user: $sshUser" }
+if ($client.Length -lt 1 -or $client.Length -gt 100 -or $client -match '["`;$\r\n]') { Show-Error 'Invalid client name.' }
 
-$dir = Get-ChildItem $machinesDir -Directory -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ieq $hostName } | Select-Object -First 1
-$entity = if ($dir) { Join-Path $dir.FullName 'entity.json' }
-if (-not $entity -or -not (Test-Path $entity)) { Show-Error "Machine '$hostName' is not configured in the dashboard." }
-
-$hostName = $dir.Name
-$config   = Get-Content $entity -Raw -Encoding UTF8 | ConvertFrom-Json
-$client   = $config.client
-$sshUser  = $config.sshUser
-
-foreach ($v in @($client, $sshUser)) {
-    if ($v -match '["`;$]') { Show-Error "Invalid characters in the configuration of '$hostName'." }
-}
-
-# 3. Tailscale IP (informational; carries on without it on failure)
-$ip = '?'
+# 2. The host must be in the tailnet with tag:cliente
 try {
     $ts = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
     $status = & $ts status --json | ConvertFrom-Json
-    $peer = $status.Peer.PSObject.Properties.Value |
-        Where-Object { ($_.DNSName -split '\.')[0] -ieq $hostName } | Select-Object -First 1
-    if ($peer) { $ip = $peer.TailscaleIPs[0] }
-} catch { }
+} catch {
+    Show-Error "Could not read Tailscale status: $($_.Exception.Message)"
+}
+$peer = $status.Peer.PSObject.Properties.Value |
+    Where-Object { ($_.DNSName -split '\.')[0] -ieq $hostName } | Select-Object -First 1
+if (-not $peer -or @($peer.Tags) -notcontains 'tag:cliente') {
+    Show-Error "Machine '$hostName' is not a client machine in the tailnet."
+}
+$ip = $peer.TailscaleIPs[0]
 
-# 4. Open Claude Code in the repository folder with the machine context
+# 3. Open Claude Code in the repository folder with the machine context
 $prompt = "Helpdesk: client $client, machine $hostName ($ip, user $sshUser). " +
           "Start the session as described in CLAUDE.md, then ask me what the problem is."
 
