@@ -1,28 +1,28 @@
 ﻿<#
 .SYNOPSIS
-    Regista o protocolo nodehub:// para o utilizador atual (não precisa de admin).
+    Registers the nodehub:// protocol for the current user (no admin needed).
 
 .EXAMPLE
-    .\instalar-protocolo.ps1            # regista
-    .\instalar-protocolo.ps1 -Remover   # remove
+    .\register-protocol.ps1            # register
+    .\register-protocol.ps1 -Remove    # remove
 #>
-param([switch]$Remover)
+param([switch]$Remove)
 
-$chave = 'HKCU:\Software\Classes\nodehub'
+$key = 'HKCU:\Software\Classes\nodehub'
 
-if ($Remover) {
-    Remove-Item $chave -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host 'Protocolo nodehub:// removido.'
+if ($Remove) {
+    Remove-Item $key -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host 'nodehub:// protocol removed.'
     return
 }
 
-$script = Join-Path $PSScriptRoot 'abrir.ps1'
-$comando = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" `"%1`""
+$script  = Join-Path $PSScriptRoot 'open.ps1'
+$command = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" `"%1`""
 
-New-Item "$chave\shell\open\command" -Force | Out-Null
-Set-ItemProperty $chave -Name '(Default)' -Value 'URL:nodehub'
-Set-ItemProperty $chave -Name 'URL Protocol' -Value ''
-Set-ItemProperty "$chave\shell\open\command" -Name '(Default)' -Value $comando
+New-Item "$key\shell\open\command" -Force | Out-Null
+Set-ItemProperty $key -Name '(Default)' -Value 'URL:nodehub'
+Set-ItemProperty $key -Name 'URL Protocol' -Value ''
+Set-ItemProperty "$key\shell\open\command" -Name '(Default)' -Value $command
 
-Write-Host 'Protocolo nodehub:// registado.'
-Write-Host "Teste: Start-Process 'nodehub://open?host=<maquina>'"
+Write-Host 'nodehub:// protocol registered.'
+Write-Host "Test: Start-Process 'nodehub://open?host=<machine>'"

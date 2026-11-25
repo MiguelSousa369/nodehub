@@ -1,59 +1,64 @@
 ﻿<#
 .SYNOPSIS
-    Abre o Claude Code ligado a uma máquina do nodehub.
+    Opens Claude Code connected to a nodehub machine.
 
 .EXAMPLE
-    .\abrir.ps1 nodehub://open?host=teste-srv
-    .\abrir.ps1 teste-srv
+    .\open.ps1 nodehub://open?host=teste-srv
+    .\open.ps1 teste-srv
 
-    Chamado pelo protocolo nodehub:// (ver instalar-protocolo.ps1) ou diretamente.
+    Called by the nodehub:// protocol (see register-protocol.ps1) or directly.
 #>
-param([Parameter(Mandatory)][string]$Alvo)
+param([Parameter(Mandatory)][string]$Target)
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+$machinesDir = Join-Path $repo 'backend\data\machines'
 
-function Mostrar-Erro([string]$msg) {
+function Show-Error([string]$msg) {
     Add-Type -AssemblyName PresentationFramework
     [System.Windows.MessageBox]::Show($msg, 'nodehub', 'OK', 'Error') | Out-Null
     exit 1
 }
 
-# 1. Extrair o host (aceita "nodehub://open?host=X", "nodehub://open/?host=X" ou só "X")
-if ($Alvo -match '^nodehub:') {
-    if ($Alvo -notmatch '[?&]host=([^&/]+)') { Mostrar-Erro "Link inválido: $Alvo" }
+# 1. Extract the host (accepts "nodehub://open?host=X", "nodehub://open/?host=X" or just "X")
+if ($Target -match '^nodehub:') {
+    if ($Target -notmatch '[?&]host=([^&/]+)') { Show-Error "Invalid link: $Target" }
     $hostName = [uri]::UnescapeDataString($Matches[1])
 } else {
-    $hostName = $Alvo
+    $hostName = $Target
 }
 
-# 2. Validar: o link pode vir de qualquer página web, por isso só aceitamos nomes simples
-#    e máquinas que estejam configuradas em maquinas.json.
-if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Mostrar-Erro "Nome de máquina inválido: $hostName" }
+# 2. Validate: links can come from any web page, so only simple names of
+#    machines configured in the dashboard are accepted.
+if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error "Invalid machine name: $hostName" }
 
-$maquinas = Get-Content (Join-Path $repo 'maquinas.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$cfg = $maquinas.PSObject.Properties | Where-Object { $_.Name -ieq $hostName } | Select-Object -First 1
-if (-not $cfg) { Mostrar-Erro "A máquina '$hostName' não está em maquinas.json." }
-$hostName   = $cfg.Name
-$cliente    = $cfg.Value.cliente
-$utilizador = $cfg.Value.utilizador
+$dir = Get-ChildItem $machinesDir -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -ieq $hostName } | Select-Object -First 1
+$entity = if ($dir) { Join-Path $dir.FullName 'entity.json' }
+if (-not $entity -or -not (Test-Path $entity)) { Show-Error "Machine '$hostName' is not configured in the dashboard." }
 
-foreach ($v in @($cliente, $utilizador)) {
-    if ($v -match '["`;$]') { Mostrar-Erro "Caracteres inválidos em maquinas.json para '$hostName'." }
+$hostName = $dir.Name
+$config   = Get-Content $entity -Raw -Encoding UTF8 | ConvertFrom-Json
+$client   = $config.client
+$sshUser  = $config.sshUser
+
+foreach ($v in @($client, $sshUser)) {
+    if ($v -match '["`;$]') { Show-Error "Invalid characters in the configuration of '$hostName'." }
 }
 
-# 3. IP Tailscale (informativo; se falhar, segue sem ele)
+# 3. Tailscale IP (informational; carries on without it on failure)
 $ip = '?'
 try {
     $ts = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
-    $estado = & $ts status --json | ConvertFrom-Json
-    $peer = $estado.Peer.PSObject.Properties.Value | Where-Object { $_.HostName -ieq $hostName } | Select-Object -First 1
+    $status = & $ts status --json | ConvertFrom-Json
+    $peer = $status.Peer.PSObject.Properties.Value |
+        Where-Object { ($_.DNSName -split '\.')[0] -ieq $hostName } | Select-Object -First 1
     if ($peer) { $ip = $peer.TailscaleIPs[0] }
 } catch { }
 
-# 4. Abrir o Claude Code na pasta do repositório, já com o contexto da máquina
-$prompt = "Helpdesk: cliente $cliente, máquina $hostName ($ip, utilizador $utilizador). " +
-          "Inicia a sessão como indicado no CLAUDE.md e depois pergunta-me qual é o problema."
+# 4. Open Claude Code in the repository folder with the machine context
+$prompt = "Helpdesk: client $client, machine $hostName ($ip, user $sshUser). " +
+          "Start the session as described in CLAUDE.md, then ask me what the problem is."
 
 $wt = Get-Command wt.exe -ErrorAction SilentlyContinue
 if ($wt) {
