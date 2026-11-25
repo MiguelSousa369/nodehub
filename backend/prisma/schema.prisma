@@ -14,20 +14,38 @@ datasource db {
 
 enum Role {
   ADMIN       // everything, including managing users
-  TECHNICIAN  // machines and clients
+  TECHNICIAN  // machines, clients and sessions
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
   name         String
-  passwordHash String   @map("password_hash")
-  role         Role     @default(TECHNICIAN)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  passwordHash String     @map("password_hash")
+  role         Role       @default(TECHNICIAN)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  apiTokens    ApiToken[]
+  sessions     Session[]
 
   @@map("users")
+}
+
+/// Personal access tokens, used by the nodehub CLI (and therefore by Claude Code).
+/// Only a SHA-256 hash is stored; the token itself is shown once when created.
+model ApiToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  prefix     String    // first characters, to recognise the token in the list
+  tokenHash  String    @unique @map("token_hash")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+
+  @@index([userId])
+  @@map("api_tokens")
 }
 
 // ---------------------------------------------------------------------------
@@ -50,9 +68,41 @@ model Machine {
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
   sshUser   String   @default("nodehub") @map("ssh_user")
   notes     String   @default("")
+  /// Free-form profile in Markdown: role, OS, hardware, important software, quirks.
+  profile   String   @default("")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([clientId])
   @@map("machines")
+}
+
+// ---------------------------------------------------------------------------
+// Helpdesk sessions: what was done on each machine, by whom
+// ---------------------------------------------------------------------------
+
+enum SessionResult {
+  FIXED
+  PARTIAL
+  UNRESOLVED
+}
+
+/// Linked to the machine by host name (not a foreign key) so the history
+/// survives when a machine is removed from the dashboard and added back.
+model Session {
+  id           Int           @id @default(autoincrement())
+  host         String
+  technicianId Int?          @map("technician_id")
+  technician   User?         @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  summary      String
+  problem      String        @default("")
+  diagnosis    String        @default("")
+  actions      String        @default("")
+  result       SessionResult
+  pending      String        @default("")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([host, createdAt])
+  @@index([technicianId])
+  @@map("sessions")
 }
