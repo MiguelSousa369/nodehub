@@ -1,0 +1,58 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Users: technicians who sign in to the dashboard
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN       // everything, including managing users
+  TECHNICIAN  // machines and clients
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         Role     @default(TECHNICIAN)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Clients and their machines (Tailscale state is read live, not stored)
+// ---------------------------------------------------------------------------
+
+model Client {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  notes     String    @default("")
+  createdAt DateTime  @default(now()) @map("created_at")
+  machines  Machine[]
+
+  @@map("clients")
+}
+
+model Machine {
+  host      String   @id // unique name in the tailnet
+  clientId  Int      @map("client_id")
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  sshUser   String   @default("nodehub") @map("ssh_user")
+  notes     String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@map("machines")
+}

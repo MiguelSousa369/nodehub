@@ -1,0 +1,24 @@
+# PostgreSQL for nodehub. Only reachable from this PC (127.0.0.1).
+# Start: docker compose up -d
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: nodehub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nodehub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodehub}
+      POSTGRES_DB: nodehub
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - nodehub-db:/var/lib/postgresql/data
+      - ./backend/prisma/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodehub -d nodehub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  nodehub-db:
