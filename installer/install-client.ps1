@@ -1,98 +1,98 @@
 <#
 .SYNOPSIS
-    Prepara um PC de cliente para o helpdesk do nodehub.
+    Prepares a client PC for nodehub helpdesk.
 
 .DESCRIPTION
-    - Instala o Tailscale (modo unattended) e liga-o à tailnet com a tag:cliente
-    - Cria o utilizador local "nodehub" (administrador, escondido do ecrã de login, sem password conhecida)
-    - Instala o OpenSSH Server, só com autenticação por chave
-    - Firewall: SSH só a partir da tailnet (100.64.0.0/10)
+    - Installs Tailscale (unattended mode) and joins the tailnet with tag:cliente
+    - Creates the local user "nodehub" (administrator, hidden from the sign-in screen, no known password)
+    - Installs OpenSSH Server, key authentication only
+    - Firewall: SSH only from the tailnet (100.64.0.0/10)
 
-    Este ficheiro é um MODELO. O instalador a usar no cliente descarrega-se no painel
-    ("Adicionar máquina"), já com a chave do Tailscale e as chaves SSH preenchidas.
-    No fim, o instalador apaga-se a si próprio (contém a chave do Tailscale).
+    This file is a TEMPLATE. The installer used on client PCs is downloaded from the dashboard
+    ("Add machine"), with the Tailscale auth key and the SSH public keys already filled in.
+    When it finishes, the installer deletes itself (it contains the Tailscale auth key).
 
 .NOTES
-    Executar com: botão direito > "Executar com o PowerShell". Pede elevação sozinho.
-    Por SSH (já elevado): powershell -ExecutionPolicy Bypass -File nodehub-instalar.ps1 -SemPausa
+    Run with: right-click > "Run with PowerShell". It asks for elevation by itself.
+    Over SSH (already elevated): powershell -ExecutionPolicy Bypass -File nodehub-install.ps1 -NoPause
 #>
 param(
     [string]   $AuthKey    = '__NODEHUB_AUTHKEY__',
     [string[]] $PublicKeys = @('__NODEHUB_PUBKEYS__'),
-    [switch]   $SemPausa   # não esperar por Enter no fim (execução remota/automática)
+    [switch]   $NoPause    # do not wait for Enter at the end (remote/automated runs)
 )
 
 $ErrorActionPreference = 'Stop'
 $UserName = 'nodehub'
 
-# --- 0. Elevação ---------------------------------------------------------------
+# --- 0. Elevation --------------------------------------------------------------
 $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     exit
 }
 
-function Passo($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
-function Terminar($ok) {
+function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
+function Finish($ok) {
     try { Stop-Transcript | Out-Null } catch { }
-    # O instalador tem a chave do Tailscale: não deixar ficar na máquina
-    if ($PSCommandPath -and (Test-Path $PSCommandPath) -and $PSCommandPath -notmatch '\\instalador\\instalar-cliente\.ps1$') {
+    # The installer contains the Tailscale auth key: do not leave it on the machine
+    if ($PSCommandPath -and (Test-Path $PSCommandPath) -and $PSCommandPath -notmatch '\\installer\\install-client\.ps1$') {
         Remove-Item $PSCommandPath -Force -ErrorAction SilentlyContinue
     }
-    if (-not $SemPausa) {
+    if (-not $NoPause) {
         Write-Host ''
-        Read-Host 'Carregue Enter para fechar'
+        Read-Host 'Press Enter to close'
     }
     if ($ok) { exit 0 } else { exit 1 }
 }
 
 $logDir = Join-Path $env:ProgramData 'nodehub'
 New-Item $logDir -ItemType Directory -Force | Out-Null
-Start-Transcript -Path (Join-Path $logDir 'instalacao.log') -Append | Out-Null
+Start-Transcript -Path (Join-Path $logDir 'install.log') -Append | Out-Null
 
 try {
     if ($AuthKey -notmatch '^tskey-auth-[A-Za-z0-9-]+$') {
-        throw 'Instalador sem chave do Tailscale. Descarregue o instalador no painel do nodehub.'
+        throw 'Installer has no Tailscale auth key. Download the installer from the nodehub dashboard.'
     }
     $PublicKeys = @($PublicKeys | Where-Object { $_ -match '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-\S+|sk-\S+) ' })
-    if (-not $PublicKeys) { throw 'Instalador sem chaves SSH. Descarregue o instalador no painel do nodehub.' }
+    if (-not $PublicKeys) { throw 'Installer has no SSH keys. Download the installer from the nodehub dashboard.' }
 
     # --- 1. Tailscale ----------------------------------------------------------
     $tsExe = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
     if (-not (Test-Path $tsExe)) {
-        Passo 'A descarregar e instalar o Tailscale'
+        Step 'Downloading and installing Tailscale'
         $msi = Join-Path $env:TEMP 'tailscale-setup.msi'
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest 'https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi' -OutFile $msi -UseBasicParsing
         $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /quiet /norestart TS_UNATTENDEDMODE=always" -Wait -PassThru
-        if ($p.ExitCode -notin 0, 3010) { throw "A instalação do Tailscale falhou (código $($p.ExitCode))." }
+        if ($p.ExitCode -notin 0, 3010) { throw "Tailscale installation failed (exit code $($p.ExitCode))." }
         Remove-Item $msi -Force
     } else {
-        Passo 'Tailscale já instalado'
+        Step 'Tailscale already installed'
     }
 
-    # Já ligada à rede do suporte (Running + tag:cliente)? Então não mexer: um novo
-    # "tailscale up" mudava-lhe o nome na tailnet e o histórico deixava de bater certo.
-    $estado = $null
-    try { $estado = (& $tsExe status --json 2>$null | Out-String) | ConvertFrom-Json } catch { }
-    $jaLigada = $estado -and $estado.BackendState -eq 'Running' -and (@($estado.Self.Tags) -contains 'tag:cliente')
+    # Already on the support tailnet (Running + tag:cliente)? Then leave it alone: another
+    # "tailscale up" would rename it in the tailnet and its history would no longer match.
+    $status = $null
+    try { $status = (& $tsExe status --json 2>$null | Out-String) | ConvertFrom-Json } catch { }
+    $alreadyJoined = $status -and $status.BackendState -eq 'Running' -and (@($status.Self.Tags) -contains 'tag:cliente')
 
-    if ($jaLigada) {
-        $hostname = ($estado.Self.DNSName -split '\.')[0]
-        Passo "Já ligada à rede do suporte como '$hostname' (sem alterações)"
+    if ($alreadyJoined) {
+        $hostname = ($status.Self.DNSName -split '\.')[0]
+        Step "Already on the support network as '$hostname' (no changes)"
     } else {
         $hostname = ($env:COMPUTERNAME.ToLower() -replace '[^a-z0-9-]', '-').Trim('-')
         if ($hostname.Length -gt 63) { $hostname = $hostname.Substring(0, 63) }
 
-        Passo "A ligar à rede do suporte como '$hostname'"
+        Step "Joining the support network as '$hostname'"
         & $tsExe up --authkey=$AuthKey --unattended --hostname=$hostname --reset
-        if ($LASTEXITCODE -ne 0) { throw 'Não foi possível ligar o Tailscale (tailscale up falhou).' }
+        if ($LASTEXITCODE -ne 0) { throw 'Could not connect Tailscale (tailscale up failed).' }
     }
     $tsIp = (& $tsExe ip -4).Trim()
 
-    # --- 2. Utilizador nodehub -------------------------------------------------
-    Passo "A criar o utilizador '$UserName'"
-    # Password aleatória que ninguém conhece: o acesso é só por chave SSH
+    # --- 2. nodehub user -------------------------------------------------------
+    Step "Creating user '$UserName'"
+    # Random password nobody knows: access is SSH key only
     $bytes = New-Object byte[] 24
     [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
     $pass = ConvertTo-SecureString ([Convert]::ToBase64String($bytes) + 'aA1!') -AsPlainText -Force
@@ -103,72 +103,72 @@ try {
         $user | Enable-LocalUser
     } else {
         New-LocalUser -Name $UserName -Password $pass -PasswordNeverExpires -AccountNeverExpires `
-            -Description 'nodehub: suporte remoto' | Out-Null
+            -Description 'nodehub: remote support' | Out-Null
     }
-    # Grupo Administradores pelo SID (funciona em Windows PT e EN)
+    # Administrators group by SID (works on any Windows language)
     $admins = Get-LocalGroup -SID 'S-1-5-32-544'
     if (-not (Get-LocalGroupMember -Group $admins | Where-Object { $_.Name -match "\\$UserName$" })) {
         Add-LocalGroupMember -Group $admins -Member $UserName
     }
-    # Esconder do ecrã de login
+    # Hide from the sign-in screen
     $ul = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SpecialAccounts\UserList'
     New-Item $ul -Force | Out-Null
     New-ItemProperty $ul -Name $UserName -Value 0 -PropertyType DWord -Force | Out-Null
 
     # --- 3. OpenSSH Server -----------------------------------------------------
-    Passo 'A instalar o OpenSSH Server'
+    Step 'Installing OpenSSH Server'
     $cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*'
     if ($cap.State -ne 'Installed') {
         try { Add-WindowsCapability -Online -Name $cap.Name | Out-Null }
-        catch { throw "Não foi possível instalar o OpenSSH Server pelo Windows Update: $($_.Exception.Message)" }
+        catch { throw "Could not install OpenSSH Server through Windows Update: $($_.Exception.Message)" }
     }
     Set-Service sshd -StartupType Automatic
-    Start-Service sshd   # o primeiro arranque gera as chaves do servidor e o sshd_config
+    Start-Service sshd   # first start generates the host keys and sshd_config
 
-    # Shell por omissão: PowerShell
+    # Default shell: PowerShell
     New-Item 'HKLM:\SOFTWARE\OpenSSH' -Force | Out-Null
     New-ItemProperty 'HKLM:\SOFTWARE\OpenSSH' -Name DefaultShell `
         -Value "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -PropertyType String -Force | Out-Null
 
-    # Só autenticação por chave
+    # Key authentication only
     $cfg = Join-Path $env:ProgramData 'ssh\sshd_config'
     $content = Get-Content $cfg
     $content = $content -replace '^\s*#?\s*PasswordAuthentication\s+.*$', 'PasswordAuthentication no'
     if (-not ($content -match '^PasswordAuthentication no')) { $content = @('PasswordAuthentication no') + $content }
     Set-Content -Path $cfg -Value $content -Encoding ascii
 
-    # Chaves públicas dos técnicos (acrescenta, não apaga as que já existam)
+    # Technicians' public keys (appended; existing keys are kept)
     $ak = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
-    $existentes = if (Test-Path $ak) { @(Get-Content $ak) } else { @() }
-    # Compara só o tipo + chave (ignora o comentário no fim da linha)
-    $corpos = @($existentes | ForEach-Object { ($_ -split '\s+')[0..1] -join ' ' })
-    $novas = $PublicKeys | Where-Object { $corpos -notcontains (($_ -split '\s+')[0..1] -join ' ') }
-    Set-Content -Path $ak -Value (@($existentes) + @($novas) | Where-Object { $_ }) -Encoding ascii
+    $existing = if (Test-Path $ak) { @(Get-Content $ak) } else { @() }
+    # Compare type + key only (ignore the trailing comment)
+    $bodies = @($existing | ForEach-Object { ($_ -split '\s+')[0..1] -join ' ' })
+    $new = $PublicKeys | Where-Object { $bodies -notcontains (($_ -split '\s+')[0..1] -join ' ') }
+    Set-Content -Path $ak -Value (@($existing) + @($new) | Where-Object { $_ }) -Encoding ascii
     icacls $ak /inheritance:r /grant '*S-1-5-32-544:F' /grant '*S-1-5-18:F' | Out-Null
 
     Restart-Service sshd
 
     # --- 4. Firewall -----------------------------------------------------------
-    Passo 'A configurar a firewall (SSH só pela rede do suporte)'
+    Step 'Configuring the firewall (SSH only from the support network)'
     Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue | Disable-NetFirewallRule
     Remove-NetFirewallRule -Name 'nodehub-SSH' -ErrorAction SilentlyContinue
-    New-NetFirewallRule -Name 'nodehub-SSH' -DisplayName 'nodehub: OpenSSH (só Tailscale)' `
+    New-NetFirewallRule -Name 'nodehub-SSH' -DisplayName 'nodehub: OpenSSH (Tailscale only)' `
         -Direction Inbound -Protocol TCP -LocalPort 22 -RemoteAddress '100.64.0.0/10' -Action Allow | Out-Null
 
-    # --- Fim -------------------------------------------------------------------
+    # --- Done ------------------------------------------------------------------
     Write-Host ''
     Write-Host '=============================================' -ForegroundColor Green
-    Write-Host '  Instalação concluída' -ForegroundColor Green
+    Write-Host '  Installation complete' -ForegroundColor Green
     Write-Host '=============================================' -ForegroundColor Green
-    Write-Host "  Máquina: $hostname"
+    Write-Host "  Machine: $hostname"
     Write-Host "  IP:      $tsIp"
     Write-Host ''
-    Write-Host '  A máquina já aparece no painel do técnico.'
-    Terminar $true
+    Write-Host "  The machine now shows up in the technician's dashboard."
+    Finish $true
 }
 catch {
     Write-Host ''
-    Write-Host "ERRO: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Registo em: $logDir\instalacao.log"
-    Terminar $false
+    Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Log: $logDir\install.log"
+    Finish $false
 }
