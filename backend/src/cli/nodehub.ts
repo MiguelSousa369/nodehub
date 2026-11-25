@@ -1,7 +1,7 @@
 /**
  * nodehub CLI: read and record machine history from the terminal (used by Claude Code).
  *
- *   nodehub login                      save a personal access token (created in the dashboard)
+ *   nodehub login                      connect this PC (approve it in the browser)
  *   nodehub machine <host>             configuration, profile and recent sessions
  *   nodehub history <host>             full session history
  *   nodehub log <host> --file s.json   record a session
@@ -9,10 +9,10 @@
  *
  * Run through nodehub.cmd at the repository root. See docs/cli.md.
  */
+import { spawn } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import readline from 'readline';
 
 // ---------------------------------------------------------------------------
 // Config: %APPDATA%\nodehub\cli.json (or ~/.config/nodehub/cli.json)
@@ -73,34 +73,48 @@ function requireHost(positional: string[]): string {
   return host;
 }
 
-async function api<T>(method: string, route: string, body?: unknown): Promise<T> {
-  const config = loadConfig();
-  if (!config) throw new CliError('Not signed in. Run: nodehub login');
-
+/** Low-level request; returns the status and parsed body, throwing only on network errors. */
+async function request(url: string, method: string, route: string, body?: unknown, token?: string) {
   let res: Response;
   try {
-    res = await fetch(`${config.url}${route}`, {
+    res = await fetch(`${url}${route}`, {
       method,
-      headers: { Authorization: `Bearer ${config.token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      body   : body ? JSON.stringify(body) : undefined,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new CliError(`Cannot reach nodehub at ${config.url}. Is the dashboard running (start.cmd)?`);
+    throw new CliError(`Cannot reach nodehub at ${url}. Is the dashboard running (start.cmd)?`);
   }
-
-  if (res.status === 401) throw new CliError('Token rejected (revoked or user deactivated). Run: nodehub login');
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    const details = Array.isArray(err.details) ? ` ${err.details.map((d: { message: string; path: string[] }) => `${d.path.join('.')}: ${d.message}`).join('; ')}` : '';
-    throw new CliError(`${err.error ?? `HTTP ${res.status}`}${details}`);
-  }
-  return res.status === 204 ? (undefined as T) : res.json();
+  const data = res.status === 204 ? undefined : await res.json().catch(() => ({ error: res.statusText }));
+  return { status: res.status, ok: res.ok, data };
 }
 
-function ask(question: string): Promise<string> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise((resolve) => rl.question(question, (answer) => { rl.close(); resolve(answer.trim()); }));
+function errorMessage(data: { error?: string; details?: Array<{ message: string; path: string[] }> } | undefined, status: number): string {
+  const details = Array.isArray(data?.details) ? ` ${data!.details.map((d) => `${d.path.join('.')}: ${d.message}`).join('; ')}` : '';
+  return `${data?.error ?? `HTTP ${status}`}${details}`;
 }
+
+/** Authenticated API call with the saved token. */
+async function api<T>(method: string, route: string, body?: unknown): Promise<T> {
+  const config = loadConfig();
+  if (!config) throw new CliError('This PC is not connected. Run: nodehub login');
+  const res = await request(config.url, method, route, body, config.token);
+  if (res.status === 401) throw new CliError('This PC was disconnected (or your user deactivated). Run: nodehub login');
+  if (!res.ok) throw new CliError(errorMessage(res.data, res.status));
+  return res.data as T;
+}
+
+function openBrowser(url: string): void {
+  const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', url]]
+    : process.platform === 'darwin' ? ['open', [url]]
+    : ['xdg-open', [url]];
+  spawn(cmd, args, { stdio: 'ignore', detached: true, windowsVerbatimArguments: true }).unref();
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const date = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('T', ' ');
 
@@ -127,22 +141,49 @@ function printSession(s: Session): void {
 // Commands
 // ---------------------------------------------------------------------------
 
+/**
+ * Connects this PC: asks the server for a connection request, opens the browser on the
+ * dashboard's approval page and waits until a signed-in user approves it.
+ */
 async function cmdLogin(flags: Record<string, string | true>) {
   const url = (flag(flags, 'url') ?? loadConfig()?.url ?? DEFAULT_URL).replace(/\/+$/, '');
-  const token = flag(flags, 'token') ?? await ask('Personal access token (dashboard → Access token): ');
-  if (!token.startsWith('nhk_')) throw new CliError('That does not look like a nodehub access token (nhk_...).');
+  const deviceName = (flag(flags, 'name') ?? os.hostname()).slice(0, 64);
 
-  saveConfig({ url, token });
-  try {
-    const me = await api<{ name: string; username: string }>('GET', '/api/auth/me');
-    console.log(`Signed in as ${me.name} (${me.username}) on ${url}.`);
-  } catch (err) {
-    fs.rmSync(CONFIG_FILE, { force: true });
-    throw err;
+  const start = await request(url, 'POST', '/api/cli-login', { deviceName });
+  if (!start.ok) throw new CliError(errorMessage(start.data, start.status));
+  const { deviceCode, userCode, expiresIn, interval } = start.data as
+    { deviceCode: string; userCode: string; expiresIn: number; interval: number };
+
+  const approveUrl = `${url}/connect?code=${userCode}`;
+  console.log(`Connecting "${deviceName}" to nodehub.\n`);
+  console.log(`  Approve it in the browser: ${approveUrl}`);
+  console.log(`  Code: ${userCode}\n`);
+  if (!flags['no-browser']) openBrowser(approveUrl);
+  console.log('Waiting for approval... (Ctrl+C to cancel)');
+
+  const deadline = Date.now() + expiresIn * 1000;
+  while (Date.now() < deadline) {
+    await sleep(interval * 1000);
+    const res = await request(url, 'POST', '/api/cli-login/poll', { deviceCode });
+    if (res.status === 202) continue;
+    if (!res.ok) throw new CliError(errorMessage(res.data, res.status));
+
+    const { token, user } = res.data as { token: string; user: { name: string; username: string } };
+    saveConfig({ url, token });
+    console.log(`\nConnected. This PC now works as ${user.name} (${user.username}).`);
+    return;
   }
+  throw new CliError('The connection request expired. Run "nodehub login" again.');
 }
 
-async function cmdWhoami() {
+/** Exit code 0 if this PC is connected (used by the launcher with --quiet). */
+async function cmdWhoami(quiet: boolean) {
+  if (quiet) {
+    const config = loadConfig();
+    const res = config ? await request(config.url, 'GET', '/api/auth/me', undefined, config.token).catch(() => null) : null;
+    process.exitCode = res?.ok ? 0 : 1; // not process.exit(): it can crash on Windows while sockets close
+    return;
+  }
   const me = await api<{ name: string; username: string; role: string }>('GET', '/api/auth/me');
   console.log(`${me.name} (${me.username}, ${me.role.toLowerCase()}) on ${loadConfig()!.url}`);
 }
@@ -194,9 +235,10 @@ async function cmdProfile(host: string, flags: Record<string, string | true>) {
 
 const HELP = `nodehub CLI
 
-  nodehub login [--token nhk_...] [--url http://127.0.0.1:8737]
-  nodehub logout
-  nodehub whoami
+  nodehub login [--url http://127.0.0.1:8737] [--name PC-NAME] [--no-browser]
+                                           connect this PC (approve it in the browser)
+  nodehub logout                           forget this PC's token
+  nodehub whoami [--quiet]
   nodehub machine <host> [--json]          configuration, profile and recent sessions
   nodehub history <host> [--limit 50] [--json]
   nodehub log <host> --file session.json   record a session (JSON with summary, problem,
@@ -214,8 +256,8 @@ async function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   switch (positional[0]) {
     case 'login'  : return cmdLogin(flags);
-    case 'logout' : fs.rmSync(CONFIG_FILE, { force: true }); return console.log('Signed out.');
-    case 'whoami' : return cmdWhoami();
+    case 'logout' : fs.rmSync(CONFIG_FILE, { force: true }); return console.log('This PC forgot its token. Disconnect it in the dashboard (Connected PCs) to revoke it.');
+    case 'whoami' : return cmdWhoami(Boolean(flags.quiet));
     case 'machine': return cmdMachine(requireHost(positional), Boolean(flags.json));
     case 'history': return cmdHistory(requireHost(positional), flags);
     case 'log'    : return cmdLog(requireHost(positional), flags);
@@ -226,5 +268,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(`Error: ${err instanceof CliError ? err.message : (err as Error).stack}`);
-  process.exit(1);
+  process.exitCode = 1;
 });
