@@ -6,7 +6,7 @@
   },
   "teste-srv": {
     "cliente": "Testes",
-    "utilizador": "LitiOne",
+    "utilizador": "nodehub",
     "notas": "Máquina de teste (servidor)"
   }
 }
