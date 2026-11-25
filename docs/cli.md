@@ -5,28 +5,49 @@ Claude Code uses it during [helpdesk sessions](helpdesk-sessions.md); technician
 
 The CLI is built together with the backend (`start.cmd` or `npm run build` in `backend/`).
 
-## Signing in
+## Connecting a PC
 
-The CLI authenticates with your **personal access token** (one per user), so everything it records
-is attributed to you.
+Each PC is connected to a nodehub account once, by approving it in the browser (like
+`gh auth login`). Everything the CLI records on that PC is attributed to that account.
 
-1. In the dashboard: **Access token → Generate token**. Copy the token (`nhk_...`); it's shown only
-   once. Use the same token on every PC you work from.
-2. In the nodehub folder:
-   ```powershell
-   .\nodehub.cmd login
-   ```
-   Paste the token when asked. To point at another server: `--url http://host:8737`.
+**Usually you don't do anything:** the first time you click **Open in Claude** on a PC, the launcher
+runs `nodehub login` for you.
 
-The token is saved in `%APPDATA%\nodehub\cli.json`. `.\nodehub.cmd logout` deletes it.
+By hand:
+
+```powershell
+.\nodehub.cmd login
+```
+
+```text
+Connecting "MIGUEL-LAPTOP" to nodehub.
+
+  Approve it in the browser: http://127.0.0.1:8737/connect?code=WDJB-MJHT
+  Code: WDJB-MJHT
+
+Waiting for approval... (Ctrl+C to cancel)
+
+Connected. This PC now works as Miguel Sousa (miguel.sousa).
+```
+
+1. The browser opens the dashboard (sign in if needed) on **Connect this PC?**
+2. Check that the code matches the terminal and click **Approve**.
+3. The CLI receives a token for this PC and saves it in `%APPDATA%\nodehub\cli.json`.
+
+The request expires after 10 minutes. Connecting the same PC again replaces its previous token.
+Options: `--url http://host:8737` (another server), `--name PC-NAME` (default: the computer name),
+`--no-browser` (just print the link).
+
+To disconnect a PC, use **Connected PCs** in the dashboard. `.\nodehub.cmd logout` only makes this
+PC forget its token.
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `login [--token nhk_...] [--url URL]` | Save and check an access token |
-| `logout` | Forget the token on this PC |
-| `whoami` | Show who the CLI is signed in as |
+| `login [--url URL] [--name PC-NAME] [--no-browser]` | Connect this PC (approve it in the browser) |
+| `logout` | Forget this PC's token (disconnect it in the dashboard to revoke it) |
+| `whoami [--quiet]` | Show which account this PC is connected as (`--quiet`: exit code only) |
 | `machine <host> [--json]` | Client, SSH user, notes, profile and the 10 latest sessions |
 | `history <host> [--limit 50] [--json]` | Session history of a machine |
 | `log <host> --file session.json` | Record a session from a JSON file |
@@ -85,8 +106,9 @@ Notes:    Back office server
 
 | Message | Fix |
 |---|---|
-| *Not signed in* | Run `.\nodehub.cmd login` |
-| *Token rejected* | The token was revoked or replaced, or your user deactivated: generate a new one and log in again |
+| *This PC is not connected* | Run `.\nodehub.cmd login` and approve it in the browser |
+| *This PC was disconnected* | It was disconnected in the dashboard or your user deactivated: run `.\nodehub.cmd login` again |
+| *The connection request expired* / *was denied* | Run `.\nodehub.cmd login` again and approve within 10 minutes |
 | *Cannot reach nodehub* | Start the dashboard (`start.cmd`) or check `--url` |
 | *Machine ... is not configured* | Configure the machine in the dashboard first |
 | *The nodehub CLI is not built yet* | Run `start.cmd` or `npm run build` in `backend/` |

@@ -8,7 +8,7 @@ nodehub account.
 - [Editing and removing machines](#editing-and-removing-machines)
 - [History and profiles](#history-and-profiles)
 - [Users](#users)
-- [Your account: password and access token](#your-account)
+- [Your account: password and connected PCs](#your-account)
 
 ---
 
@@ -77,7 +77,7 @@ Use the filter box to find a client or machine by name.
 - a result filter (*Fixed*, *Partial*, *Unresolved*): handy to find open issues;
 - *Only my sessions*.
 
-Each session shows who did it: the technician whose access token Claude used.
+Each session shows who did it: the technician the PC running Claude is connected as.
 
 ---
 
@@ -87,13 +87,13 @@ Each session shows who did it: the technician whose access token Claude used.
 
 | Role | Can |
 |---|---|
-| **Technician** | Everything with machines, clients, sessions and their own access token |
+| **Technician** | Everything with machines, clients, sessions and their own connected PCs |
 | **Admin** | The same, plus managing users |
 
 - **+ Add user:** username (lowercase letters, digits, `.` `_` `-`), name, initial password (at
   least 10 characters) and role. Share the password privately; the user changes it on first sign-in.
 - **Edit:** change name, role, reset the password, or untick **Active** to block access while
-  keeping their history. Deactivating someone signs them out and disables their access token
+  keeping their history. Deactivating someone signs them out and disconnects their PCs
   immediately.
 - **Delete:** removes the account. Their past sessions stay, marked *deleted user*.
 
@@ -107,12 +107,11 @@ least one active admin.
 In the top bar:
 
 - **Password:** change your password.
-- **Access token:** your token for the [nodehub CLI](cli.md), which Claude Code uses to read
-  history and record sessions **in your name**. Each user has one.
-  - **Generate token**, copy it (it's shown once) and run `.\nodehub.cmd login` in the nodehub
-    folder on every PC you work from.
-  - The dialog shows when it was generated and last used.
-  - **Generate new token** replaces it: the old one stops working on every PC, so log in again
-    with the new one. Do this if a PC is lost. **Revoke** removes it without a replacement.
-  - The token can't manage users, the token or passwords: those need a dashboard sign-in.
+- **Connected PCs:** the PCs where Claude Code can read history and record sessions **in your
+  name**, with when each was connected and last used.
+  - A PC connects the first time you click **Open in Claude** on it: a browser tab asks
+    **Connect this PC?** Check the code and click **Approve**. (By hand: `.\nodehub.cmd login`,
+    see [cli.md](cli.md#connecting-a-pc).)
+  - **Disconnect** a PC you no longer use, or one that was lost. The others keep working.
+  - A connected PC can't manage PCs, users or passwords: those need a dashboard sign-in.
 - **Sign out.** Sessions also expire after `JWT_EXPIRES_IN` (12 hours by default).

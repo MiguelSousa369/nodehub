@@ -41,9 +41,15 @@ The log on the client PC is `C:\ProgramData\nodehub\install.log`.
 | *tailscale up failed* | Auth key expired or revoked (generate a new one and update `.env`), or the PC is signed in to another tailnet. |
 | The machine kept its old name | Expected: if it was already on the tailnet with the client tag, the installer leaves Tailscale untouched. |
 
-## CLI
+## CLI and connecting a PC
 
-See [cli.md → Errors](cli.md#errors).
+| Symptom | Cause / fix |
+|---|---|
+| *Open in Claude* opens a "connect this PC" window every time | The approval wasn't completed, or the PC was disconnected. Approve it in the browser tab that opens. |
+| The browser tab doesn't open during `nodehub login` | Open the link printed in the terminal by hand. |
+| Approved, but the terminal still waits | It checks every 2 seconds; if it keeps waiting, the request expired: run `.\nodehub.cmd login` again. |
+
+More: [cli.md → Errors](cli.md#errors).
 
 ## Tests
 

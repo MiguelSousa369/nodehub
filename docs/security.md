@@ -22,8 +22,9 @@ protects against and how, and the responsibilities that stay with you.
 | **DNS rebinding** | Requests whose `Host` isn't `127.0.0.1`/`localhost` are rejected. |
 | **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors don't reveal whether a username exists. |
 | **Roles** | Only admins manage users. You can't remove your own admin access or delete yourself; there is always one active admin. |
-| **Immediate revocation** | Each request reloads the user: deactivating someone ends their dashboard sessions and access tokens at once. |
-| **Access tokens** | One per user, stored only as a SHA-256 hash, shown once, revocable or replaceable, with *last used* tracking. They **cannot** manage users, the token or passwords (`SESSION_REQUIRED`), so a token leaked from a Claude session can't take over the account. If a PC is lost, generate a new token: the old one stops working everywhere. |
+| **Immediate revocation** | Each request reloads the user: deactivating someone ends their dashboard sessions and disconnects their PCs at once. |
+| **Connected PCs** | Each PC gets its own token through a browser approval (`nodehub login`): nobody copies tokens around. Tokens are stored only as SHA-256 hashes, show *last used*, and can be disconnected one by one (e.g. a lost laptop). They **cannot** manage PCs, users or passwords (`SESSION_REQUIRED`), so a token leaked from a Claude session can't take over the account. |
+| **PC approval** | The approval page shows the PC name and a code to compare with the terminal; requests expire after 10 minutes, can be answered once, only by a signed-in dashboard session; the secret device code is stored hashed and the token is handed out exactly once. |
 | **Input validation** | Every request body, parameter and query is validated with Zod. Values that end up on a command line (client name, notes, SSH user, hostname) can't contain quotes, `;` or `$`. |
 | **Only tagged machines** | Machines can only be configured if they are in the tailnet with `CLIENT_TAG`. |
 | **Security headers** | `helmet()` defaults; CORS restricted in production. |
@@ -47,7 +48,7 @@ launcher therefore:
 - Content from client machines is treated as **data, not instructions** (protection against
   prompt injection from files or logs).
 - Claude Code's own permission prompts still apply to every command it runs.
-- Every session is recorded under the technician who owns the access token.
+- Every session is recorded under the technician the PC is connected as.
 
 ## Your responsibilities
 

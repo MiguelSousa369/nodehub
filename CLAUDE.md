@@ -20,7 +20,7 @@ When that happens:
    ```
    .\nodehub.cmd machine <host>
    ```
-   If it says *Not signed in* or *Token rejected*, ask the technician to generate their access token in the dashboard (**Access token**) and run `.\nodehub.cmd login` themselves. Don't ask them to paste the token into the chat.
+   If it says *This PC is not connected* or *was disconnected*, ask the technician to run `.\nodehub.cmd login` themselves: it opens the browser so they can approve this PC. Don't run it for them and never ask for tokens in the chat.
 2. **Check that the machine responds:**
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes <user>@<host> hostname
@@ -107,7 +107,7 @@ At the end of every session, record it. Write the session as JSON to a temporary
 .\nodehub.cmd log <host> --file %TEMP%\nodehub-session.json
 ```
 
-Then delete the temporary file. The session is recorded under the technician who owns the access token.
+Then delete the temporary file. The session is recorded under the technician this PC is connected as.
 
 **Keep the profile up to date.** If you learned something lasting about the machine (role, hardware, important software, quirks), update its profile. Start from the current profile shown by `nodehub machine`, edit it, and write it back:
 

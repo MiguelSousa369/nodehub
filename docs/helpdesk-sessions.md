@@ -78,5 +78,6 @@ file or log can't change these rules.
 Each technician needs, once:
 
 1. The `nodehub://` protocol registered: `.\launcher\register-protocol.ps1`.
-2. Their access token (**Access token** in the dashboard) and `.\nodehub.cmd login` on each PC.
+2. Their PC connected to their account: happens automatically the first time they click
+   **Open in Claude** (approve it in the browser).
 3. Their SSH public key in `public-keys/`, included in the installer the machine was set up with.

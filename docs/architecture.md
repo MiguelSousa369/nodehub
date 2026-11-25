@@ -20,7 +20,7 @@ flowchart TB
     L -- "checks host + tag" --> TS
     L --> CC
     CC --> CLI
-    CLI -- "REST /api (access token)" --> BE
+    CLI -- "REST /api (PC token)" --> BE
   end
   CC == "ssh nodehub@host<br/>(over the tailnet)" ==> CM["Client machine<br/>Tailscale + OpenSSH<br/>user nodehub"]
 ```
@@ -28,7 +28,7 @@ flowchart TB
 | Component | Location | Role |
 |---|---|---|
 | **Backend** | `backend/` | REST API, authentication, business rules; serves the built dashboard on the same origin. |
-| **Dashboard** | `frontend/` | React single-page app: machines, history, users, access token. |
+| **Dashboard** | `frontend/` | React single-page app: machines, history, users, connected PCs, PC approval page. |
 | **Database** | `docker-compose.yml` | PostgreSQL 17 with Prisma migrations (`backend/prisma/`). |
 | **Tailscale** | technician PC | Source of truth for which machines exist and whether they're online. No Tailscale API token is needed. |
 | **Launcher** | `launcher/` | Handles `nodehub://` links: validates them and opens Claude Code with the machine context. |
@@ -40,7 +40,8 @@ flowchart TB
 
 ```mermaid
 erDiagram
-  users ||--o| api_tokens : "has (0 or 1)"
+  users ||--o{ api_tokens : "connected PCs"
+  users |o--o{ cli_login_requests : approves
   users |o--o{ sessions : "recorded by"
   clients ||--o{ machines : has
   machines ||..o{ sessions : "host (no FK)"
@@ -55,10 +56,19 @@ erDiagram
   }
   api_tokens {
     int id PK
-    int user_id FK,UK "one per user"
+    int user_id FK
+    string name "PC name"
     string prefix
     string token_hash UK "SHA-256"
     datetime last_used_at
+  }
+  cli_login_requests {
+    int id PK
+    string device_code_hash UK "SHA-256, CLI secret"
+    string user_code UK "shown to the user"
+    string device_name
+    enum status "PENDING | APPROVED | DENIED | CONSUMED"
+    datetime expires_at "10 minutes"
   }
   clients {
     int id PK
@@ -132,12 +142,36 @@ sequenceDiagram
 4. It opens Windows Terminal in the repository with `claude "<start message>"`.
 5. Claude follows `CLAUDE.md`: `nodehub machine <host>`, SSH, diagnosis, record.
 
+### Connecting a PC (`nodehub login`)
+
+```mermaid
+sequenceDiagram
+  participant CLI as nodehub CLI (PC)
+  participant B as Backend
+  actor T as Technician (browser)
+  CLI->>B: POST /api/cli-login { deviceName }
+  B-->>CLI: deviceCode (secret) + userCode WDJB-MJHT
+  CLI->>T: opens /connect?code=WDJB-MJHT
+  loop every 2 s
+    CLI->>B: POST /api/cli-login/poll { deviceCode }
+    B-->>CLI: 202 pending
+  end
+  T->>B: Approve (signed in to the dashboard)
+  CLI->>B: POST /api/cli-login/poll
+  B-->>CLI: 200 token for this PC (issued once)
+```
+
+The launcher runs this automatically the first time *Open in Claude* is used on a PC. Only the
+hash of the device code is stored; the token is created when the CLI collects it, so it is never
+stored in clear text. Requests expire after 10 minutes, and connecting the same PC again replaces
+its previous token.
+
 ### Authentication
 
 | Credential | Created by | Used by | Lifetime | Can manage users/tokens/password |
 |---|---|---|---|---|
 | **Dashboard session** (JWT) | `POST /api/auth/login` | Browser | `JWT_EXPIRES_IN` (12 h) | Yes (by role) |
-| **Access token** (`nhk_…`), one per user | Dashboard → Access token | CLI / Claude | Until revoked or replaced | **No** |
+| **PC token** (`nhk_…`), one per connected PC | Browser approval (`nodehub login`) | CLI / Claude | Until the PC is disconnected | **No** |
 
 Both are sent as `Authorization: Bearer …`. Every request reloads the user, so deactivating a user
 cuts all their credentials immediately.
