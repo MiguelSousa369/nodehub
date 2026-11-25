@@ -55,7 +55,17 @@ if (-not $peer -or @($peer.Tags) -notcontains $clientTag) {
 }
 $ip = $peer.TailscaleIPs[0]
 
-# 3. Open Claude Code in the repository folder with the machine context
+# 3. Make sure this PC is connected to nodehub (so Claude can read and record history).
+#    If not, run "nodehub login" in a visible window: it opens the browser to approve this PC.
+$cli = Join-Path $repo 'backend\dist\cli\nodehub.js'
+if (Test-Path $cli) {
+    & node $cli whoami --quiet 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Start-Process cmd.exe -Wait -ArgumentList '/c', "title nodehub: connect this PC & node `"$cli`" login & timeout /t 4 >nul"
+    }
+}
+
+# 4. Open Claude Code in the repository folder with the machine context
 $prompt = "Helpdesk: client $client, machine $hostName ($ip, user $sshUser). " +
           "Start the session as described in CLAUDE.md, then ask me what the problem is."
 
