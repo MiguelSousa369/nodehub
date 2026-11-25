@@ -1,11 +1,11 @@
 import { Router } from 'express';
 
 import * as users from '../controllers/users.controller';
-import { authGuard, requireRole } from '../middlewares/auth.middleware';
+import { authGuard, requireRole, sessionOnly } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.use(authGuard, requireRole(['ADMIN']));
+router.use(authGuard, sessionOnly, requireRole(['ADMIN']));
 
 router.get('/', users.list);
 router.post('/', users.create);

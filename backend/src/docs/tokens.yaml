@@ -1,0 +1,71 @@
+components:
+  schemas:
+    AccessToken:
+      type: object
+      properties:
+        id:         { type: integer }
+        name:       { type: string, example: Office laptop }
+        prefix:     { type: string, example: nhk_4fJ2kQ9x, description: First characters, to recognise the token. }
+        createdAt:  { type: string, format: date-time }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+  responses:
+    SessionRequired:
+      description: SESSION_REQUIRED (needs a dashboard sign-in, not an access token)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+paths:
+  /api/tokens:
+    get:
+      summary: Your personal access tokens
+      description: Requires a dashboard session (an access token can't manage tokens).
+      responses:
+        '200':
+          description: Your tokens (without the secret).
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/AccessToken' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+    post:
+      summary: Create a personal access token
+      description: The token (`nhk_...`) is returned only once. It acts as you, except for account-level actions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 60 }
+      responses:
+        '201':
+          description: Created; `token` is shown only now.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/AccessToken' }
+                  - type: object
+                    properties:
+                      token: { type: string, example: nhk_... }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+
+  /api/tokens/{id}:
+    delete:
+      summary: Revoke one of your tokens
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Revoked. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
+        '404':
+          description: NOT_FOUND (or not yours)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

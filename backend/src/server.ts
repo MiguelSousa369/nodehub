@@ -14,6 +14,7 @@ import { localHostOnly } from './middlewares/local-host.middleware';
 import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
 import machinesRoutes from './routes/machines.routes';
+import tokensRoutes from './routes/tokens.routes';
 import usersRoutes from './routes/users.routes';
 import logger from './utils/logger';
 
@@ -39,6 +40,7 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes); // admins only
+app.use('/api/tokens', tokensRoutes); // your own personal access tokens
 app.use('/api/machines', authGuard, machinesRoutes);
 app.use('/api/installer', authGuard, installerRoutes);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route not found.', code: 'NOT_FOUND' }));
