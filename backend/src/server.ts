@@ -6,7 +6,7 @@ import helmet from 'helmet';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
 
-import { initStore } from './lib/store';
+import prisma from './lib/prisma';
 import { swaggerSpec } from './lib/swagger';
 import { apiKeyGuard } from './middlewares/auth.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
@@ -58,7 +58,7 @@ app.use(errorMiddleware); // ALWAYS mounted last
 async function start() {
   try {
     if (!process.env.API_KEY) throw new Error('API_KEY is not set (see backend/.env.example).');
-    initStore();
+    await prisma.$connect();
     app.listen(PORT, HOST, () => logger.info(`nodehub running on http://${HOST}:${PORT}`));
   } catch (err) {
     logger.error('Failed to start server', { err: (err as Error).message });

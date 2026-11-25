@@ -34,10 +34,10 @@ export async function save(req: Request, res: Response, next: NextFunction) {
 // DELETE /api/machines/:host
 // ---------------------------------------------------------------------------
 
-export function remove(req: Request, res: Response, next: NextFunction) {
+export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const { host } = HostParamsSchema.parse(req.params);
-    if (!machineService.removeMachine(host)) {
+    if (!(await machineService.removeMachine(host))) {
       res.status(404).json({ error: `Machine '${host}' is not configured.`, code: 'NOT_FOUND' });
       return;
     }

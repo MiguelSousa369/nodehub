@@ -1,4 +1,4 @@
-import * as store from '../lib/store';
+import prisma from '../lib/prisma';
 import { CLIENT_TAG, getPeers, TailscalePeer } from '../lib/tailscale';
 import { Machine, MachineConfig } from '../schemas/machine.schema';
 import { HttpError } from '../utils/http-error';
@@ -8,6 +8,8 @@ export interface MachineList {
   clients       : string[];
   tailscaleError: string | null;
 }
+
+const byName = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 // ---------------------------------------------------------------------------
 // List: Tailscale peers (client machines only) + stored configuration
@@ -22,19 +24,25 @@ export async function listMachines(): Promise<MachineList> {
     tailscaleError = `Could not read Tailscale status: ${(err as Error).message}`;
   }
 
+  const [stored, clients] = await Promise.all([
+    prisma.machine.findMany({ include: { client: true } }),
+    prisma.client.findMany({ select: { name: true } }),
+  ]);
+  const storedByHost = new Map(stored.map((m) => [m.host.toLowerCase(), m]));
+
   const machines: Machine[] = [];
   const seen = new Set<string>();
 
   for (const peer of peers) {
-    const stored = store.getConfig(peer.host);
-    if (!stored && !peer.tags.includes(CLIENT_TAG)) continue; // our own devices, not clients
+    const config = storedByHost.get(peer.host.toLowerCase());
+    if (!config && !peer.tags.includes(CLIENT_TAG)) continue; // our own devices, not clients
     seen.add(peer.host.toLowerCase());
     machines.push({
-      host      : stored?.host ?? peer.host,
-      client    : stored?.config.client ?? null,
-      sshUser   : stored?.config.sshUser ?? null,
-      notes     : stored?.config.notes ?? '',
-      configured: Boolean(stored),
+      host      : config?.host ?? peer.host,
+      client    : config?.client.name ?? null,
+      sshUser   : config?.sshUser ?? null,
+      notes     : config?.notes ?? '',
+      configured: Boolean(config),
       inTailnet : true,
       online    : peer.online,
       ip        : peer.ip,
@@ -43,10 +51,10 @@ export async function listMachines(): Promise<MachineList> {
     });
   }
 
-  for (const { host, config } of store.listConfigs()) {
-    if (seen.has(host.toLowerCase())) continue;
+  for (const m of stored) {
+    if (seen.has(m.host.toLowerCase())) continue;
     machines.push({
-      host, client: config.client, sshUser: config.sshUser, notes: config.notes,
+      host: m.host, client: m.client.name, sshUser: m.sshUser, notes: m.notes,
       configured: true, inTailnet: false, online: false, ip: null, os: null, lastSeen: null,
     });
   }
@@ -54,13 +62,10 @@ export async function listMachines(): Promise<MachineList> {
   // Configured machines by client, then unassigned ones at the end
   machines.sort((a, b) =>
     Number(!a.configured) - Number(!b.configured)
-    || (a.client ?? '').localeCompare(b.client ?? '', undefined, { sensitivity: 'base' })
-    || a.host.localeCompare(b.host, undefined, { sensitivity: 'base' }));
+    || byName(a.client ?? '', b.client ?? '')
+    || byName(a.host, b.host));
 
-  const clients = [...new Set(machines.flatMap((m) => (m.client ? [m.client] : [])))]
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-
-  return { machines, clients, tailscaleError };
+  return { machines, clients: clients.map((c) => c.name).sort(byName), tailscaleError };
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +73,7 @@ export async function listMachines(): Promise<MachineList> {
 // ---------------------------------------------------------------------------
 
 export async function saveMachine(host: string, config: MachineConfig): Promise<{ host: string } & MachineConfig> {
-  const existing = store.getConfig(host);
+  const existing = await prisma.machine.findFirst({ where: { host: { equals: host, mode: 'insensitive' } } });
   let name = existing?.host;
 
   if (!name) {
@@ -86,10 +91,17 @@ export async function saveMachine(host: string, config: MachineConfig): Promise<
     name = peer.host;
   }
 
-  store.saveConfig(name, config);
-  return { host: name, ...config };
+  // Reuse an existing client regardless of letter case, or create it
+  const client = await prisma.client.findFirst({ where: { name: { equals: config.client, mode: 'insensitive' } } })
+    ?? await prisma.client.create({ data: { name: config.client } });
+
+  const data = { clientId: client.id, sshUser: config.sshUser, notes: config.notes };
+  await prisma.machine.upsert({ where: { host: name }, create: { host: name, ...data }, update: data });
+
+  return { host: name, ...config, client: client.name };
 }
 
-export function removeMachine(host: string): boolean {
-  return store.deleteConfig(host);
+export async function removeMachine(host: string): Promise<boolean> {
+  const { count } = await prisma.machine.deleteMany({ where: { host: { equals: host, mode: 'insensitive' } } });
+  return count > 0;
 }
