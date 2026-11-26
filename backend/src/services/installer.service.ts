@@ -14,9 +14,19 @@ const REPO_ROOT = path.resolve(__dirname, '../../..');
 const AUTHKEY_RE    = /^tskey-auth-[A-Za-z0-9-]+$/;
 const PUBLIC_KEY_RE = /^(ssh-ed25519|ssh-rsa|ecdsa-sha2-\S+|sk-\S+) [A-Za-z0-9+/=]+( [^'\r\n]*)?$/;
 
+/** What still has to be configured; the dashboard shows each code in the team language. */
+export type MissingSetting = 'TAILSCALE_AUTHKEY' | 'PUBLIC_KEYS' | 'INSTALLER_TEMPLATE' | 'CLIENT_TAG';
+
+const MISSING_TEXT: Record<MissingSetting, string> = {
+  TAILSCALE_AUTHKEY : 'TAILSCALE_AUTHKEY in backend/.env.',
+  PUBLIC_KEYS       : 'At least one SSH public key in public-keys/*.pub.',
+  INSTALLER_TEMPLATE: 'Installer template (installer/install-client.ps1).',
+  CLIENT_TAG        : 'A valid CLIENT_TAG in backend/.env (e.g. tag:client).',
+};
+
 export interface InstallerStatus {
   ready  : boolean;
-  missing: string[];
+  missing: MissingSetting[];
 }
 
 function templatePath(): string {
@@ -44,11 +54,11 @@ export function publicKeys(): string[] {
 }
 
 export function getInstallerStatus(): InstallerStatus {
-  const missing: string[] = [];
-  if (!authKey()) missing.push('TAILSCALE_AUTHKEY in backend/.env.');
-  if (publicKeys().length === 0) missing.push('At least one SSH public key in public-keys/*.pub.');
-  if (!fs.existsSync(templatePath())) missing.push('Installer template (installer/install-client.ps1).');
-  if (!/^tag:[A-Za-z0-9-]+$/.test(clientTag())) missing.push('A valid CLIENT_TAG in backend/.env (e.g. tag:client).');
+  const missing: MissingSetting[] = [];
+  if (!authKey()) missing.push('TAILSCALE_AUTHKEY');
+  if (publicKeys().length === 0) missing.push('PUBLIC_KEYS');
+  if (!fs.existsSync(templatePath())) missing.push('INSTALLER_TEMPLATE');
+  if (!/^tag:[A-Za-z0-9-]+$/.test(clientTag())) missing.push('CLIENT_TAG');
   return { ready: missing.length === 0, missing };
 }
 
@@ -56,7 +66,7 @@ export function getInstallerStatus(): InstallerStatus {
 export function buildInstaller(): Buffer {
   const status = getInstallerStatus();
   if (!status.ready) {
-    throw new HttpError(409, 'INSTALLER_NOT_CONFIGURED', `Installer not configured: ${status.missing.join(' ')}`);
+    throw new HttpError(409, 'INSTALLER_NOT_CONFIGURED', `Installer not configured: ${status.missing.map((m) => MISSING_TEXT[m]).join(' ')}`);
   }
 
   const keys = publicKeys().map((k) => `'${k.replace(/'/g, "''")}'`).join(',');

@@ -11,7 +11,10 @@ paths:
                 type: object
                 properties:
                   ready:   { type: boolean }
-                  missing: { type: array, items: { type: string } }
+                  missing:
+                    type: array
+                    items: { type: string, enum: [TAILSCALE_AUTHKEY, PUBLIC_KEYS, INSTALLER_TEMPLATE, CLIENT_TAG] }
+                    description: What still has to be configured before the installer can be generated.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }
 

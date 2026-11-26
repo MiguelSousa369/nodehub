@@ -46,7 +46,7 @@ token.
 | `PUT` | `/api/machines/:host` | session | Configure / edit `{ client, sshUser?, notes? }` |
 | `DELETE` | `/api/machines/:host` | session | Remove the configuration (history is kept) |
 | `PUT` | `/api/machines/:host/profile` | any | `{ profile }` (Markdown) |
-| `POST` | `/api/machines/:host/ssh-test` | session | `{ sshUser? }` → `{ ok, message }` |
+| `POST` | `/api/machines/:host/ssh-test` | session | `{ sshUser? }` → `{ ok, kind, detail, message }` |
 | **Sessions** | | | |
 | `GET` | `/api/sessions` | any | All sessions; filters `host`, `technicianId`, `result`, `q`, `limit`, `offset` |
 | `PATCH` | `/api/sessions/:id` | any (author or admin) | Correct a session: only the fields sent change (`summary`, `problem`, `diagnosis`, `actions`, `result`, `pending`) |
@@ -54,7 +54,7 @@ token.
 | `GET` | `/api/machines/:host/sessions` | any | Sessions of one machine (`limit`, `offset`) |
 | `POST` | `/api/machines/:host/sessions` | any | Record a session as the caller |
 | **Installer** | | | |
-| `GET` | `/api/installer/status` | session | `{ ready, missing[] }` |
+| `GET` | `/api/installer/status` | session | `{ ready, missing[] }` (codes: `TAILSCALE_AUTHKEY`, `PUBLIC_KEYS`, `INSTALLER_TEMPLATE`, `CLIENT_TAG`) |
 | `GET` | `/api/installer` | session | Download `nodehub-install.ps1` (contains the Tailscale auth key) |
 
 ## Errors

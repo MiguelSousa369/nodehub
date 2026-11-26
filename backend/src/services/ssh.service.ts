@@ -2,6 +2,10 @@ import { execFile } from 'child_process';
 
 export interface SshTestResult {
   ok     : boolean;
+  /** ok | timeout | error: lets the dashboard word the result in the team language */
+  kind   : 'ok' | 'timeout' | 'error';
+  /** The machine's hostname when ok; OpenSSH's own error line otherwise */
+  detail : string;
   message: string;
 }
 
@@ -17,13 +21,17 @@ export function testSsh(host: string, sshUser: string): Promise<SshTestResult> {
 
   return new Promise((resolve) => {
     execFile('ssh', args, { timeout: 20_000, encoding: 'utf-8' }, (err, stdout, stderr) => {
-      if (!err) return resolve({ ok: true, message: `Connection OK (${stdout.trim()}).` });
+      if (!err) {
+        const hostname = stdout.trim();
+        return resolve({ ok: true, kind: 'ok', detail: hostname, message: `Connection OK (${hostname}).` });
+      }
       if ((err as NodeJS.ErrnoException & { killed?: boolean }).killed) {
-        return resolve({ ok: false, message: 'No response (timeout).' });
+        return resolve({ ok: false, kind: 'timeout', detail: '', message: 'No response (timeout).' });
       }
       // Skip OpenSSH warning banners (lines starting with **)
       const lines = stderr.split(/\r?\n/).filter((l) => l.trim() && !l.startsWith('**'));
-      resolve({ ok: false, message: lines[lines.length - 1] ?? `Failed (${err.message}).` });
+      const detail = lines[lines.length - 1] ?? `Failed (${err.message}).`;
+      resolve({ ok: false, kind: 'error', detail, message: detail });
     });
   });
 }

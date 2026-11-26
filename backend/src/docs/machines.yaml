@@ -154,7 +154,9 @@ paths:
                 type: object
                 properties:
                   ok:      { type: boolean }
-                  message: { type: string }
+                  kind:    { type: string, enum: [ok, timeout, error] }
+                  detail:  { type: string, description: The machine's hostname when ok; OpenSSH's error line otherwise. }
+                  message: { type: string, description: English summary. }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }

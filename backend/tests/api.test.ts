@@ -300,6 +300,12 @@ describe('installer', () => {
     const status = await request(app).get('/api/installer/status').set(as(techToken));
     expect(status.body).toEqual({ ready: true, missing: [] });
 
+    const authKey = process.env.TAILSCALE_AUTHKEY;
+    process.env.TAILSCALE_AUTHKEY = '';
+    const notReady = await request(app).get('/api/installer/status').set(as(techToken));
+    process.env.TAILSCALE_AUTHKEY = authKey;
+    expect(notReady.body).toEqual({ ready: false, missing: ['TAILSCALE_AUTHKEY'] });
+
     const res = await request(app).get('/api/installer').set(as(techToken))
       .buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))); });
     const body = res.body as Buffer;
