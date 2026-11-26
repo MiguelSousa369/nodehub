@@ -4,7 +4,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 // Light / dark theme, shared by the whole app.
 //
 // The choice ("system", "light" or "dark") is kept in localStorage under "theme". Dark mode is the
-// `dark` class on <html> (Tailwind darkMode: 'class'). index.html applies it before the first paint,
+// `dark` class on <html> (Tailwind darkMode: 'class'). public/theme-init.js applies it before the first paint,
 // so there is no flash of the wrong theme; this provider keeps it in sync afterwards, including
 // following the OS setting live while the choice is "system".
 // ---------------------------------------------------------------------------
