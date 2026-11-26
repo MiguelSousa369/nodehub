@@ -15,6 +15,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import readline from 'readline';
 
 import { keyBody, ownPublicKeys, syncKeys, SyncTarget } from './keys-sync';
 import { apiErrorText, cliLanguage, clientTagFromServer, m, resultWord, setClientTag, setCliLanguage } from './messages';
@@ -248,20 +249,39 @@ async function cmdUpdate(positional: string[], flags: Record<string, string | tr
   console.log(m().updated(s.id, s.host, resultWord(s.result), s.pending));
 }
 
-interface TeamKey { fingerprint: string; name: string; comment: string; key: string }
+interface TeamKey {
+  fingerprint: string; name: string; comment: string; key: string; effective: boolean;
+  owner: { name: string; username: string; active: boolean } | null;
+}
+
+/** Asks a yes/no question on the terminal (y/s = yes). */
+function confirm(question: string): Promise<boolean> {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise((resolve) => rl.question(question, (answer) => { rl.close(); resolve(/^[ys]/i.test(answer.trim())); }));
+}
 interface MachineRow { host: string; displayName: string; sshUser: string | null; configured: boolean; online: boolean }
 
-/** nodehub keys: the team list. nodehub keys sync [--host h] [--dry-run] [--force]: apply it to client PCs. */
+/**
+ * nodehub keys: the team list.
+ * nodehub keys sync [--host h] [--dry-run] [--yes] [--force]: apply the effective keys to client PCs.
+ * In a terminal it first shows what would change and asks before applying (--yes skips the question).
+ */
 async function cmdKeys(positional: string[], flags: Record<string, string | true>) {
   const t = m();
-  const keys = await api<TeamKey[]>('GET', '/api/keys');
+  const all = await api<TeamKey[]>('GET', '/api/keys');
 
   if (positional[1] !== 'sync') {
-    if (keys.length === 0) return console.log(t.keysNone);
-    console.log(t.keysTitle(keys.length));
-    for (const k of keys) console.log(`  ${k.fingerprint}  ${k.name}${k.comment ? `  (${k.comment})` : ''}`);
+    if (all.length === 0) return console.log(t.keysNone);
+    console.log(t.keysTitle(all.length));
+    for (const k of all) {
+      const who = k.owner ? `${k.owner.name} (${k.owner.username})` : t.keysService;
+      console.log(`  ${k.fingerprint}  ${who} · ${k.name}${k.effective ? '' : `  [${t.keysInactive}]`}`);
+    }
     return console.log(`\n${t.keysHint}`);
   }
+
+  // Only effective keys: owners whose account is active, plus service keys
+  const keys = all.filter((k) => k.effective);
 
   // Safety: never empty the machines, and never cut off the PC doing the sync
   if (keys.length === 0) throw new CliError(t.syncNoKeys);
@@ -278,9 +298,28 @@ async function cmdKeys(positional: string[], flags: Record<string, string | true
   if (targets.length === 0) {
     console.log(t.syncNothing);
   } else {
-    const dryRun = Boolean(flags['dry-run']);
-    console.log(t.syncStart(targets.length, keys.length, dryRun));
-    const results = await syncKeys(targets, keys.map((k) => k.key), dryRun, (r) => console.log(
+    let dryRun = Boolean(flags['dry-run']);
+    let toApply = targets;
+
+    // Interactive: preview first, then ask (the dashboard's "Sync keys" button opens this in a window)
+    if (!dryRun && !flags.yes && process.stdin.isTTY) {
+      console.log(t.syncPreview);
+      const preview = await syncKeys(targets, keys.map((k) => k.key), true, (r) => console.log(
+        r.status === 'failed' ? t.syncFailed(r.target.label, r.error ?? '')
+          : r.status === 'unchanged' ? t.syncUnchanged(r.target.label)
+          : t.syncWouldUpdate(r.target.label, r.added, r.removed)));
+      toApply = preview.filter((r) => r.status === 'updated').map((r) => r.target);
+      if (toApply.length === 0) {
+        console.log(`\n${t.syncSummary(0, preview.filter((r) => r.status === 'unchanged').length, preview.filter((r) => r.status === 'failed').length)}`);
+        if (offline > 0) console.log(t.syncSkipped(offline));
+        return;
+      }
+      if (!(await confirm(`\n${t.syncConfirm}`))) return console.log(t.syncCancelled);
+      dryRun = false;
+    }
+
+    console.log(t.syncStart(toApply.length, keys.length, dryRun));
+    const results = await syncKeys(toApply, keys.map((k) => k.key), dryRun, (r) => console.log(
       r.status === 'failed' ? t.syncFailed(r.target.label, r.error ?? '')
         : r.status === 'unchanged' ? t.syncUnchanged(r.target.label)
         : dryRun ? t.syncWouldUpdate(r.target.label, r.added, r.removed)
@@ -317,8 +356,10 @@ const HELP = `nodehub CLI
   nodehub update <id> --pending "" --result fixed
   nodehub profile <host> --file profile.md replace the machine profile (Markdown)
   nodehub keys                             list the team's SSH public keys
-  nodehub keys sync [--host h] [--dry-run] make every online client PC accept exactly those
-                                           keys (run on a PC that already has access)
+  nodehub keys sync [--host h] [--dry-run] [--yes]
+                                           make every online client PC accept exactly the
+                                           team's active keys (run on a PC that already has
+                                           access); asks before applying unless --yes
 
 Docs: docs/cli.md`;
 

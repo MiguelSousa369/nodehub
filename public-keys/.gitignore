@@ -1,2 +1,3 @@
-# Technicians' SSH public keys are per installation
+# Technicians' SSH public keys are per installation (now imported into the database)
 *.pub
+*.pub.imported

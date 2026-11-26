@@ -6,6 +6,8 @@
     .\open.ps1 "nodehub://open?host=srv-bakery&user=nodehub"
 
     Called by the nodehub:// protocol (see register-protocol.ps1); the dashboard builds the link.
+    nodehub://keys-sync (the dashboard's "Sync keys" button) opens a window running
+    "nodehub keys sync", which shows what would change and asks before applying.
 #>
 param([Parameter(Mandatory)][string]$Target)
 
@@ -22,6 +24,8 @@ $Messages = @{
         TailscaleError = 'Could not read Tailscale status: {0}'
         NotClient      = "Machine '{0}' is not a client machine in the tailnet."
         ConnectTitle   = 'nodehub: connect this PC'
+        SyncTitle      = 'nodehub: sync SSH keys'
+        NoCli          = 'The nodehub CLI is not built on this PC. In the nodehub folder run: cd backend; npm install; npm run build:cli'
         Prompt         = 'Helpdesk: machine {0} ({1}, user {2}). Start the session as described in CLAUDE.md, then ask me what the problem is.'
     }
     pt = @{
@@ -31,6 +35,8 @@ $Messages = @{
         TailscaleError = 'Não foi possível ler o estado do Tailscale: {0}'
         NotClient      = "A máquina '{0}' não é uma máquina cliente na tailnet."
         ConnectTitle   = 'nodehub: ligar este PC'
+        SyncTitle      = 'nodehub: sincronizar chaves SSH'
+        NoCli          = 'A CLI do nodehub não está compilada neste PC. Na pasta do nodehub corra: cd backend; npm install; npm run build:cli'
         Prompt         = 'Helpdesk: máquina {0} ({1}, utilizador {2}). Começa a sessão como descrito no CLAUDE.md e depois pergunta-me qual é o problema.'
     }
 }
@@ -56,6 +62,14 @@ function Show-Error([string]$msg) {
 function Get-Param([string]$name) {
     if ($Target -match "[?&]$name=([^&]*)") { return [uri]::UnescapeDataString($Matches[1].Replace('+', ' ')) }
     return ''
+}
+
+# Key sync: no parameters to validate (the key list comes from the server). It previews the changes
+# and asks for confirmation in the window, so a link from another web page can't apply anything alone.
+if ($Target -match '^nodehub://keys-sync/?$') {
+    if (-not (Test-Path $cli)) { Show-Error $T.NoCli }
+    Start-Process cmd.exe -ArgumentList '/c', "title $($T.SyncTitle) & node `"$cli`" keys sync & echo. & pause"
+    exit 0
 }
 
 # 1. Read and validate the link. Links can come from any web page, so only two strictly

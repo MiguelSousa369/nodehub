@@ -1,21 +1,20 @@
 # public-keys
 
-SSH **public** keys of the technicians, one file per person (`<name>.pub`). The client installer
-(downloaded from the dashboard) adds every key in this folder to the client machines, so each
-technician can connect over SSH as the `nodehub` user.
+SSH keys are now managed **in the dashboard**, and each key belongs to a user account:
 
-These files are specific to each installation, so they are not committed (`*.pub` is ignored).
+- each technician adds their own key: account menu → **My SSH keys**;
+- admins see every key in **Users → SSH keys**, and can add keys for others or *service keys*;
+- keys of deactivated accounts are no longer applied to client PCs.
 
-## Adding a technician
+After a change, **Sync keys** (in either place) updates every online client PC. See
+[docs/server.md → Adding or removing a technician](../docs/server.md#adding-or-removing-a-technician).
 
-1. The technician creates a key pair on their PC, if they don't have one yet:
-   ```powershell
-   ssh-keygen -t ed25519 -C "<name>"
-   ```
-2. Copy **only the public key** (`%USERPROFILE%\.ssh\id_ed25519.pub`) here as `<name>.pub`.
-3. New installers include the key automatically. For machines that are already installed, run the
-   installer again on them (it keeps the existing keys and only adds new ones).
+## This folder
 
-Never put a private key (`id_ed25519`, without `.pub`) in this folder.
+Older installations kept keys here as `<name>.pub`. When the backend starts, it imports any `*.pub`
+file into the database (a file named like a username, e.g. `miguel.sousa.pub`, belongs to that user)
+and renames it to `*.pub.imported`. You can still drop a `.pub` file here to import it, but the
+dashboard is easier.
 
-See [docs/installation.md](../docs/installation.md#ssh-keys).
+Never put a private key (`id_ed25519`, without `.pub`) in this folder. These files are specific to
+each installation and are not committed.
