@@ -24,6 +24,34 @@ knowledge that lives in one technician's head. nodehub changes that:
 - **Nothing is forgotten.** Each session (problem, diagnosis, actions, result) is stored with the
   machine and the technician, searchable by everyone.
 
+## See it in action
+
+*Demo data: the clients, people and PCs below are fictional.*
+
+**Every client machine, grouped by client.** Search, filter by status, and see what's online.
+
+![Dashboard: search and filters](docs/media/dashboard.gif)
+
+**Quick search.** Ctrl+K on any page, type a name, Enter: Claude opens on that machine.
+
+![Quick search](docs/media/quick-search.gif)
+
+**A new PC shows up.** Pick the client and give it a friendly name.
+
+![Configuring a new machine](docs/media/onboarding.gif)
+
+**Each machine's profile and history**, recorded by Claude at the end of every session.
+
+![Machine page](docs/media/machine.gif)
+
+**History across all clients**, grouped by day and filterable.
+
+![History](docs/media/history.gif)
+
+**Light or dark, English or Portuguese.**
+
+![Theme and language](docs/media/theme-language.gif)
+
 ## Features
 
 | | |
