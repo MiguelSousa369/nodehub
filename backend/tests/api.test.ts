@@ -24,7 +24,7 @@ vi.mock('../src/lib/tailscale', () => ({
 
 import prisma from '../src/lib/prisma';
 import app from '../src/server';
-import { MAX_FAILURES, resetLoginThrottle } from '../src/utils/login-throttle';
+import { MAX_FAILURES, MAX_FAILURES_PER_IP, resetLoginThrottle } from '../src/utils/login-throttle';
 import logger from '../src/utils/logger';
 import { hashPassword } from '../src/utils/password';
 
@@ -121,6 +121,14 @@ describe('auth', () => {
     expect((await request(app).post('/api/auth/login').set(HOST).send({ username: 'admin', password: ADMIN_PW })).status).toBe(200);
   });
 
+  it('locks an address that guesses passwords across many usernames', async () => {
+    for (let i = 0; i < MAX_FAILURES_PER_IP; i++) {
+      await request(app).post('/api/auth/login').set(HOST).send({ username: `nobody${i}`, password: 'guess' });
+    }
+    const res = await request(app).post('/api/auth/login').set(HOST).send({ username: 'admin', password: ADMIN_PW });
+    expect(res.body.code).toBe('TOO_MANY_ATTEMPTS');
+  });
+
   it('cuts access immediately when a user is deactivated', async () => {
     await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
     const res = await request(app).get('/api/machines').set(as(techToken));
@@ -130,6 +138,24 @@ describe('auth', () => {
   it('requires a token and rejects requests addressed to another host', async () => {
     expect((await request(app).get('/api/machines').set(HOST)).status).toBe(401);
     expect((await request(app).get('/api/health').set('Host', 'evil.example')).status).toBe(403);
+  });
+
+  it('answers on the server address listed in ALLOWED_HOSTS, and only there', async () => {
+    const server = { Host: '192.168.1.50:8737' };
+    expect((await request(app).get('/api/health').set(server)).body.code).toBe('FORBIDDEN_HOST');
+
+    process.env.ALLOWED_HOSTS = '192.168.1.50, nodehub-srv';
+    try {
+      expect((await request(app).get('/api/health').set(server)).status).toBe(200);
+      expect((await request(app).get('/api/health').set({ Host: 'NODEHUB-SRV' })).status).toBe(200);
+      // The dashboard opened at the server address is a valid origin; other sites still aren't
+      expect((await request(app).post('/api/auth/login').set({ ...server, Origin: 'http://192.168.1.50:8737' })
+        .send({ username: 'admin', password: ADMIN_PW })).status).toBe(200);
+      expect((await request(app).get('/api/health').set({ ...server, Origin: 'http://192.168.1.99' })).body.code).toBe('FORBIDDEN_ORIGIN');
+      expect((await request(app).get('/api/health').set({ Host: 'evil.example' })).body.code).toBe('FORBIDDEN_HOST');
+    } finally {
+      delete process.env.ALLOWED_HOSTS;
+    }
   });
 
   it('refuses requests sent by pages from other sites', async () => {
@@ -190,7 +216,7 @@ describe('settings', () => {
   it('has English by default, readable without signing in', async () => {
     const res = await request(app).get('/api/settings').set(HOST);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ language: 'en' });
+    expect(res.body).toEqual({ language: 'en', clientTag: 'tag:client' });
   });
 
   it('lets admins (and only admins, in the dashboard) change the team language', async () => {
@@ -199,7 +225,7 @@ describe('settings', () => {
 
     const res = await request(app).put('/api/settings').set(as(adminToken)).send({ language: 'pt' });
     expect(res.body).toEqual({ language: 'pt' });
-    expect((await request(app).get('/api/settings').set(HOST)).body.language).toBe('pt');
+    expect((await request(app).get('/api/settings').set(HOST)).body).toEqual({ language: 'pt', clientTag: 'tag:client' });
   });
 });
 
