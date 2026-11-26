@@ -13,9 +13,12 @@ export default {
       },
       keyframes: {
         'fade-in': { from: { opacity: '0', transform: 'translate(-50%, 6px)' }, to: { opacity: '1', transform: 'translate(-50%, 0)' } },
+        // dropdown menus
+        pop: { from: { opacity: '0', transform: 'translateY(-4px) scale(.98)' }, to: { opacity: '1', transform: 'none' } },
       },
       animation: {
         'fade-in': 'fade-in .2s ease-out',
+        pop      : 'pop .12s ease-out',
       },
     },
   },

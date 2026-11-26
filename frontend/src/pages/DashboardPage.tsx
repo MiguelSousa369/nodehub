@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import AddMachineDialog from '../components/AddMachineDialog'
@@ -91,7 +92,7 @@ export default function DashboardPage() {
         <div className="flex-1" />
         <input className="input w-full sm:w-56" type="search" placeholder="Filter client or machine"
                value={filter} onChange={(e) => setFilter(e.target.value)} />
-        <button className="btn-primary" onClick={() => setAdding(true)}>+ Add machine</button>
+        <button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />Add machine</button>
       </Header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6">

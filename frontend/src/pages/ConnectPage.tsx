@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
+import Logo from '../components/Logo'
 import { useAuth, useUser } from '../context/AuthContext'
 import { ApiError, decideCliLogin, getCliLogin } from '../services/api'
 import type { CliLoginRequest } from '../types'
@@ -48,7 +49,7 @@ export default function ConnectPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="card w-full max-w-md space-y-4 p-6">
-        <h1 className="text-xl font-semibold">node<span className="text-brand dark:text-brand-dark">hub</span></h1>
+        <h1><Logo /></h1>
 
         {state === 'loading' && <p className="text-sm text-slate-500">Loading…</p>}
 

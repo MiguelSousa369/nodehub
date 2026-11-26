@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
 import Header from '../components/Header'
@@ -49,7 +50,7 @@ export default function UsersPage() {
     <>
       <Header>
         <div className="flex-1" />
-        <button className="btn-primary" onClick={() => openForm(null)}>+ Add user</button>
+        <button className="btn-primary gap-1.5" onClick={() => openForm(null)}><Plus size={16} aria-hidden="true" />Add user</button>
       </Header>
 
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6">

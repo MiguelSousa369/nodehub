@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { Copy, History, Pencil, Settings2, Terminal, Trash2, MoreHorizontal } from 'lucide-react'
 
 import type { Machine } from '../types'
+import Menu from './Menu'
 
 interface MachineCardProps {
   machine    : Machine
@@ -31,17 +32,6 @@ function statusText(m: Machine): string {
 }
 
 export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy, onHistory }: MachineCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Close the ⋯ menu when clicking outside it
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [menuOpen])
-
   const details = [statusText(m), m.ip, m.sshUser].filter(Boolean).join(' · ')
 
   return (
@@ -53,23 +43,17 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy,
         <span className="flex-1 truncate text-base font-semibold">{m.host}</span>
 
         {m.configured && (
-          <div ref={menuRef} className="relative">
-            <button
-              aria-label="More actions"
-              onClick={() => setMenuOpen((o) => !o)}
-              className="rounded-md px-2 text-lg leading-tight text-slate-500 hover:bg-surface dark:hover:bg-surface-dark"
-            >⋯</button>
-            {menuOpen && (
-              <div className="card absolute right-0 top-7 z-10 min-w-[130px] p-1 shadow-xl">
-                <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-surface dark:hover:bg-surface-dark"
-                        onClick={() => { setMenuOpen(false); onHistory(m) }}>History &amp; profile</button>
-                <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-surface dark:hover:bg-surface-dark"
-                        onClick={() => { setMenuOpen(false); onConfigure(m) }}>Edit</button>
-                <button className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-danger hover:bg-surface dark:text-danger-dark dark:hover:bg-surface-dark"
-                        onClick={() => { setMenuOpen(false); onRemove(m) }}>Remove</button>
-              </div>
-            )}
-          </div>
+          <Menu
+            label={`More actions for ${m.host}`}
+            trigger={<MoreHorizontal size={18} />}
+            triggerClass="rounded-md p-1 text-slate-500 hover:bg-surface dark:hover:bg-surface-dark"
+            items={[
+              { label: 'History & profile', icon: <History size={16} />, onClick: () => onHistory(m) },
+              { label: 'Edit', icon: <Pencil size={16} />, onClick: () => onConfigure(m) },
+              'separator',
+              { label: 'Remove', icon: <Trash2 size={16} />, onClick: () => onRemove(m), danger: true },
+            ]}
+          />
         )}
       </div>
 
@@ -79,11 +63,13 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy,
       <div className="mt-1.5 flex gap-2">
         {m.configured ? (
           <>
-            <a className="btn-primary flex-1" href={launcherLink(m)}>Open in Claude</a>
-            <button className="btn flex-1" onClick={() => onCopy(m)}>Copy</button>
+            <a className="btn-primary flex-1 gap-1.5" href={launcherLink(m)}><Terminal size={15} aria-hidden="true" />Open in Claude</a>
+            <button className="btn gap-1.5" onClick={() => onCopy(m)} title="Copy a prompt to paste into Claude Code">
+              <Copy size={15} aria-hidden="true" />Copy
+            </button>
           </>
         ) : (
-          <button className="btn-primary flex-1" onClick={() => onConfigure(m)}>Configure</button>
+          <button className="btn-primary flex-1 gap-1.5" onClick={() => onConfigure(m)}><Settings2 size={15} aria-hidden="true" />Configure</button>
         )}
       </div>
     </div>

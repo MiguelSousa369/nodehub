@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 
+import Logo from '../components/Logo'
 import { useAuth } from '../context/AuthContext'
 import { login } from '../services/api'
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4 p-6">
-        <h1 className="text-xl font-semibold">node<span className="text-brand dark:text-brand-dark">hub</span></h1>
+        <h1><Logo /></h1>
         <label className="block">
           <span className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400">Username</span>
           <input className="input" required autoFocus autoComplete="username"
