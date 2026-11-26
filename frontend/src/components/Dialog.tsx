@@ -24,7 +24,14 @@ export default function Dialog({ open, title, onClose, wide = false, children }:
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (open && !el.open) el.showModal()
+    if (open && !el.open) {
+      el.showModal()
+      // showModal focuses the first focusable element, which is the close (X) button: typing a space
+      // would then close the dialog. Focus the first field instead (or the first other button).
+      const first = el.querySelector<HTMLElement>('input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])')
+        ?? el.querySelector<HTMLElement>('button:not([data-dialog-close]):not([disabled]), a[href]')
+      first?.focus()
+    }
     if (!open && el.open) el.close()
   }, [open])
 
@@ -42,7 +49,7 @@ export default function Dialog({ open, title, onClose, wide = false, children }:
       <div className="p-6">
         <div className="mb-4 flex items-start gap-3">
           <h2 id={titleId} className="flex-1 text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={t.common.close}
+          <button type="button" onClick={onClose} aria-label={t.common.close} data-dialog-close
                   className="-mr-2 -mt-1 rounded-md p-1.5 text-slate-500 hover:bg-surface dark:hover:bg-surface-dark">
             <X size={18} aria-hidden="true" />
           </button>
