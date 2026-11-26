@@ -31,11 +31,14 @@ knowledge that lives in one technician's head. nodehub changes that:
 | **Dashboard** | Every client machine grouped by client, with live online/offline status from Tailscale. Built for many clients: collapsible groups, search, status filters and sorting. |
 | **Quick search** | Ctrl+K on any page: type a machine's name, press Enter, and Claude opens on it. |
 | **One-click sessions** | *Open in Claude* opens a terminal with Claude Code already connected to the machine. |
-| **Zero-typing onboarding** | Download the installer, run it on the client PC, pick the client in the dashboard. |
-| **History** | Session log per machine and across all clients, grouped by day, with search and filters. |
+| **Zero-typing onboarding** | Download the installer, run it on the client PC, pick the client and a friendly name (e.g. *PC-PEDRO*). New machines are marked *New*. |
+| **History** | Session log per machine and across all clients, grouped by day, with search and filters. Claude can correct a session after recording it. |
 | **Machine profiles** | Role, hardware, important software and quirks, kept up to date by Claude. |
 | **English or Portuguese** | One switch for the team: dashboard, records written by Claude, CLI and client installer. Each person can also pick their own dashboard language. |
 | **Team accounts** | Users with Admin / Technician roles. PCs connect to an account with one click in the browser, no tokens to copy. |
+| **SSH key management** | Each technician adds their own key; deactivating an account takes its keys off every client PC with one *Sync keys* click. |
+| **Office server** | Run it on one server and open it at its IP from every PC ([guide](docs/server.md)). |
+| **Secure by default** | Reviewed against the OWASP Top 10: audit log, sign-in lockout, least-privilege PC tokens ([security](docs/security.md)). |
 | **API** | Documented REST API with Swagger at `/api/docs`. |
 
 ## How it works

@@ -56,6 +56,8 @@ PC forget its token.
 | `update <id> --pending "" --result fixed` | The same with flags |
 | `keys` | List the team's SSH keys with owner, and which are not applied (inactive accounts) |
 | `keys sync [--host <h>] [--dry-run] [--yes] [--force]` | Make every online client PC accept exactly the active keys, over SSH from this PC. In a terminal it previews the changes and asks first (`--yes` skips the question); `--dry-run` only shows them; `--host` limits it to one machine; `--force` skips the "your own key must stay" check. The dashboard's **Sync keys** button opens this in a window. Not for Claude: the technician runs it |
+| `language` | Print the team language (`en` or `pt`) |
+| `launcher-info` | Print the team language and client tag (`pt tag:client`); used by the `nodehub://` launcher |
 | `profile <host> --file profile.md` | Replace the machine profile (Markdown) |
 | `profile <host> --text "..."` | Same, from text |
 

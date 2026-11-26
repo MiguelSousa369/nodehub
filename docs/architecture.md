@@ -2,6 +2,9 @@
 
 ## Components
 
+nodehub runs either on one technician's PC (below) or on an [office server](server.md) that the team
+opens at its IP. In both cases Claude Code, the CLI and the launcher run on each technician's PC.
+
 ```mermaid
 flowchart TB
   subgraph PC["Technician's PC"]
@@ -28,11 +31,11 @@ flowchart TB
 | Component | Location | Role |
 |---|---|---|
 | **Backend** | `backend/` | REST API, authentication, business rules; serves the built dashboard on the same origin. |
-| **Dashboard** | `frontend/` | React single-page app: machines, history, users, connected PCs, PC approval page. |
+| **Dashboard** | `frontend/` | React single-page app: machines, history, users, team settings, SSH keys, connected PCs, PC approval page. English or Portuguese. |
 | **Database** | `docker-compose.yml` | PostgreSQL 17 with Prisma migrations (`backend/prisma/`). |
 | **Tailscale** | technician PC | Source of truth for which machines exist and whether they're online. No Tailscale API token is needed. |
-| **Launcher** | `launcher/` | Handles `nodehub://` links: validates them and opens Claude Code with the machine context. |
-| **CLI** | `backend/src/cli/` → `nodehub.cmd` | Lets Claude (and technicians) read profiles/history and record sessions. |
+| **Launcher** | `launcher/` | Handles `nodehub://` links: `open` validates the link and opens Claude Code with the machine context; `keys-sync` opens the SSH key sync window. |
+| **CLI** | `backend/src/cli/` → `nodehub.cmd` | Lets Claude (and technicians) read profiles/history and record or correct sessions; technicians also sync SSH keys with it. |
 | **Installer** | `installer/` | Template of the script that prepares client PCs; the backend fills in the secrets. |
 | **Claude rules** | `CLAUDE.md` | How Claude runs a helpdesk session and what it may do. |
 
@@ -43,6 +46,7 @@ erDiagram
   users ||--o{ api_tokens : "connected PCs"
   users |o--o{ cli_login_requests : approves
   users |o--o{ sessions : "recorded by"
+  users |o--o{ ssh_keys : owns
   clients ||--o{ machines : has
   machines ||..o{ sessions : "host (no FK)"
 
@@ -53,6 +57,7 @@ erDiagram
     string password_hash "scrypt"
     enum role "ADMIN | TECHNICIAN"
     bool active
+    datetime sessions_valid_from "JWTs issued before are rejected"
   }
   api_tokens {
     int id PK
@@ -78,9 +83,11 @@ erDiagram
   machines {
     string host PK "unique tailnet name"
     int client_id FK
+    string display_name "friendly name, e.g. PC-PEDRO"
     string ssh_user
     string notes
     string profile "Markdown"
+    datetime created_at "drives the New badge"
   }
   sessions {
     int id PK
@@ -93,6 +100,18 @@ erDiagram
     enum result "FIXED | PARTIAL | UNRESOLVED"
     string pending
     datetime created_at
+    datetime updated_at "set when corrected"
+  }
+  ssh_keys {
+    int id PK
+    int user_id FK "null = service key"
+    string name "label"
+    string body UK "type + base64"
+    string fingerprint "SHA256:..."
+  }
+  settings {
+    string key PK "e.g. language"
+    string value "en | pt"
   }
 ```
 
@@ -107,6 +126,10 @@ Design choices:
 - **Clients are matched case-insensitively** when configuring a machine, so "silva bakery" reuses
   "Silva Bakery".
 - **Deleting a user keeps their sessions**, with the technician set to null ("deleted user").
+- **A friendly name doesn't replace the tailnet name**: SSH and history keep using `host`, so the
+  display name can change at any time.
+- **SSH keys belong to accounts.** Only keys of active accounts (and service keys) go into installers
+  and syncs, so deactivating someone takes their keys off client PCs at the next sync.
 
 ## Flows
 
@@ -142,6 +165,26 @@ sequenceDiagram
 4. It opens Windows Terminal in the repository with `claude "<start message>"`.
 5. Claude follows `CLAUDE.md`: `nodehub machine <host>`, SSH, diagnosis, record.
 
+### Syncing SSH keys
+
+```mermaid
+sequenceDiagram
+  actor T as Technician
+  participant D as Dashboard
+  participant W as Sync window (technician PC)
+  participant B as Backend
+  participant M as Client PCs
+  T->>D: Sync keys
+  D->>W: nodehub://keys-sync
+  W->>B: GET /api/keys (PC token)
+  W->>M: ssh: compare administrators_authorized_keys (preview)
+  W->>T: +1 −0 per machine. Apply?
+  T->>W: y
+  W->>M: ssh: write the active keys, fix permissions
+```
+
+The server never connects to client PCs: the window runs on a PC that already has access.
+
 ### Connecting a PC (`nodehub login`)
 
 ```mermaid
@@ -170,11 +213,20 @@ its previous token.
 
 | Credential | Created by | Used by | Lifetime | Can manage users/tokens/password |
 |---|---|---|---|---|
-| **Dashboard session** (JWT) | `POST /api/auth/login` | Browser | `JWT_EXPIRES_IN` (12 h) | Yes (by role) |
+| **Dashboard session** (JWT, HS256) | `POST /api/auth/login` | Browser | `JWT_EXPIRES_IN` (12 h), or until the password changes | Yes (by role) |
 | **PC token** (`nhk_…`), one per connected PC | Browser approval (`nodehub login`) | CLI / Claude | Until the PC is disconnected | **No** |
 
 Both are sent as `Authorization: Bearer …`. Every request reloads the user, so deactivating a user
-cuts all their credentials immediately.
+cuts all their credentials immediately. PC tokens can only do what Claude needs (read machines and
+history, record and correct sessions, update profiles, read the key list): no users, passwords,
+tokens, SSH key changes, machine list changes or installer downloads.
+
+### Language
+
+The team language (`settings.language`, set by an admin) is read without signing in
+(`GET /api/settings`). The dashboard uses it as its default (each person can override it in the
+browser), the CLI prints its messages in it and tells Claude which language to record in, and the
+installer and launcher show their messages in it.
 
 ## Backend layering
 
@@ -185,9 +237,9 @@ routes/       HTTP method + path → controller (+ middlewares). No logic.
 controllers/  Parse input with Zod, call a service, shape the response.
 services/     Business rules and data access (Prisma, Tailscale, ssh).
 schemas/      Zod schemas + inferred types: one source of truth for validation and types.
-middlewares/  authGuard, sessionOnly, requireRole, localHostOnly, errorMiddleware.
+middlewares/  authGuard, sessionOnly, requireRole, localHostOnly (Host/Origin), errorMiddleware.
 lib/          Singletons/clients: prisma, tailscale, swagger.
-utils/        Stateless helpers: logger, password hashing, HttpError.
+utils/        Stateless helpers: logger, audit log, login throttle, password hashing, HttpError.
 docs/         OpenAPI YAML, one file per resource, merged at runtime.
 cli/          The nodehub CLI.
 ```
