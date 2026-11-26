@@ -31,6 +31,7 @@ model User {
   apiTokens    ApiToken[]
   cliLogins    CliLoginRequest[]
   sessions     Session[]
+  sshKeys      SshKey[]
 
   @@map("users")
 }
@@ -146,4 +147,21 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+/// An SSH public key of the team: owned by a user, or a service key (no owner, created by admins).
+/// Applied to client PCs (installer, nodehub keys sync) while the owner's account is active.
+model SshKey {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String                     // label, e.g. "laptop" or "server test key"
+  type        String                     // ssh-ed25519, ssh-rsa, ...
+  body        String   @unique           // "type base64": identifies the key
+  comment     String   @default("")
+  fingerprint String                     // SHA256:... as ssh-keygen -l shows it
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("ssh_keys")
 }

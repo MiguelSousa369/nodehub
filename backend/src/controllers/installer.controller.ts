@@ -5,14 +5,18 @@ import { getSettings } from '../services/settings.service';
 import { audit } from '../utils/audit';
 
 // GET /api/installer/status
-export function status(_req: Request, res: Response) {
-  res.json(getInstallerStatus());
+export async function status(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(await getInstallerStatus());
+  } catch (err) {
+    next(err);
+  }
 }
 
 // GET /api/installer
 export async function download(req: Request, res: Response, next: NextFunction) {
   try {
-    const file = buildInstaller((await getSettings()).language);   // messages in the team language
+    const file = await buildInstaller((await getSettings()).language);   // messages in the team language
     audit('installer.downloaded', req.user!);   // it contains the Tailscale auth key
     res
       .type('application/octet-stream')

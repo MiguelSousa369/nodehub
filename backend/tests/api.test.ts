@@ -10,7 +10,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 // ---------------------------------------------------------------------------
 
 const keysDir = fs.mkdtempSync(path.join(os.tmpdir(), 'nodehub-keys-'));
-fs.writeFileSync(path.join(keysDir, 'tech.pub'), 'ssh-ed25519 AAAATEST tech\n');
 process.env.PUBLIC_KEYS_DIR = keysDir;
 
 vi.mock('../src/lib/tailscale', () => ({
@@ -23,6 +22,7 @@ vi.mock('../src/lib/tailscale', () => ({
 }));
 
 import prisma from '../src/lib/prisma';
+import { importKeyFiles } from '../src/services/keys.service';
 import app from '../src/server';
 import { MAX_FAILURES, MAX_FAILURES_PER_IP, resetLoginThrottle } from '../src/utils/login-throttle';
 import logger from '../src/utils/logger';
@@ -49,6 +49,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   resetLoginThrottle();
   await prisma.setting.deleteMany();
+  await prisma.sshKey.deleteMany();
   await prisma.cliLoginRequest.deleteMany();
   await prisma.session.deleteMany();
   await prisma.apiToken.deleteMany();
@@ -62,6 +63,9 @@ beforeEach(async () => {
   adminId = admin.id;
   await prisma.user.create({
     data: { username: 'tech', name: 'Tech', role: 'TECHNICIAN', passwordHash: await hashPassword(TECH_PW) },
+  });
+  await prisma.sshKey.create({
+    data: { name: 'tech', type: 'ssh-ed25519', body: 'ssh-ed25519 AAAATEST', comment: 'tech', fingerprint: 'SHA256:test' },
   });
   const client = await prisma.client.create({ data: { name: 'Client A' } });
   await prisma.machine.create({ data: { host: 'srv-a', clientId: client.id } });
@@ -214,32 +218,54 @@ describe('auth', () => {
 
 describe('ssh keys', () => {
   const PEDRO = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPedroPedroPedroPedroPedroPedroPedroPedro pedro@PC-PEDRO';
+  const ADMIN_KEY = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAdminAdminAdminAdminAdminAdminAdminAdmin admin@laptop';
 
-  afterAll(() => fs.rmSync(path.join(keysDir, 'pedro.pub'), { force: true }));
+  const installerText = async () => ((await request(app).get('/api/installer').set(as(adminToken))
+    .buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))); })).body as Buffer)
+    .toString('utf-8');
 
-  it('lists the team keys with fingerprints, for anyone signed in (PC tokens too)', async () => {
+  it('lists the keys with owner and whether they apply, for anyone signed in (PC tokens too)', async () => {
     const token = await createToken(techToken);
     const res = await request(app).get('/api/keys').set(as(token));
     expect(res.status).toBe(200);
-    expect(res.body[0]).toMatchObject({ type: 'ssh-ed25519', name: 'tech', key: 'ssh-ed25519 AAAATEST tech' });
-    expect(res.body[0].fingerprint).toMatch(/^SHA256:/);
+    expect(res.body[0]).toMatchObject({ name: 'tech', key: 'ssh-ed25519 AAAATEST tech', owner: null, effective: true });
   });
 
-  it('lets admins add and remove keys, which the installer then includes or drops', async () => {
-    expect((await request(app).post('/api/keys').set(as(techToken)).send({ name: 'pedro', publicKey: PEDRO })).status).toBe(403);
-
-    const added = await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'pedro', publicKey: PEDRO });
+  it('lets technicians add and remove their own keys (never with a PC token)', async () => {
+    const added = await request(app).post('/api/keys').set(as(techToken)).send({ name: 'laptop', publicKey: PEDRO, userId: adminId });
     expect(added.status).toBe(201);
-    expect(fs.readFileSync(path.join(keysDir, 'pedro.pub'), 'utf-8').trim()).toBe(PEDRO);
-    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'other', publicKey: PEDRO })).body.code).toBe('KEY_EXISTS');
+    expect(added.body).toMatchObject({ name: 'laptop', owner: { username: 'tech' }, effective: true });   // userId ignored
+    expect(added.body.fingerprint).toMatch(/^SHA256:/);
+    expect(await installerText()).toContain('pedro@PC-PEDRO');
 
-    const installer = (await request(app).get('/api/installer').set(as(adminToken))
-      .buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))); })).body as Buffer;
-    expect(installer.toString('utf-8')).toContain('pedro@PC-PEDRO');
+    const token = await createToken(techToken);
+    expect((await request(app).post('/api/keys').set(as(token)).send({ name: 'x', publicKey: ADMIN_KEY })).body.code).toBe('SESSION_REQUIRED');
 
-    expect((await request(app).delete(`/api/keys/${added.body.id}`).set(as(adminToken))).status).toBe(204);
-    expect(fs.existsSync(path.join(keysDir, 'pedro.pub'))).toBe(false);
-    expect((await request(app).delete(`/api/keys/${added.body.id}`).set(as(adminToken))).body.code).toBe('KEY_NOT_FOUND');
+    const adminsKey = await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'laptop', publicKey: ADMIN_KEY });
+    expect((await request(app).delete(`/api/keys/${adminsKey.body.id}`).set(as(techToken))).status).toBe(403);
+    expect((await request(app).delete(`/api/keys/${added.body.id}`).set(as(techToken))).status).toBe(204);
+    expect(await installerText()).not.toContain('pedro@PC-PEDRO');
+  });
+
+  it('lets admins add keys for anyone, or service keys, and remove any key', async () => {
+    const tech = await prisma.user.findUniqueOrThrow({ where: { username: 'tech' } });
+    const forTech = await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'pc', publicKey: PEDRO, userId: tech.id });
+    expect(forTech.body.owner.username).toBe('tech');
+    const service = await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'server', publicKey: ADMIN_KEY, userId: null });
+    expect(service.body.owner).toBeNull();
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'again', publicKey: PEDRO })).body.code).toBe('KEY_EXISTS');
+    expect((await request(app).delete(`/api/keys/${forTech.body.id}`).set(as(adminToken))).status).toBe(204);
+    expect((await request(app).delete(`/api/keys/${forTech.body.id}`).set(as(adminToken))).body.code).toBe('KEY_NOT_FOUND');
+  });
+
+  it('stops applying the keys of a deactivated account', async () => {
+    await request(app).post('/api/keys').set(as(techToken)).send({ name: 'laptop', publicKey: PEDRO });
+    const tech = await prisma.user.findUniqueOrThrow({ where: { username: 'tech' } });
+    await request(app).patch(`/api/users/${tech.id}`).set(as(adminToken)).send({ active: false });
+
+    const keys = await request(app).get('/api/keys').set(as(adminToken));
+    expect(keys.body.find((k: { name: string }) => k.name === 'laptop')).toMatchObject({ effective: false });
+    expect(await installerText()).not.toContain('pedro@PC-PEDRO');
   });
 
   it('refuses private keys and anything that is not a public key', async () => {
@@ -247,8 +273,22 @@ describe('ssh keys', () => {
       .send({ name: 'oops', publicKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaA==\n-----END OPENSSH PRIVATE KEY-----' });
     expect(priv.body.code).toBe('PRIVATE_KEY');
     expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'x', publicKey: 'hello' })).body.code).toBe('INVALID_KEY');
-    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: '../evil', publicKey: PEDRO })).body.code).toBe('INVALID_KEY');
     expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'q', publicKey: "ssh-ed25519 AAAA x'; rm" })).body.code).toBe('INVALID_KEY');
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'a"b', publicKey: PEDRO })).body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('imports keys left in public-keys/*.pub once, matching file names to usernames', async () => {
+    fs.writeFileSync(path.join(keysDir, 'tech.pub'), `${PEDRO}\n`);
+    fs.writeFileSync(path.join(keysDir, 'shared.pub'), `${ADMIN_KEY}\n`);
+    expect(await importKeyFiles()).toBe(2);
+    expect(fs.existsSync(path.join(keysDir, 'tech.pub'))).toBe(false);
+    expect(fs.existsSync(path.join(keysDir, 'tech.pub.imported'))).toBe(true);
+
+    const keys = (await request(app).get('/api/keys').set(as(adminToken))).body as { name: string; owner: { username: string } | null }[];
+    expect(keys.find((k) => k.name === 'tech' && k.owner)?.owner?.username).toBe('tech');
+    expect(keys.find((k) => k.name === 'shared')?.owner).toBeNull();
+    expect(await importKeyFiles()).toBe(0);
+    for (const f of fs.readdirSync(keysDir)) fs.rmSync(path.join(keysDir, f));
   });
 });
 

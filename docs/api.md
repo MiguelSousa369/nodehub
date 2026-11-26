@@ -54,9 +54,9 @@ token.
 | `GET` | `/api/machines/:host/sessions` | any | Sessions of one machine (`limit`, `offset`) |
 | `POST` | `/api/machines/:host/sessions` | any | Record a session as the caller |
 | **SSH keys** | | | |
-| `GET` | `/api/keys` | any | The team's public keys: `[{ id, fingerprint, type, comment, name, key }]` |
-| `POST` | `/api/keys` | session, admin | `{ name, publicKey }`: saved as `public-keys/<name>.pub` |
-| `DELETE` | `/api/keys/:id` | session, admin | Remove a key (client PCs drop it on the next `nodehub keys sync`) |
+| `GET` | `/api/keys` | any | The team's keys: `[{ id, name, type, comment, fingerprint, key, owner, effective }]` |
+| `POST` | `/api/keys` | session | `{ name, publicKey, userId? }`: your own key; admins may set `userId` (or `null` for a service key) |
+| `DELETE` | `/api/keys/:id` | session | Remove one of your keys (admins: any). Client PCs drop it on the next `nodehub keys sync` |
 | **Installer** | | | |
 | `GET` | `/api/installer/status` | session | `{ ready, missing[] }` (codes: `TAILSCALE_AUTHKEY`, `PUBLIC_KEYS`, `INSTALLER_TEMPLATE`, `CLIENT_TAG`) |
 | `GET` | `/api/installer` | session | Download `nodehub-install.ps1` (contains the Tailscale auth key) |
@@ -81,9 +81,9 @@ Every error has the same shape; branch on `code`, not on the message:
 | `LOGIN_DENIED` | 403 | The PC connection request was denied |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
 | `SESSION_NOT_FOUND` | 404 | No session with that number |
-| `INVALID_KEY` | 400 | Not a valid SSH public key, or invalid key name |
+| `INVALID_KEY` | 400 | Not a valid SSH public key |
 | `PRIVATE_KEY` | 400 | A private key was pasted instead of the `.pub` |
-| `KEY_EXISTS` / `KEY_NAME_TAKEN` | 409 | That key, or a key with that name, is already in the list |
+| `KEY_EXISTS` | 409 | That key is already in the list |
 | `KEY_NOT_FOUND` | 404 | No key with that id |
 | `TOO_MANY_ATTEMPTS` | 429 | 5 wrong passwords for this username in 15 minutes: wait and try again |
 | `FORBIDDEN_ORIGIN` | 403 | Request sent by a page from another site (its `Origin` is not `127.0.0.1`/`localhost`) |

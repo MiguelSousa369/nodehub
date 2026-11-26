@@ -5,33 +5,34 @@ import * as keys from '../services/keys.service';
 import { audit } from '../utils/audit';
 
 const AddKeySchema = z.object({
-  name     : z.string().trim().min(1).max(40),
+  name     : z.string().trim().min(1).max(60).regex(/^[^"`;$\r\n]*$/, 'Name contains forbidden characters.'),
   publicKey: z.string().trim().min(1).max(10_000),
+  /** Admins only: the owner's user id, or null for a service key. Ignored for technicians. */
+  userId   : z.number().int().positive().nullable().optional(),
 }).strict();
 
-const KeyIdParamsSchema = z.object({ id: z.string().regex(/^[0-9a-f]{64}$/) });
+const KeyIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
 
 // ---------------------------------------------------------------------------
-// GET /api/keys  (any signed-in user or PC: "nodehub keys sync" reads it)
+// GET /api/keys  (anyone signed in, PC tokens too: "nodehub keys sync" reads it)
 // ---------------------------------------------------------------------------
 
-export function list(_req: Request, res: Response, next: NextFunction) {
+export async function list(_req: Request, res: Response, next: NextFunction) {
   try {
-    res.json(keys.listKeys());
+    res.json(await keys.listKeys());
   } catch (err) {
     next(err);
   }
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/keys  (admins, dashboard session)
+// POST /api/keys  (dashboard session: your own key; admins may add one for anyone, or a service key)
 // ---------------------------------------------------------------------------
 
-export function add(req: Request, res: Response, next: NextFunction) {
+export async function add(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, publicKey } = AddKeySchema.parse(req.body ?? {});
-    const key = keys.addKey(name, publicKey);
-    audit('key.added', req.user!, { name: key.name, fingerprint: key.fingerprint, comment: key.comment });
+    const key = await keys.addKey(AddKeySchema.parse(req.body ?? {}), req.user!);
+    audit('key.added', req.user!, { keyId: key.id, name: key.name, fingerprint: key.fingerprint, owner: key.owner?.username ?? null });
     res.status(201).json(key);
   } catch (err) {
     next(err);
@@ -39,14 +40,14 @@ export function add(req: Request, res: Response, next: NextFunction) {
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/keys/:id  (admins, dashboard session)
+// DELETE /api/keys/:id  (dashboard session: your own keys; admins any)
 // ---------------------------------------------------------------------------
 
-export function remove(req: Request, res: Response, next: NextFunction) {
+export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = KeyIdParamsSchema.parse(req.params);
-    const key = keys.removeKey(id);
-    audit('key.removed', req.user!, { name: key.name, fingerprint: key.fingerprint, comment: key.comment });
+    const key = await keys.removeKey(id, req.user!);
+    audit('key.removed', req.user!, { keyId: key.id, name: key.name, fingerprint: key.fingerprint, owner: key.owner?.username ?? null });
     res.status(204).end();
   } catch (err) {
     next(err);

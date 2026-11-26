@@ -3,21 +3,32 @@ components:
     PublicKey:
       type: object
       properties:
-        id:          { type: string, description: Hex SHA-256 of the key (used in URLs). }
-        fingerprint: { type: string, example: 'SHA256:3dPkqMfGz...', description: As ssh-keygen -l shows it. }
+        id:          { type: integer }
+        name:        { type: string, example: laptop, description: Label. }
         type:        { type: string, example: ssh-ed25519 }
         comment:     { type: string, example: pedro@PC-PEDRO }
-        name:        { type: string, example: pedro, description: File in public-keys/ (without .pub). }
+        fingerprint: { type: string, example: 'SHA256:3dPkqMfGz...', description: As ssh-keygen -l shows it. }
         key:         { type: string, description: The full public key line. }
+        owner:
+          type: object
+          nullable: true
+          description: The account it belongs to; null for a service key (created by an admin).
+          properties:
+            id:       { type: integer }
+            name:     { type: string }
+            username: { type: string }
+            active:   { type: boolean }
+        effective:   { type: boolean, description: Applied to client PCs (owner active, or service key). }
+        createdAt:   { type: string, format: date-time }
 
 paths:
   /api/keys:
     get:
-      summary: The team's SSH public keys (public-keys/*.pub)
+      summary: The team's SSH public keys
       description: |
-        The list client PCs should accept. The installer writes it to new PCs, and
-        `nodehub keys sync` (run on a technician PC that already has access) applies it to every
-        online client PC. PC tokens may read it.
+        Effective keys go into new installers and are applied to client PCs by `nodehub keys sync`
+        (run on a technician PC that already has access). Keys of deactivated accounts stay listed
+        with `effective: false`. PC tokens may read the list.
       responses:
         '200':
           description: Keys.
@@ -26,7 +37,10 @@ paths:
               schema: { type: array, items: { $ref: '#/components/schemas/PublicKey' } }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
-      summary: Add a technician's public key (admins, dashboard session)
+      summary: Add a key (dashboard session)
+      description: |
+        Technicians add their own keys (`userId` is ignored). Admins may set `userId` to add a key
+        for someone else, or `null` for a service key.
       requestBody:
         required: true
         content:
@@ -35,11 +49,12 @@ paths:
               type: object
               required: [name, publicKey]
               properties:
-                name:      { type: string, pattern: '^[A-Za-z0-9._-]{1,40}$', example: pedro }
+                name:      { type: string, maxLength: 60, example: laptop }
                 publicKey: { type: string, example: 'ssh-ed25519 AAAAC3Nza... pedro@PC-PEDRO' }
+                userId:    { type: integer, nullable: true, description: Admins only. }
       responses:
         '201':
-          description: Added (saved as public-keys/<name>.pub).
+          description: Added.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PublicKey' }
@@ -49,28 +64,24 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403':
-          description: FORBIDDEN (not an admin) or SESSION_REQUIRED (PC token)
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Error' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
         '409':
-          description: KEY_EXISTS or KEY_NAME_TAKEN
+          description: KEY_EXISTS
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
   /api/keys/{id}:
     delete:
-      summary: Remove a key (admins, dashboard session)
+      summary: Remove a key (your own; admins any)
       description: Client PCs stop accepting it after the next `nodehub keys sync`.
       parameters:
-        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{64}$' } }
+        - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
         '204': { description: Removed. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
-          description: FORBIDDEN or SESSION_REQUIRED
+          description: FORBIDDEN (someone else's key) or SESSION_REQUIRED
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
