@@ -1,5 +1,7 @@
 import { ReactNode } from 'react'
 
+import { getMessages } from '../i18n'
+
 // ---------------------------------------------------------------------------
 // Loading placeholders and empty states, shared by the pages.
 // ---------------------------------------------------------------------------
@@ -12,7 +14,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 /** Placeholder for the dashboard: a group title and a few machine cards. */
 export function MachineGridSkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <div role="status" aria-label="Loading machines">
+    <div role="status" aria-label={getMessages().feedback.loadingMachines}>
       <Skeleton className="mb-3 h-4 w-40" />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
         {Array.from({ length: cards }, (_, i) => (
@@ -35,9 +37,9 @@ export function MachineGridSkeleton({ cards = 6 }: { cards?: number }) {
 }
 
 /** Placeholder for lists of rows (history, users, connected PCs). */
-export function ListSkeleton({ rows = 5, label = 'Loading' }: { rows?: number; label?: string }) {
+export function ListSkeleton({ rows = 5, label }: { rows?: number; label?: string }) {
   return (
-    <div role="status" aria-label={label} className="space-y-2">
+    <div role="status" aria-label={label ?? getMessages().feedback.loading} className="space-y-2">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="card flex items-center gap-3 px-3 py-3">
           <Skeleton className="h-5 w-16 rounded-full" />

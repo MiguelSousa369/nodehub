@@ -9,6 +9,7 @@ import Markdown from '../components/Markdown'
 import SessionItem from '../components/SessionItem'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../i18n'
 import { useToast } from '../hooks/useToast'
 import { ApiError, getMachine, listMachines, listSessions, updateProfile } from '../services/api'
 import type { Machine, MachineDetail, Session } from '../types'
@@ -17,8 +18,6 @@ import { fullDate, timeAgo } from '../utils/time'
 
 const PAGE_SIZE = 20
 
-const PROFILE_TEMPLATE = '- **Role:** server / workstation\n- **OS:**\n- **Hardware:**\n- **Important software:**\n- **Quirks:**'
-
 // ---------------------------------------------------------------------------
 // One machine (/machines/:host): live status, profile (editable) and its full session history.
 // ---------------------------------------------------------------------------
@@ -26,6 +25,7 @@ const PROFILE_TEMPLATE = '- **Role:** server / workstation\n- **OS:**\n- **Hardw
 export default function MachinePage() {
   const host = useParams().host ?? ''
   const { logout } = useAuth()
+  const { t } = useI18n()
   const toast = useToast()
   const [detail, setDetail]     = useState<MachineDetail | null>(null)
   const [live, setLive]         = useState<Machine | null>(null)   // status from Tailscale
@@ -74,7 +74,7 @@ export default function MachinePage() {
       await updateProfile(host, draft)
       setDetail((d) => (d ? { ...d, profile: draft } : d))
       setEditingProfile(false)
-      toast.show('Profile saved.')
+      toast.show(t.machine.profileSaved)
     } catch (e) {
       fail(e)
     }
@@ -84,9 +84,9 @@ export default function MachinePage() {
     if (!detail) return
     try {
       await navigator.clipboard.writeText(claudePrompt({ ...detail, ip: live?.ip }))
-      toast.show('Copied. Paste it into Claude Code.')
+      toast.show(t.common.copied)
     } catch {
-      toast.show('Could not copy.')
+      toast.show(t.common.copyFailed)
     }
   }
 
@@ -103,11 +103,11 @@ export default function MachinePage() {
 
       <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-5xl px-4 py-5 sm:px-6">
         <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
-          <ArrowLeft size={15} aria-hidden="true" />Machines
+          <ArrowLeft size={15} aria-hidden="true" />{t.machine.back}
         </Link>
 
         {error && <Banner>{error}</Banner>}
-        {!detail && !error && <ListSkeleton rows={4} label="Loading machine" />}
+        {!detail && !error && <ListSkeleton rows={4} label={t.machine.loading} />}
 
         {detail && (
           <div className="space-y-5">
@@ -122,50 +122,50 @@ export default function MachinePage() {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   <Link to={`/?q=${encodeURIComponent(detail.client)}`} className="font-medium hover:underline">{detail.client}</Link>
                   {' · '}
-                  {live?.online ? <span className="text-online dark:text-online-dark">Online</span>
-                    : live?.inTailnet ? `Offline${live.lastSeen ? ` · seen ${timeAgo(live.lastSeen)}` : ''}`
-                    : live ? 'Not found in the tailnet' : 'Status unknown'}
+                  {live?.online ? <span className="text-online dark:text-online-dark">{t.common.online}</span>
+                    : live?.inTailnet ? `${t.common.offline}${live.lastSeen ? ` · ${t.card.seen(timeAgo(live.lastSeen))}` : ''}`
+                    : live ? t.card.notInTailnet : t.machine.statusUnknown}
                   {live?.ip && ` · ${live.ip}`}
-                  {` · SSH user ${detail.sshUser}`}
+                  {` · ${t.machine.sshUser(detail.sshUser)}`}
                 </p>
                 {detail.notes && <p className="mt-1 text-sm italic text-slate-500 dark:text-slate-400">{detail.notes}</p>}
               </div>
               <div className="flex flex-wrap gap-2">
-                <a className="btn-primary gap-1.5" href={launcherLink(detail)}><Terminal size={15} aria-hidden="true" />Open in Claude</a>
-                <button className="btn gap-1.5" onClick={copy}><Copy size={15} aria-hidden="true" />Copy</button>
-                <button className="btn gap-1.5" onClick={() => setEditing(true)}><Pencil size={15} aria-hidden="true" />Edit</button>
+                <a className="btn-primary gap-1.5" href={launcherLink(detail)}><Terminal size={15} aria-hidden="true" />{t.common.openInClaude}</a>
+                <button className="btn gap-1.5" onClick={copy}><Copy size={15} aria-hidden="true" />{t.common.copy}</button>
+                <button className="btn gap-1.5" onClick={() => setEditing(true)}><Pencil size={15} aria-hidden="true" />{t.common.edit}</button>
               </div>
             </section>
 
             {/* Profile */}
             <section className="card p-5" aria-labelledby="profile-title">
               <div className="mb-3 flex items-center justify-between">
-                <h2 id="profile-title" className="font-semibold">Profile</h2>
+                <h2 id="profile-title" className="font-semibold">{t.machine.profile}</h2>
                 {!editingProfile && (
-                  <button className="btn gap-1.5" onClick={() => { setDraft(detail.profile || PROFILE_TEMPLATE); setEditingProfile(true) }}>
-                    <Pencil size={14} aria-hidden="true" />Edit
+                  <button className="btn gap-1.5" onClick={() => { setDraft(detail.profile || t.machine.profileTemplate); setEditingProfile(true) }}>
+                    <Pencil size={14} aria-hidden="true" />{t.common.edit}
                   </button>
                 )}
               </div>
               {editingProfile ? (
                 <>
                   <label className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400" htmlFor="profile-text">
-                    Markdown: <code>**bold**</code>, <code>- list item</code>
+                    {t.machine.markdownHint}
                   </label>
                   <textarea id="profile-text" className="input min-h-[200px] font-mono" value={draft} onChange={(e) => setDraft(e.target.value)} />
                   <div className="mt-2 flex justify-end gap-2">
-                    <button className="btn" onClick={() => setEditingProfile(false)}>Cancel</button>
-                    <button className="btn-primary" onClick={saveProfile}>Save profile</button>
+                    <button className="btn" onClick={() => setEditingProfile(false)}>{t.common.cancel}</button>
+                    <button className="btn-primary" onClick={saveProfile}>{t.machine.saveProfile}</button>
                   </div>
                 </>
               ) : detail.profile ? (
                 <Markdown>{detail.profile}</Markdown>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No profile yet. Claude fills it in during sessions, or edit it here.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t.machine.noProfile}</p>
               )}
               {detail.profile && !editingProfile && (
                 <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-400" title={fullDate(detail.updatedAt)}>
-                  Machine record updated {timeAgo(detail.updatedAt)}
+                  {t.machine.recordUpdated(timeAgo(detail.updatedAt))}
                 </p>
               )}
             </section>
@@ -174,24 +174,24 @@ export default function MachinePage() {
             <section aria-labelledby="sessions-title">
               <div className="mb-2.5 flex items-center justify-between">
                 <h2 id="sessions-title" className="font-semibold">
-                  Sessions <span className="font-normal text-slate-500">({detail.totalSessions})</span>
+                  {t.machine.sessions} <span className="font-normal text-slate-500">({detail.totalSessions})</span>
                 </h2>
                 {detail.totalSessions > 0 && (
                   <Link to={`/history?host=${encodeURIComponent(detail.host)}`} className="text-sm text-brand hover:underline dark:text-brand-dark">
-                    Search in history
+                    {t.machine.searchHistory}
                   </Link>
                 )}
               </div>
               {sessions.length === 0 ? (
-                <EmptyState icon={<ClipboardList size={22} />} title="No sessions recorded yet">
-                  Claude records a session here at the end of each helpdesk session on this machine.
+                <EmptyState icon={<ClipboardList size={22} />} title={t.machine.noSessionsTitle}>
+                  {t.machine.noSessionsText}
                 </EmptyState>
               ) : (
                 <div className="space-y-2">{sessions.map((s) => <SessionItem key={s.id} session={s} />)}</div>
               )}
               {sessions.length < detail.totalSessions && (
                 <div className="mt-3 text-center">
-                  <button className="btn" onClick={loadMore}>Load more</button>
+                  <button className="btn" onClick={loadMore}>{t.common.loadMore}</button>
                 </div>
               )}
             </section>
@@ -200,7 +200,7 @@ export default function MachinePage() {
       </main>
 
       <MachineFormDialog machine={editing ? asMachine : null} clients={clients} onClose={() => setEditing(false)}
-                         onSaved={() => { setEditing(false); toast.show('Machine saved.'); load() }} />
+                         onSaved={() => { setEditing(false); toast.show(t.machine.machineSaved); load() }} />
       <Toast message={toast.message} />
     </>
   )

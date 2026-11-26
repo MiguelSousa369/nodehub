@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react'
 
 import Logo from '../components/Logo'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../i18n'
 import { login } from '../services/api'
 
 // ---------------------------------------------------------------------------
@@ -12,6 +13,7 @@ import { login } from '../services/api'
 
 export default function LoginPage() {
   const { login: onLogin } = useAuth()
+  const { t } = useI18n()
   const [username, setUsername]   = useState('')
   const [password, setPassword]   = useState('')
   const [showPassword, setShowPw] = useState(false)
@@ -36,14 +38,14 @@ export default function LoginPage() {
     <main id="main" className="flex min-h-screen flex-col items-center justify-center gap-7 px-4 py-10">
       <div className="text-center">
         <h1><Logo size="lg" /></h1>
-        <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Remote helpdesk for your clients&apos; PCs</p>
+        <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{t.login.tagline}</p>
       </div>
 
       <form onSubmit={submit} className="card w-full max-w-sm space-y-4 p-6 shadow-xl shadow-slate-900/5 dark:shadow-black/30">
-        <h2 className="text-lg font-semibold">Sign in</h2>
+        <h2 className="text-lg font-semibold">{t.login.title}</h2>
 
         <label className="block">
-          <span className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400">Username</span>
+          <span className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400">{t.login.username}</span>
           <span className="relative block">
             <User size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input className="input pl-9" required autoFocus autoComplete="username"
@@ -52,13 +54,13 @@ export default function LoginPage() {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400">Password</span>
+          <span className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400">{t.login.password}</span>
           <span className="relative block">
             <LockKeyhole size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input className="input px-9" type={showPassword ? 'text' : 'password'} required autoComplete="current-password"
                    value={password} onChange={(e) => setPassword(e.target.value)} />
             <button type="button" onClick={() => setShowPw((s) => !s)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? t.login.hide : t.login.show}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -68,11 +70,11 @@ export default function LoginPage() {
         {error && <div role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger dark:text-danger-dark">{error}</div>}
 
         <button type="submit" className="btn-primary w-full gap-2 py-2" disabled={busy}>
-          <LogIn size={16} aria-hidden="true" />{busy ? 'Signing in…' : 'Sign in'}
+          <LogIn size={16} aria-hidden="true" />{busy ? t.login.signingIn : t.login.signIn}
         </button>
       </form>
 
-      <p className="text-[12px] text-slate-500 dark:text-slate-400">No account? Ask an administrator to create one.</p>
+      <p className="text-[12px] text-slate-500 dark:text-slate-400">{t.login.noAccount}</p>
     </main>
   )
 }

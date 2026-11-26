@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 
 import { useAuth, useUser } from '../context/AuthContext'
+import { useI18n } from '../i18n'
 import ChangePasswordDialog from './ChangePasswordDialog'
 import CommandPalette from './CommandPalette'
 import ConnectedPcsDialog from './ConnectedPcsDialog'
@@ -29,6 +30,7 @@ function initials(name: string): string {
 export default function Header({ children }: HeaderProps) {
   const user = useUser()
   const { logout } = useAuth()
+  const { t } = useI18n()
   const [dialog, setDialog] = useState<'password' | 'pcs' | 'search' | null>(null)
 
   // Quick search shortcuts: Ctrl+K (or Cmd+K) anywhere, "/" when not typing in a field
@@ -65,15 +67,15 @@ export default function Header({ children }: HeaderProps) {
                        dark:border-slate-700/60 dark:bg-surface-card-dark/75">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-lg
                                 focus:bg-brand focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
-        Skip to content
+        {t.nav.skipToContent}
       </a>
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3 sm:px-6">
-        <Link to="/" className="mr-1 rounded-md" aria-label="nodehub, go to machines"><Logo /></Link>
+        <Link to="/" className="mr-1 rounded-md" aria-label={t.nav.home}><Logo /></Link>
 
-        <nav className="flex gap-0.5" aria-label="Main">
-          {tab('/', 'Machines', <Monitor size={16} />)}
-          {tab('/history', 'History', <History size={16} />)}
-          {user.role === 'ADMIN' && tab('/users', 'Users', <Users size={16} />)}
+        <nav className="flex gap-0.5" aria-label={t.nav.main}>
+          {tab('/', t.nav.machines, <Monitor size={16} />)}
+          {tab('/history', t.nav.history, <History size={16} />)}
+          {user.role === 'ADMIN' && tab('/users', t.nav.users, <Users size={16} />)}
         </nav>
 
         {/* Page controls: inline on wide screens, own row below on phones */}
@@ -85,16 +87,16 @@ export default function Header({ children }: HeaderProps) {
           <button
             type="button"
             onClick={() => setDialog('search')}
-            aria-label="Quick search (Ctrl+K)"
+            aria-label={t.header.quickSearch}
             className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-surface px-2.5 text-sm text-slate-500
                        transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:bg-surface-dark dark:hover:text-slate-300"
           >
             <Search size={15} aria-hidden="true" />
-            <span className="hidden lg:inline">Search…</span>
+            <span className="hidden lg:inline">{t.header.search}</span>
             <kbd className="hidden rounded border border-slate-200 px-1 font-sans text-[11px] lg:inline dark:border-slate-700">Ctrl K</kbd>
           </button>
           <Menu
-            label={`Account menu for ${user.name}`}
+            label={t.header.accountMenu(user.name)}
             triggerClass="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 text-[13px] font-semibold
                           text-brand transition hover:bg-brand/25 dark:bg-brand-dark/20 dark:text-brand-dark"
             trigger={initials(user.name)}
@@ -102,16 +104,16 @@ export default function Header({ children }: HeaderProps) {
               <>
                 <div className="text-sm font-semibold">{user.name}</div>
                 <div className="text-[13px] text-slate-500 dark:text-slate-400">
-                  {user.username} · {user.role === 'ADMIN' ? 'Admin' : 'Technician'}
+                  {user.username} · {user.role === 'ADMIN' ? t.common.admin : t.common.technician}
                 </div>
               </>
             }
             footer={<ThemeSwitch />}
             items={[
-              { label: 'Connected PCs', icon: <MonitorSmartphone size={16} />, onClick: () => setDialog('pcs') },
-              { label: 'Change password', icon: <KeyRound size={16} />, onClick: () => setDialog('password') },
+              { label: t.header.connectedPcs, icon: <MonitorSmartphone size={16} />, onClick: () => setDialog('pcs') },
+              { label: t.header.changePassword, icon: <KeyRound size={16} />, onClick: () => setDialog('password') },
               'separator',
-              { label: 'Sign out', icon: <LogOut size={16} />, onClick: logout, danger: true },
+              { label: t.header.signOut, icon: <LogOut size={16} />, onClick: logout, danger: true },
             ]}
           />
         </div>

@@ -2,6 +2,7 @@ import { Building2, History, Monitor, Search, Terminal, Users } from 'lucide-rea
 import { KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
+import { useI18n } from '../i18n'
 import { listMachines } from '../services/api'
 import type { Machine } from '../types'
 import { launcherLink, machinePath } from '../utils/machine'
@@ -42,6 +43,7 @@ function matches(m: Machine, words: string[]): boolean {
 
 export default function CommandPalette({ open, onClose, isAdmin }: CommandPaletteProps) {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const inputRef  = useRef<HTMLInputElement>(null)
   const [query, setQuery]       = useState('')
@@ -67,9 +69,9 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
     const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
 
     const pages: Result[] = [
-      { key: 'p-machines', icon: <Monitor size={16} />, title: 'Machines', subtitle: 'Page', run: go('/') },
-      { key: 'p-history', icon: <History size={16} />, title: 'History', subtitle: 'Page', run: go('/history') },
-      ...(isAdmin ? [{ key: 'p-users', icon: <Users size={16} />, title: 'Users', subtitle: 'Page', run: go('/users') }] : []),
+      { key: 'p-machines', icon: <Monitor size={16} />, title: t.nav.machines, subtitle: t.palette.page, run: go('/') },
+      { key: 'p-history', icon: <History size={16} />, title: t.nav.history, subtitle: t.palette.page, run: go('/history') },
+      ...(isAdmin ? [{ key: 'p-users', icon: <Users size={16} />, title: t.nav.users, subtitle: t.palette.page, run: go('/users') }] : []),
     ].filter((p) => words.every((w) => p.title.toLowerCase().includes(w)))
 
     if (!machines) return pages
@@ -82,7 +84,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
       key     : `m-${m.host}`,
       icon    : <Terminal size={16} />,
       title   : m.host,
-      subtitle: [m.client ?? 'Unassigned', m.online ? 'online' : 'offline', m.notes].filter(Boolean).join(' · '),
+      subtitle: [m.client ?? t.common.unassigned, m.online ? t.common.online : t.common.offline, m.notes].filter(Boolean).join(' · '),
       online  : m.online,
       run     : m.configured
         ? () => { onClose(); window.location.href = launcherLink(m) }
@@ -98,12 +100,12 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
         key     : `c-${c}`,
         icon    : <Building2 size={16} />,
         title   : c,
-        subtitle: `Client · ${machines.filter((m) => m.client === c).length} machines`,
+        subtitle: t.palette.client(machines.filter((m) => m.client === c).length),
         run     : go(`/?q=${encodeURIComponent(c)}`),
       }))
 
     return [...machineResults, ...clientResults, ...pages]
-  }, [query, machines, isAdmin, navigate, onClose])
+  }, [query, machines, isAdmin, navigate, onClose, t])
 
   // Keep the highlighted row valid and visible
   useEffect(() => { setActive(0) }, [query])
@@ -132,7 +134,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
       ref={dialogRef}
       onClose={onClose}
       onClick={(e) => { if (e.target === dialogRef.current) onClose() }}   // click on the backdrop
-      aria-label="Quick search"
+      aria-label={t.palette.label}
       className="card mt-[12vh] w-[min(620px,calc(100vw-32px))] overflow-hidden p-0 text-slate-800 shadow-2xl dark:text-slate-200"
     >
       <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 dark:border-slate-700/60">
@@ -143,8 +145,8 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
           aria-expanded="true"
           aria-controls="palette-results"
           aria-activedescendant={activeId}
-          aria-label="Search machines, clients and pages"
-          placeholder="Search machines, clients, pages…"
+          aria-label={t.palette.inputLabel}
+          placeholder={t.palette.placeholder}
           className="w-full bg-transparent py-3.5 text-base outline-none placeholder:text-slate-400"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -153,9 +155,9 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
         <kbd className="hidden rounded border border-slate-200 px-1.5 text-[11px] text-slate-500 sm:block dark:border-slate-700">Esc</kbd>
       </div>
 
-      <ul id="palette-results" role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto p-1.5">
-        {machines === null && <li className="px-3 py-2 text-sm text-slate-500">Loading machines…</li>}
-        {machines !== null && results.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-500">Nothing found.</li>}
+      <ul id="palette-results" role="listbox" aria-label={t.palette.results} className="max-h-[50vh] overflow-y-auto p-1.5">
+        {machines === null && <li className="px-3 py-2 text-sm text-slate-500">{t.palette.loading}</li>}
+        {machines !== null && results.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-500">{t.palette.nothing}</li>}
         {results.map((r, i) => (
           <li
             key={r.key}
@@ -179,7 +181,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
               <span className="block truncate text-sm font-medium">{r.title}</span>
               <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{r.subtitle}</span>
             </span>
-            {i === active && r.alt && <span className="hidden flex-none text-[11px] text-slate-500 sm:block dark:text-slate-400">Enter: Claude · Shift+Enter: page</span>}
+            {i === active && r.alt && <span className="hidden flex-none text-[11px] text-slate-500 sm:block dark:text-slate-400">{t.palette.hint}</span>}
           </li>
         ))}
       </ul>

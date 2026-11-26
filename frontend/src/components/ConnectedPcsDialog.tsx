@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { useI18n } from '../i18n'
 import { listTokens, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
 import { formatDate, timeAgo } from '../utils/time'
@@ -13,6 +14,7 @@ interface ConnectedPcsDialogProps {
 
 /** PCs where the nodehub CLI (used by Claude Code) is connected with your account. */
 export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialogProps) {
+  const { t } = useI18n()
   const [pcs, setPcs]         = useState<AccessToken[]>([])
   const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,7 @@ export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialog
   }, [open, reload])
 
   async function disconnect(pc: AccessToken) {
-    if (!confirm(`Disconnect ${pc.name}?\n\nClaude on that PC can no longer read or record history until it connects again.`)) return
+    if (!confirm(t.pcs.confirm(pc.name))) return
     try {
       await revokeToken(pc.id)
       reload()
@@ -42,19 +44,16 @@ export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialog
   }
 
   return (
-    <Dialog open={open} title="Connected PCs" onClose={onClose}>
-      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-        PCs where Claude Code can read machine history and record sessions in your name. A PC connects the first time
-        you click <b>Open in Claude</b> on it (or with <code>.\nodehub.cmd login</code>): you approve it in the browser.
-      </p>
+    <Dialog open={open} title={t.pcs.title} onClose={onClose}>
+      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">{t.pcs.intro}</p>
 
       {error && <div className="mb-3 text-sm text-danger dark:text-danger-dark">{error}</div>}
 
       <ul className="space-y-2">
-        {loading && pcs.length === 0 && <li><ListSkeleton rows={2} label="Loading connected PCs" /></li>}
+        {loading && pcs.length === 0 && <li><ListSkeleton rows={2} label={t.pcs.loading} /></li>}
         {!loading && pcs.length === 0 && (
           <li className="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-500 dark:border-slate-700">
-            No PCs connected yet.
+            {t.pcs.none}
           </li>
         )}
         {pcs.map((pc) => (
@@ -62,17 +61,17 @@ export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialog
             <div className="flex-1">
               <div className="font-medium">{pc.name}</div>
               <div className="text-[13px] text-slate-500 dark:text-slate-400">
-                Connected {formatDate(pc.createdAt)}
-                {' · '}{pc.lastUsedAt ? `last used ${timeAgo(pc.lastUsedAt)}` : 'never used'}
+                {t.pcs.connected(formatDate(pc.createdAt))}
+                {' · '}{pc.lastUsedAt ? t.pcs.lastUsed(timeAgo(pc.lastUsedAt)) : t.pcs.neverUsed}
               </div>
             </div>
-            <button className="btn text-danger dark:text-danger-dark" onClick={() => disconnect(pc)}>Disconnect</button>
+            <button className="btn text-danger dark:text-danger-dark" onClick={() => disconnect(pc)}>{t.pcs.disconnect}</button>
           </li>
         ))}
       </ul>
 
       <div className="mt-5 flex justify-end">
-        <button className="btn" onClick={onClose}>Close</button>
+        <button className="btn" onClick={onClose}>{t.common.close}</button>
       </div>
     </Dialog>
   )

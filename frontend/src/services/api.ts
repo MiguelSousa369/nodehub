@@ -1,11 +1,12 @@
+import { getMessages } from '../i18n'
 import type {
   AccessToken, AuthUser, CliLoginRequest, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
-  SessionFilters, SessionList, SshTestResult, Technician, User, UserInput,
+  SessionFilters, SessionList, Settings, SshTestResult, Technician, User, UserInput,
 } from '../types'
 
 const BASE = '/api'
 
-/** Error carrying the backend's machine-readable `code`. */
+/** Error carrying the backend's machine-readable `code`; the message is in the active language when known. */
 export class ApiError extends Error {
   constructor(message: string, public readonly code: string, public readonly status: number) {
     super(message)
@@ -20,7 +21,8 @@ function headers(extra: Record<string, string> = {}): HeadersInit {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
-    throw new ApiError(body.error ?? `HTTP ${res.status}`, body.code ?? 'UNKNOWN', res.status)
+    const code = body.code ?? 'UNKNOWN'
+    throw new ApiError(getMessages().errors[code] ?? body.error ?? `HTTP ${res.status}`, code, res.status)
   }
   return res.status === 204 ? (undefined as T) : res.json()
 }
@@ -46,6 +48,20 @@ export async function getMe(): Promise<AuthUser> {
 export async function changePassword(currentPassword: string, newPassword: string): Promise<{ token: string }> {
   return handleResponse(await fetch(`${BASE}/auth/password`, {
     method: 'POST', headers: headers(json), body: JSON.stringify({ currentPassword, newPassword }),
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// Team settings (read: anyone; change: admins)
+// ---------------------------------------------------------------------------
+
+export async function getSettings(): Promise<Settings> {
+  return handleResponse(await fetch(`${BASE}/settings`))
+}
+
+export async function updateSettings(settings: Settings): Promise<Settings> {
+  return handleResponse(await fetch(`${BASE}/settings`, {
+    method: 'PUT', headers: headers(json), body: JSON.stringify(settings),
   }))
 }
 

@@ -1,7 +1,7 @@
 import { Copy, History, MonitorCog, MoreHorizontal, Network, Pencil, Settings2, Terminal, Trash2, UserRound } from 'lucide-react'
-
 import { Link, useNavigate } from 'react-router'
 
+import { useI18n } from '../i18n'
 import type { Machine } from '../types'
 import { launcherLink, machinePath } from '../utils/machine'
 import { fullDate, timeAgo } from '../utils/time'
@@ -16,11 +16,12 @@ interface MachineCardProps {
 
 /** Status line next to the dot: online / offline since / missing from the tailnet. */
 function Status({ m }: { m: Machine }) {
-  if (m.online) return <span className="font-medium text-online dark:text-online-dark">Online</span>
-  if (!m.inTailnet) return <span className="text-warn dark:text-warn-dark">Not found in the tailnet</span>
+  const { t } = useI18n()
+  if (m.online) return <span className="font-medium text-online dark:text-online-dark">{t.common.online}</span>
+  if (!m.inTailnet) return <span className="text-warn dark:text-warn-dark">{t.card.notInTailnet}</span>
   return (
-    <span title={m.lastSeen ? `Last seen ${fullDate(m.lastSeen)}` : undefined}>
-      Offline{m.lastSeen && ` · seen ${timeAgo(m.lastSeen)}`}
+    <span title={m.lastSeen ? t.card.lastSeen(fullDate(m.lastSeen)) : undefined}>
+      {t.common.offline}{m.lastSeen && ` · ${t.card.seen(timeAgo(m.lastSeen))}`}
     </span>
   )
 }
@@ -42,6 +43,7 @@ function Detail({ icon, children, title }: { icon: React.ReactNode; children: Re
 
 export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy }: MachineCardProps) {
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   return (
     <article
@@ -65,15 +67,15 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
 
         {m.configured && (
           <Menu
-            label={`More actions for ${m.host}`}
+            label={t.card.moreActions(m.host)}
             trigger={<MoreHorizontal size={18} />}
             triggerClass="rounded-md p-1 text-slate-500 opacity-70 transition hover:bg-surface hover:opacity-100
                           group-hover:opacity-100 dark:hover:bg-surface-dark"
             items={[
-              { label: 'History & profile', icon: <History size={16} />, onClick: () => navigate(machinePath(m.host)) },
-              { label: 'Edit', icon: <Pencil size={16} />, onClick: () => onConfigure(m) },
+              { label: t.card.historyProfile, icon: <History size={16} />, onClick: () => navigate(machinePath(m.host)) },
+              { label: t.common.edit, icon: <Pencil size={16} />, onClick: () => onConfigure(m) },
               'separator',
-              { label: 'Remove', icon: <Trash2 size={16} />, onClick: () => onRemove(m), danger: true },
+              { label: t.common.remove, icon: <Trash2 size={16} />, onClick: () => onRemove(m), danger: true },
             ]}
           />
         )}
@@ -82,12 +84,12 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
       <div className="text-[13px] text-slate-500 dark:text-slate-400"><Status m={m} /></div>
 
       <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-slate-500 dark:text-slate-400">
-        {m.ip && <Detail icon={<Network size={13} />} title="Tailscale IP">{m.ip}</Detail>}
-        {m.sshUser && <Detail icon={<UserRound size={13} />} title="SSH user">{m.sshUser}</Detail>}
-        {m.os && <Detail icon={<MonitorCog size={13} />} title="Operating system">{m.os}</Detail>}
+        {m.ip && <Detail icon={<Network size={13} />} title={t.card.ip}>{m.ip}</Detail>}
+        {m.sshUser && <Detail icon={<UserRound size={13} />} title={t.card.sshUser}>{m.sshUser}</Detail>}
+        {m.os && <Detail icon={<MonitorCog size={13} />} title={t.card.os}>{m.os}</Detail>}
         {m.configured && (
-          <Detail icon={<History size={13} />} title={m.lastSessionAt ? `Last session ${fullDate(m.lastSessionAt)}` : undefined}>
-            {m.lastSessionAt ? `session ${timeAgo(m.lastSessionAt)}` : 'no sessions yet'}
+          <Detail icon={<History size={13} />} title={m.lastSessionAt ? t.card.lastSession(fullDate(m.lastSessionAt)) : undefined}>
+            {m.lastSessionAt ? t.card.session(timeAgo(m.lastSessionAt)) : t.card.noSessions}
           </Detail>
         )}
       </div>
@@ -98,15 +100,15 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
         {m.configured ? (
           <>
             <a className="btn-primary flex-1 gap-1.5" href={launcherLink(m)}>
-              <Terminal size={15} aria-hidden="true" />Open in Claude
+              <Terminal size={15} aria-hidden="true" />{t.common.openInClaude}
             </a>
-            <button className="btn gap-1.5" onClick={() => onCopy(m)} title="Copy a prompt to paste into Claude Code">
-              <Copy size={15} aria-hidden="true" />Copy
+            <button className="btn gap-1.5" onClick={() => onCopy(m)} title={t.card.copyTitle}>
+              <Copy size={15} aria-hidden="true" />{t.common.copy}
             </button>
           </>
         ) : (
           <button className="btn-primary flex-1 gap-1.5" onClick={() => onConfigure(m)}>
-            <Settings2 size={15} aria-hidden="true" />Configure
+            <Settings2 size={15} aria-hidden="true" />{t.common.configure}
           </button>
         )}
       </div>

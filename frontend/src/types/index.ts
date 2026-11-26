@@ -30,12 +30,22 @@ export interface MachineConfigInput {
 
 export interface SshTestResult {
   ok     : boolean
-  message: string
+  kind   : 'ok' | 'timeout' | 'error'
+  detail : string   // hostname when ok, OpenSSH's error line otherwise
+  message: string   // English summary
 }
+
+/** What still has to be configured before the installer can be generated. */
+export type MissingSetting = 'TAILSCALE_AUTHKEY' | 'PUBLIC_KEYS' | 'INSTALLER_TEMPLATE' | 'CLIENT_TAG'
 
 export interface InstallerStatus {
   ready  : boolean
-  missing: string[]
+  missing: MissingSetting[]
+}
+
+/** Team-wide settings (admins change them). */
+export interface Settings {
+  language: 'en' | 'pt'
 }
 
 // ---------------------------------------------------------------------------

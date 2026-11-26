@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 
 import Logo from '../components/Logo'
 import { useAuth, useUser } from '../context/AuthContext'
+import { useI18n } from '../i18n'
 import { ApiError, decideCliLogin, getCliLogin } from '../services/api'
 import type { CliLoginRequest } from '../types'
 
@@ -12,6 +13,7 @@ type State = 'loading' | 'ask' | 'approved' | 'denied' | 'error'
 export default function ConnectPage() {
   const user = useUser()
   const { logout: onLogout } = useAuth()
+  const { t } = useI18n()
   const code = useSearchParams()[0].get('code') ?? ''
   const [request, setRequest] = useState<CliLoginRequest | null>(null)
   const [state, setState]     = useState<State>('loading')
@@ -19,7 +21,7 @@ export default function ConnectPage() {
 
   useEffect(() => {
     if (!code) {
-      setError('This link has no connection code. Run "nodehub login" again.')
+      setError(t.connect.noCode)
       setState('error')
       return
     }
@@ -27,14 +29,14 @@ export default function ConnectPage() {
       .then((r) => {
         setRequest(r)
         setState(r.status === 'PENDING' ? 'ask' : 'error')
-        if (r.status !== 'PENDING') setError('This request was already answered.')
+        if (r.status !== 'PENDING') setError(t.connect.answered)
       })
       .catch((e: Error) => {
         if (e instanceof ApiError && e.code === 'UNAUTHORIZED') return onLogout()
         setError(e.message)
         setState('error')
       })
-  }, [code, onLogout])
+  }, [code, onLogout, t])
 
   async function decide(approve: boolean) {
     try {
@@ -51,40 +53,35 @@ export default function ConnectPage() {
       <div className="card w-full max-w-md space-y-4 p-6">
         <h1><Logo /></h1>
 
-        {state === 'loading' && <p className="text-sm text-slate-500">Loading…</p>}
+        {state === 'loading' && <p className="text-sm text-slate-500">{t.common.loading}</p>}
 
         {state === 'ask' && request && (
           <>
-            <h2 className="text-lg font-semibold">Connect this PC?</h2>
-            <p className="text-sm">
-              <b>{request.deviceName}</b> is asking to use nodehub as <b>{user.name}</b> ({user.username}).
-              Claude Code on that PC will be able to read machine history and record sessions in your name.
-            </p>
+            <h2 className="text-lg font-semibold">{t.connect.title}</h2>
+            <p className="text-sm">{t.connect.asking(request.deviceName, user.name, user.username)}</p>
             <div className="rounded-lg bg-surface p-3 text-center dark:bg-surface-dark">
-              <div className="text-[13px] text-slate-500 dark:text-slate-400">Check that the terminal shows the same code</div>
+              <div className="text-[13px] text-slate-500 dark:text-slate-400">{t.connect.checkCode}</div>
               <div className="font-mono text-2xl font-semibold tracking-widest">{request.userCode}</div>
             </div>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400">
-              Only approve if you just ran <code>nodehub login</code> or clicked <b>Open in Claude</b> on that PC.
-            </p>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400">{t.connect.onlyApprove}</p>
             <div className="flex justify-end gap-2">
-              <button className="btn" onClick={() => decide(false)}>Deny</button>
-              <button className="btn-primary" onClick={() => decide(true)}>Approve</button>
+              <button className="btn" onClick={() => decide(false)}>{t.connect.deny}</button>
+              <button className="btn-primary" onClick={() => decide(true)}>{t.connect.approve}</button>
             </div>
           </>
         )}
 
         {state === 'approved' && (
           <>
-            <h2 className="text-lg font-semibold text-online dark:text-online-dark">PC connected</h2>
-            <p className="text-sm">{request?.deviceName} is now connected. You can close this tab and go back to the terminal.</p>
+            <h2 className="text-lg font-semibold text-online dark:text-online-dark">{t.connect.connected}</h2>
+            <p className="text-sm">{t.connect.connectedText(request?.deviceName ?? '')}</p>
           </>
         )}
 
         {state === 'denied' && (
           <>
-            <h2 className="text-lg font-semibold">Request denied</h2>
-            <p className="text-sm">The PC was not connected.</p>
+            <h2 className="text-lg font-semibold">{t.connect.denied}</h2>
+            <p className="text-sm">{t.connect.deniedText}</p>
           </>
         )}
 
@@ -92,7 +89,7 @@ export default function ConnectPage() {
 
         {state !== 'ask' && state !== 'loading' && (
           <div className="flex justify-end">
-            <Link className="btn" to="/" replace>Go to the dashboard</Link>
+            <Link className="btn" to="/" replace>{t.connect.goDashboard}</Link>
           </div>
         )}
       </div>

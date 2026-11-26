@@ -1,36 +1,66 @@
-import { Laptop, Moon, Sun } from 'lucide-react'
+import { Languages, Laptop, Moon, Sun, Users } from 'lucide-react'
+import { ReactNode } from 'react'
 
 import { ThemeChoice, useTheme } from '../context/ThemeContext'
+import { LanguageChoice, MESSAGES, useI18n } from '../i18n'
 
-const OPTIONS: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
-  { value: 'system', label: 'System', icon: Laptop },
-  { value: 'light',  label: 'Light',  icon: Sun },
-  { value: 'dark',   label: 'Dark',   icon: Moon },
-]
-
-/** Three-way theme switch (System / Light / Dark), shown in the account menu. */
-export default function ThemeSwitch() {
-  const { theme, setTheme } = useTheme()
-
+/** A small segmented control (radio group), as used for theme and language. */
+function Segmented<T extends string>({ label, value, options, onChange }: {
+  label   : string
+  value   : T
+  options : { value: T; label: string; icon: ReactNode }[]
+  onChange: (value: T) => void
+}) {
   return (
     <div>
-      <div className="mb-1.5 text-[12px] text-slate-500 dark:text-slate-400" id="theme-label">Theme</div>
-      <div role="radiogroup" aria-labelledby="theme-label" className="flex gap-0.5 rounded-lg bg-surface p-0.5 dark:bg-surface-dark">
-        {OPTIONS.map(({ value, label, icon: Icon }) => (
+      <div className="mb-1.5 text-[12px] text-slate-500 dark:text-slate-400">{label}</div>
+      <div role="radiogroup" aria-label={label} className="flex gap-0.5 rounded-lg bg-surface p-0.5 dark:bg-surface-dark">
+        {options.map((o) => (
           <button
-            key={value}
+            key={o.value}
             type="button"
             role="radio"
-            aria-checked={theme === value}
-            onClick={() => setTheme(value)}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1 text-[12px] transition ${theme === value
+            aria-checked={value === o.value}
+            onClick={() => onChange(o.value)}
+            className={`flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-[12px] transition ${value === o.value
               ? 'bg-surface-card font-semibold shadow-sm dark:bg-surface-card-dark'
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
           >
-            <Icon size={13} aria-hidden="true" />{label}
+            <span aria-hidden="true">{o.icon}</span>{o.label}
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** Theme (System / Light / Dark) and language (Team / English / Português), in the account menu. */
+export default function ThemeSwitch() {
+  const { theme, setTheme } = useTheme()
+  const { t, choice, setChoice, teamLanguage } = useI18n()
+
+  return (
+    <div className="space-y-2.5">
+      <Segmented<ThemeChoice>
+        label={t.header.theme}
+        value={theme}
+        onChange={setTheme}
+        options={[
+          { value: 'system', label: t.header.themeSystem, icon: <Laptop size={13} /> },
+          { value: 'light', label: t.header.themeLight, icon: <Sun size={13} /> },
+          { value: 'dark', label: t.header.themeDark, icon: <Moon size={13} /> },
+        ]}
+      />
+      <Segmented<LanguageChoice>
+        label={t.header.language}
+        value={choice}
+        onChange={setChoice}
+        options={[
+          { value: 'team', label: t.header.languageTeam(teamLanguage.toUpperCase()), icon: <Users size={13} /> },
+          { value: 'en', label: MESSAGES.en.languageName, icon: <Languages size={13} /> },
+          { value: 'pt', label: MESSAGES.pt.languageName, icon: <Languages size={13} /> },
+        ]}
+      />
     </div>
   )
 }

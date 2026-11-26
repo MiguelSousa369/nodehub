@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
+import { useI18n } from '../i18n'
 import type { Machine } from '../types'
 import MachineCard from './MachineCard'
 
@@ -25,6 +26,7 @@ interface ClientGroupProps {
 // ---------------------------------------------------------------------------
 
 export default function ClientGroup({ name, unassigned, machines, open, collapsible, onToggle, ...actions }: ClientGroupProps) {
+  const { t } = useI18n()
   const [showAll, setShowAll] = useState(false)
   const online = machines.filter((m) => m.online).length
   const visible = showAll ? machines : machines.slice(0, FIRST_PAGE)
@@ -55,11 +57,11 @@ export default function ClientGroup({ name, unassigned, machines, open, collapsi
             className={`flex-none rounded-full px-2 py-0.5 text-[12px] font-medium tabular-nums ${online > 0
               ? 'bg-online/10 text-online dark:text-online-dark'
               : 'bg-slate-200/70 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400'}`}
-            title={`${online} of ${machines.length} online`}
+            title={t.group.onlineTitle(online, machines.length)}
           >
-            {online}/{machines.length} online
+            {t.group.online(online, machines.length)}
           </span>
-          {unassigned && <span className="text-[12px] text-warn dark:text-warn-dark">needs configuring</span>}
+          {unassigned && <span className="text-[12px] text-warn dark:text-warn-dark">{t.group.needsConfiguring}</span>}
           <span className="flex-1 border-t border-slate-200/80 dark:border-slate-700/50" aria-hidden="true" />
         </button>
       </h2>
@@ -71,7 +73,7 @@ export default function ClientGroup({ name, unassigned, machines, open, collapsi
           </div>
           {visible.length < machines.length && (
             <div className="mt-3 text-center">
-              <button className="btn" onClick={() => setShowAll(true)}>Show all {machines.length} machines</button>
+              <button className="btn" onClick={() => setShowAll(true)}>{t.group.showAll(machines.length)}</button>
             </div>
           )}
         </div>

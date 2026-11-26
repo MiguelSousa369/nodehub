@@ -1,6 +1,8 @@
 import { X } from 'lucide-react'
 import { ReactNode, useEffect, useId, useRef } from 'react'
 
+import { useI18n } from '../i18n'
+
 interface DialogProps {
   open    : boolean
   title   : string
@@ -15,6 +17,7 @@ interface DialogProps {
 // ---------------------------------------------------------------------------
 
 export default function Dialog({ open, title, onClose, wide = false, children }: DialogProps) {
+  const { t } = useI18n()
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -39,7 +42,7 @@ export default function Dialog({ open, title, onClose, wide = false, children }:
       <div className="p-6">
         <div className="mb-4 flex items-start gap-3">
           <h2 id={titleId} className="flex-1 text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close"
+          <button type="button" onClick={onClose} aria-label={t.common.close}
                   className="-mr-2 -mt-1 rounded-md p-1.5 text-slate-500 hover:bg-surface dark:hover:bg-surface-dark">
             <X size={18} aria-hidden="true" />
           </button>

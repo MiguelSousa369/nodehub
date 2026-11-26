@@ -1,19 +1,20 @@
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { useI18n } from '../i18n'
 import type { Session, SessionResult } from '../types'
 import { machinePath } from '../utils/machine'
 import { formatDateTime, formatTime, fullDate } from '../utils/time'
 
-const RESULT_STYLE: Record<SessionResult, { label: string; className: string }> = {
-  FIXED     : { label: 'Fixed',      className: 'bg-online/15 text-online dark:text-online-dark' },
-  PARTIAL   : { label: 'Partial',    className: 'bg-warn/15 text-warn dark:text-warn-dark' },
-  UNRESOLVED: { label: 'Unresolved', className: 'bg-danger/15 text-danger dark:text-danger-dark' },
+const RESULT_STYLE: Record<SessionResult, string> = {
+  FIXED     : 'bg-online/15 text-online dark:text-online-dark',
+  PARTIAL   : 'bg-warn/15 text-warn dark:text-warn-dark',
+  UNRESOLVED: 'bg-danger/15 text-danger dark:text-danger-dark',
 }
 
 export function ResultBadge({ result }: { result: SessionResult }) {
-  const style = RESULT_STYLE[result]
-  return <span className={`flex-none rounded-full px-2 py-0.5 text-xs font-medium ${style.className}`}>{style.label}</span>
+  const { t } = useI18n()
+  return <span className={`flex-none rounded-full px-2 py-0.5 text-xs font-medium ${RESULT_STYLE[result]}`}>{t.session[result]}</span>
 }
 
 interface SessionItemProps {
@@ -28,7 +29,8 @@ interface SessionItemProps {
 // ---------------------------------------------------------------------------
 
 export default function SessionItem({ session: s, showHost = false, timeOnly = false }: SessionItemProps) {
-  const fields = [['Problem', s.problem], ['Diagnosis', s.diagnosis], ['Actions', s.actions], ['Pending', s.pending]]
+  const { t } = useI18n()
+  const fields = [[t.session.problem, s.problem], [t.session.diagnosis, s.diagnosis], [t.session.actions, s.actions], [t.session.pending, s.pending]]
     .filter(([, value]) => value)
   const when = timeOnly ? formatTime(s.createdAt) : formatDateTime(s.createdAt)
 
@@ -47,8 +49,8 @@ export default function SessionItem({ session: s, showHost = false, timeOnly = f
               {s.client ? ` (${s.client})` : ''} ·{' '}
             </>
           )}
-          {s.technician?.name ?? 'deleted user'} · <time dateTime={s.createdAt} title={fullDate(s.createdAt)}>{when}</time>
-          {s.updatedAt && <span title={`Corrected ${fullDate(s.updatedAt)}`}> · edited</span>}
+          {s.technician?.name ?? t.session.deletedUser} · <time dateTime={s.createdAt} title={fullDate(s.createdAt)}>{when}</time>
+          {s.updatedAt && <span title={t.session.corrected(fullDate(s.updatedAt))}> · {t.session.edited}</span>}
         </span>
       </summary>
       {fields.length > 0 ? (
@@ -61,7 +63,7 @@ export default function SessionItem({ session: s, showHost = false, timeOnly = f
           ))}
         </dl>
       ) : (
-        <p className="mt-2 border-t border-slate-100 pl-6 pt-2 text-sm text-slate-500 dark:border-slate-800">No details recorded.</p>
+        <p className="mt-2 border-t border-slate-100 pl-6 pt-2 text-sm text-slate-500 dark:border-slate-800">{t.session.noDetails}</p>
       )}
     </details>
   )

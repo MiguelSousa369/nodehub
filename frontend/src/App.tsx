@@ -1,7 +1,9 @@
+import { Fragment } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 
 import Backdrop from './components/Backdrop'
 import { useAuth } from './context/AuthContext'
+import { useI18n } from './i18n'
 import ConnectPage from './pages/ConnectPage'
 import DashboardPage from './pages/DashboardPage'
 import HistoryPage from './pages/HistoryPage'
@@ -25,12 +27,14 @@ import UsersPage from './pages/UsersPage'
 
 export default function App() {
   const { user } = useAuth()
+  const { language } = useI18n()
 
+  // Keyed by language: switching remounts the pages, so every text and date is redrawn
   return (
-    <>
+    <Fragment key={language}>
       <Backdrop />
       {user ? <SignedInRoutes isAdmin={user.role === 'ADMIN'} /> : <LoginPage />}
-    </>
+    </Fragment>
   )
 }
 

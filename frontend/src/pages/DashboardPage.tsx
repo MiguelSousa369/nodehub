@@ -10,6 +10,7 @@ import MachineFormDialog from '../components/MachineFormDialog'
 import RefreshStatus from '../components/RefreshStatus'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
+import { Messages, useI18n } from '../i18n'
 import { useMachines } from '../hooks/useMachines'
 import { usePersistentState } from '../hooks/usePersistentState'
 import { useToast } from '../hooks/useToast'
@@ -18,7 +19,8 @@ import type { Machine } from '../types'
 import { claudePrompt } from '../utils/machine'
 import { byName } from '../utils/time'
 
-const UNASSIGNED = 'Unassigned'
+/** Group key for machines without a client (never a real client name: those can't start with a NUL). */
+const UNASSIGNED = '\u0000unassigned'
 
 /** Above this many machines, client groups start collapsed (each can still be opened). */
 const COLLAPSE_ABOVE = 40
@@ -26,18 +28,18 @@ const COLLAPSE_ABOVE = 40
 type StatusFilter = 'all' | 'online' | 'offline' | 'unassigned'
 type SortOrder    = 'name' | 'online' | 'recent'
 
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'online', label: 'Online' },
-  { value: 'offline', label: 'Offline' },
-  { value: 'unassigned', label: UNASSIGNED },
+const STATUS_OPTIONS: { value: StatusFilter; label: (t: Messages) => string }[] = [
+  { value: 'all', label: (t) => t.dashboard.all },
+  { value: 'online', label: (t) => t.common.online },
+  { value: 'offline', label: (t) => t.common.offline },
+  { value: 'unassigned', label: (t) => t.common.unassigned },
 ]
 
-const SORTS: Record<SortOrder, { label: string; compare: (a: Machine, b: Machine) => number }> = {
-  name  : { label: 'Name', compare: (a, b) => byName(a.host, b.host) },
-  online: { label: 'Online first', compare: (a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host) },
+const SORTS: Record<SortOrder, { label: (t: Messages) => string; compare: (a: Machine, b: Machine) => number }> = {
+  name  : { label: (t) => t.dashboard.sortName, compare: (a, b) => byName(a.host, b.host) },
+  online: { label: (t) => t.dashboard.sortOnline, compare: (a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host) },
   recent: {
-    label  : 'Recent session',
+    label  : (t) => t.dashboard.sortRecent,
     compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || byName(a.host, b.host),
   },
 }
@@ -63,6 +65,7 @@ function matchesStatus(m: Machine, status: StatusFilter): boolean {
 
 export default function DashboardPage() {
   const { logout } = useAuth()
+  const { t } = useI18n()
   const { machines, clients, tailscaleError, error, loading, refreshing, updatedAt, reload } = useMachines(logout)
   const toast = useToast()
   const [params, setParams] = useSearchParams()
@@ -124,19 +127,17 @@ export default function DashboardPage() {
   async function copy(m: Machine) {
     try {
       await navigator.clipboard.writeText(claudePrompt(m))
-      toast.show('Copied. Paste it into Claude Code.')
+      toast.show(t.common.copied)
     } catch {
-      toast.show('Could not copy.')
+      toast.show(t.common.copyFailed)
     }
   }
 
   async function remove(m: Machine) {
-    const warning = `Remove ${m.host} (${m.client}) from the dashboard?\n\n` +
-      `The machine keeps its access. If it is still in the tailnet it shows up under "${UNASSIGNED}" again.`
-    if (!confirm(warning)) return
+    if (!confirm(t.dashboard.removeConfirm(m.host, m.client ?? '', t.common.unassigned))) return
     try {
       await deleteMachine(m.host)
-      toast.show(`${m.host} removed.`)
+      toast.show(t.dashboard.removed(m.host))
       reload()
     } catch (e) {
       toast.show((e as Error).message)
@@ -145,7 +146,7 @@ export default function DashboardPage() {
 
   function saved(host: string) {
     setEditing(null)
-    toast.show(`${host} saved.`)
+    toast.show(t.dashboard.saved(host))
     reload()
   }
 
@@ -153,35 +154,32 @@ export default function DashboardPage() {
   // Render
   // ---------------------------------------------------------------------------
 
-  /** "1 client", "1,204 machines" */
-  const count = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`
-
   return (
     <>
       <Header>
         <div className="text-sm text-slate-500 dark:text-slate-400">
-          {loading ? 'Loading…' : (
+          {loading ? t.common.loading : (
             <>
-              {count(clients.length, 'client')} · {count(machines.length, 'machine')} ·{' '}
-              <span className="text-online dark:text-online-dark">{counts.online.toLocaleString()} online</span>
+              {t.dashboard.clients(clients.length)} · {t.dashboard.machines(machines.length)} ·{' '}
+              <span className="text-online dark:text-online-dark">{t.dashboard.onlineCount(counts.online)}</span>
             </>
           )}
         </div>
         <div className="flex-1" />
-        <button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />Add machine</button>
+        <button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />{t.dashboard.addMachine}</button>
       </Header>
 
       <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-7xl px-4 py-5 sm:px-6">
         {/* Toolbar: search, status, sort, expand/collapse */}
         <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <label className="relative w-full sm:w-72">
-            <span className="sr-only">Search machines</span>
+            <span className="sr-only">{t.dashboard.searchLabel}</span>
             <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="input pl-9" type="search" placeholder="Search machine, client, notes, IP…"
+            <input className="input pl-9" type="search" placeholder={t.dashboard.searchPlaceholder}
                    value={q} onChange={(e) => setParam('q', e.target.value, '')} />
           </label>
 
-          <div role="radiogroup" aria-label="Status" className="flex flex-wrap gap-0.5 rounded-lg border border-slate-200 bg-surface-card p-0.5 dark:border-slate-700 dark:bg-surface-card-dark">
+          <div role="radiogroup" aria-label={t.dashboard.status} className="flex flex-wrap gap-0.5 rounded-lg border border-slate-200 bg-surface-card p-0.5 dark:border-slate-700 dark:bg-surface-card-dark">
             {STATUS_OPTIONS.filter((o) => o.value !== 'unassigned' || counts.unassigned > 0).map((o) => (
               <button
                 key={o.value}
@@ -193,16 +191,16 @@ export default function DashboardPage() {
                   ? 'bg-brand/10 font-semibold text-brand dark:bg-brand-dark/15 dark:text-brand-dark'
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
               >
-                {o.label}
+                {o.label(t)}
                 {o.value === 'unassigned' && <span className="ml-1 tabular-nums">({counts.unassigned})</span>}
               </button>
             ))}
           </div>
 
           <label className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-            Sort
+            {t.dashboard.sort}
             <select className="input w-auto py-1.5" value={sort} onChange={(e) => setParam('sort', e.target.value, 'name')}>
-              {Object.entries(SORTS).map(([value, { label }]) => <option key={value} value={value}>{label}</option>)}
+              {Object.entries(SORTS).map(([value, { label }]) => <option key={value} value={value}>{label(t)}</option>)}
             </select>
           </label>
 
@@ -210,37 +208,38 @@ export default function DashboardPage() {
           <RefreshStatus updatedAt={updatedAt} refreshing={refreshing} onRefresh={reload} />
           {!filtering && groups.length > 1 && (
             <div className="flex gap-1">
-              <button className="btn gap-1.5" onClick={() => setAll(true)} title="Expand all clients">
-                <ChevronsUpDown size={15} aria-hidden="true" /><span className="hidden lg:inline">Expand all</span>
+              <button className="btn gap-1.5" onClick={() => setAll(true)} title={t.dashboard.expandAllTitle}>
+                <ChevronsUpDown size={15} aria-hidden="true" /><span className="hidden lg:inline">{t.dashboard.expandAll}</span>
               </button>
-              <button className="btn gap-1.5" onClick={() => setAll(false)} title="Collapse all clients">
-                <ChevronsDownUp size={15} aria-hidden="true" /><span className="hidden lg:inline">Collapse all</span>
+              <button className="btn gap-1.5" onClick={() => setAll(false)} title={t.dashboard.collapseAllTitle}>
+                <ChevronsDownUp size={15} aria-hidden="true" /><span className="hidden lg:inline">{t.dashboard.collapseAll}</span>
               </button>
             </div>
           )}
         </div>
 
-        {(error || tailscaleError) && <Banner>{error ?? tailscaleError}</Banner>}
+        {error && <Banner>{error}</Banner>}
+        {!error && tailscaleError && <Banner><span title={tailscaleError}>{t.errors.TAILSCALE_UNAVAILABLE}</span></Banner>}
         {loading && <MachineGridSkeleton />}
 
         {!loading && machines.length === 0 && (
           <EmptyState
             icon={<MonitorUp size={22} />}
-            title="No machines yet"
-            action={<button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />Add machine</button>}
+            title={t.dashboard.emptyTitle}
+            action={<button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />{t.dashboard.addMachine}</button>}
           >
-            Download the installer, run it on a client PC, and the PC shows up here within a minute.
+            {t.dashboard.emptyText}
           </EmptyState>
         )}
         {!loading && machines.length > 0 && groups.length === 0 && (
-          <EmptyState icon={<SearchX size={22} />} title="No machines match the filters"
-                      action={<button className="btn" onClick={() => setParams({}, { replace: true })}>Clear filters</button>} />
+          <EmptyState icon={<SearchX size={22} />} title={t.dashboard.noMatchTitle}
+                      action={<button className="btn" onClick={() => setParams({}, { replace: true })}>{t.common.clearFilters}</button>} />
         )}
 
         {groups.map(([name, list]) => (
           <ClientGroup
             key={name}
-            name={name}
+            name={name === UNASSIGNED ? t.common.unassigned : name}
             unassigned={name === UNASSIGNED}
             machines={list}
             open={isOpen(name)}
