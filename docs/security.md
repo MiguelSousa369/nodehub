@@ -20,14 +20,18 @@ protects against and how, and the responsibilities that stay with you.
 |---|---|
 | **Local only** | The backend listens on `127.0.0.1`; PostgreSQL too. |
 | **DNS rebinding** | Requests whose `Host` isn't `127.0.0.1`/`localhost` are rejected. |
-| **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors don't reveal whether a username exists. |
+| **Other websites** | A page from another site, open in the technician's browser, can still send requests to `127.0.0.1`. Every request with an `Origin` that isn't a local page is refused (`FORBIDDEN_ORIGIN`), and there is no CORS: such a page can't sign in, guess passwords or read anything. |
+| **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors and response times don't reveal whether a username exists. |
+| **Password guessing** | After 5 wrong passwords in 15 minutes, that username is locked for the rest of the 15 minutes (`TOO_MANY_ATTEMPTS`). |
+| **Sessions** | Dashboard sign-ins are JWTs signed with HS256 only (other algorithms, including `none`, are rejected) and a secret of at least 32 characters. Changing your password signs out your other sessions; an admin resetting a password signs that user out everywhere. |
 | **Roles** | Only admins manage users. You can't remove your own admin access or delete yourself; there is always one active admin. |
 | **Immediate revocation** | Each request reloads the user: deactivating someone ends their dashboard sessions and disconnects their PCs at once. |
 | **Connected PCs** | Each PC gets its own token through a browser approval (`nodehub login`): nobody copies tokens around. Tokens are stored only as SHA-256 hashes, show *last used*, and can be disconnected one by one (e.g. a lost laptop). They can only do what Claude needs (read machines and history, record sessions, update profiles): they **cannot** manage PCs, users or passwords, change or remove machines, or download the installer with the Tailscale key (`SESSION_REQUIRED`), so a token leaked from a Claude session can't take over the account or join new devices to the tailnet. |
 | **PC approval** | The approval page shows the PC name and a code to compare with the terminal; requests expire after 10 minutes, can be answered once, only by a signed-in dashboard session; the secret device code is stored hashed and the token is handed out exactly once. |
 | **Input validation** | Every request body, parameter and query is validated with Zod. Values that end up on a command line (client name, notes, SSH user, hostname) can't contain quotes, `;` or `$`. |
-| **Only tagged machines** | Machines can only be configured if they are in the tailnet with `CLIENT_TAG`. |
-| **Security headers** | `helmet()` defaults; CORS restricted in production. |
+| **Only tagged machines** | Machines can only be configured, and the SSH test only runs, if they are in the tailnet with `CLIENT_TAG`: the backend can't be used to reach other hosts. |
+| **Security headers** | `helmet()` defaults, including a Content-Security-Policy that only allows scripts from nodehub itself. |
+| **Rendering** | React escapes all text; machine profiles are rendered as Markdown without raw HTML. |
 | **Audit log** | `backend/logs/audit.log` records sign-ins (and failures, lockouts), password changes, user changes, PCs approved / connected / disconnected, installer downloads, machine list changes and refused cross-site requests: one JSON line each, with who and when, never passwords or tokens. |
 | **Errors** | Unexpected errors answer a generic message; the details (SQL, paths, stack) go only to `backend/logs/error.log`. |
 
@@ -51,6 +55,32 @@ launcher therefore:
   prompt injection from files or logs).
 - Claude Code's own permission prompts still apply to every command it runs.
 - Every session is recorded under the technician the PC is connected as.
+
+## OWASP Top 10 (2021) review
+
+How nodehub stands against each category, reviewed on 2026-11-26.
+
+| Category | Status | In nodehub |
+|---|---|---|
+| **A01 Broken Access Control** | ✅ | Every API route except sign-in and `nodehub login` needs a token. Admin-only routes check the role; account, user, machine-list and installer routes refuse PC tokens. Users only see and disconnect their own PCs. Cross-site requests are refused. |
+| **A02 Cryptographic Failures** | ✅ | scrypt for passwords, SHA-256 for PC tokens and device codes (random 256-bit secrets), HS256 JWTs with a long secret. Traffic to client machines goes through WireGuard (Tailscale) and SSH. The dashboard is plain HTTP, but only on `127.0.0.1`. |
+| **A03 Injection** | ✅ | Prisma (parameterised queries); `ssh` is run with `execFile` (no shell) and validated host/user; values written into the installer are validated and quoted; React escapes output and Markdown has no raw HTML. |
+| **A04 Insecure Design** | ✅ | Tagged auth keys + ACL isolate clients; Claude needs the technician's approval to change anything; PC tokens have only the rights Claude needs; `nodehub://` links carry no free text and are checked against Tailscale. |
+| **A05 Security Misconfiguration** | ✅ | Local-only by default (backend and PostgreSQL); helmet headers and CSP; no CORS; generic 500 errors; the backend refuses to start with a missing or short `JWT_SECRET`. |
+| **A06 Vulnerable Components** | ✅ | `npm audit` clean in backend and frontend (Prisma's `effect` dependency is pinned with an `overrides` entry until Prisma updates it). Run `npm audit` when updating. |
+| **A07 Identification and Authentication Failures** | ✅ | Per-user accounts, minimum password length 10, sign-in lockout, no username enumeration, sessions expire (`JWT_EXPIRES_IN`) and end on password change or deactivation. |
+| **A08 Software and Data Integrity Failures** | ✅ | The client installer only installs Tailscale if its MSI is validly signed by Tailscale Inc.; dependencies are pinned by `package-lock.json`. |
+| **A09 Logging and Monitoring Failures** | ✅ | Security audit log (`backend/logs/audit.log`) and error log; every helpdesk session is recorded with its technician. |
+| **A10 Server-Side Request Forgery** | ✅ | The backend only connects to Tailscale (local CLI) and, for the SSH test, to client machines it has checked are in the tailnet with `CLIENT_TAG`. |
+
+**Known limits** (accepted for a tool that runs on the technician's own PC):
+
+- The PostgreSQL password defaults to `nodehub`. The database only listens on `127.0.0.1`; set
+  `POSTGRES_PASSWORD` (and `DATABASE_URL`) if other people use the same PC.
+- The dashboard token lives in the browser's `localStorage`. The CSP and React's escaping protect
+  it from scripts; signing out removes it, and it expires after `JWT_EXPIRES_IN`.
+- Connected PC tokens don't expire by themselves: disconnect PCs you no longer use.
+- The sign-in lockout is per username, so someone on the same PC could lock an account for 15 minutes.
 
 ## Your responsibilities
 
