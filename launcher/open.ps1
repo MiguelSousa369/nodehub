@@ -11,6 +11,34 @@ param([Parameter(Mandatory)][string]$Target)
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+$cli  = Join-Path $repo 'backend\dist\cli\nodehub.js'
+
+# Messages in the team language ("nodehub language" prints en or pt; English if it can't tell)
+$Messages = @{
+    en = @{
+        InvalidLink    = 'Invalid nodehub link.'
+        InvalidHost    = 'Invalid machine name in the link.'
+        InvalidUser    = 'Invalid SSH user in the link.'
+        TailscaleError = 'Could not read Tailscale status: {0}'
+        NotClient      = "Machine '{0}' is not a client machine in the tailnet."
+        ConnectTitle   = 'nodehub: connect this PC'
+        Prompt         = 'Helpdesk: machine {0} ({1}, user {2}). Start the session as described in CLAUDE.md, then ask me what the problem is.'
+    }
+    pt = @{
+        InvalidLink    = 'Link do nodehub inválido.'
+        InvalidHost    = 'Nome de máquina inválido no link.'
+        InvalidUser    = 'Utilizador SSH inválido no link.'
+        TailscaleError = 'Não foi possível ler o estado do Tailscale: {0}'
+        NotClient      = "A máquina '{0}' não é uma máquina cliente na tailnet."
+        ConnectTitle   = 'nodehub: ligar este PC'
+        Prompt         = 'Helpdesk: máquina {0} ({1}, utilizador {2}). Começa a sessão como descrito no CLAUDE.md e depois pergunta-me qual é o problema.'
+    }
+}
+$lang = 'en'
+if (Test-Path $cli) {
+    try { $out = (& node $cli language 2>$null | Out-String).Trim(); if ($Messages.ContainsKey($out)) { $lang = $out } } catch { }
+}
+$T = $Messages[$lang]
 
 function Show-Error([string]$msg) {
     Add-Type -AssemblyName PresentationFramework
@@ -28,12 +56,12 @@ function Get-Param([string]$name) {
 #    No free text from the link reaches Claude: the client name comes from nodehub itself
 #    ("nodehub machine <host>", the first step in CLAUDE.md). Older links with &client= still work;
 #    that value is ignored.
-if ($Target -notmatch '^nodehub://open/?\?') { Show-Error 'Invalid nodehub link.' }
+if ($Target -notmatch '^nodehub://open/?\?') { Show-Error $T.InvalidLink }
 $hostName = Get-Param 'host'
 $sshUser  = Get-Param 'user'
 
-if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error 'Invalid machine name in the link.' }
-if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error 'Invalid SSH user in the link.' }
+if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error $T.InvalidHost }
+if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error $T.InvalidUser }
 
 # 2. The host must be in the tailnet with the client tag (CLIENT_TAG in backend/.env, default tag:client)
 $clientTag = 'tag:client'
@@ -47,28 +75,26 @@ try {
     $ts = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
     $status = & $ts status --json | ConvertFrom-Json
 } catch {
-    Show-Error "Could not read Tailscale status: $($_.Exception.Message)"
+    Show-Error ($T.TailscaleError -f $_.Exception.Message)
 }
 $peer = $status.Peer.PSObject.Properties.Value |
     Where-Object { ($_.DNSName -split '\.')[0] -ieq $hostName } | Select-Object -First 1
 if (-not $peer -or @($peer.Tags) -notcontains $clientTag) {
-    Show-Error "Machine '$hostName' is not a client machine in the tailnet."
+    Show-Error ($T.NotClient -f $hostName)
 }
 $ip = $peer.TailscaleIPs[0]
 
 # 3. Make sure this PC is connected to nodehub (so Claude can read and record history).
 #    If not, run "nodehub login" in a visible window: it opens the browser to approve this PC.
-$cli = Join-Path $repo 'backend\dist\cli\nodehub.js'
 if (Test-Path $cli) {
     & node $cli whoami --quiet 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Start-Process cmd.exe -Wait -ArgumentList '/c', "title nodehub: connect this PC & node `"$cli`" login & timeout /t 4 >nul"
+        Start-Process cmd.exe -Wait -ArgumentList '/c', "title $($T.ConnectTitle) & node `"$cli`" login & timeout /t 4 >nul"
     }
 }
 
 # 4. Open Claude Code in the repository folder with the machine context
-$prompt = "Helpdesk: machine $hostName ($ip, user $sshUser). " +
-          "Start the session as described in CLAUDE.md, then ask me what the problem is."
+$prompt = $T.Prompt -f $hostName, $ip, $sshUser
 
 $wt = Get-Command wt.exe -ErrorAction SilentlyContinue
 if ($wt) {

@@ -16,6 +16,9 @@ Helpdesk: machine <host> (<IP>, user <user>).
 Helpdesk: client <Client>, machine <host> (<IP>, user <user>).
 ```
 
+or, with the team language set to Portuguese, `Helpdesk: máquina <host> (<IP>, utilizador <user>).`
+(and `cliente <Cliente>, ...` from **Copy**).
+
 The client, profile and history always come from `nodehub machine <host>` (step 1), not from the
 start message.
 

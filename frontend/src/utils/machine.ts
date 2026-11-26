@@ -1,3 +1,5 @@
+import { getLanguage } from '../i18n'
+
 // ---------------------------------------------------------------------------
 // Helpers to start a helpdesk session on a machine
 // ---------------------------------------------------------------------------
@@ -19,10 +21,14 @@ export function launcherLink(m: SessionTarget): string {
   return `nodehub://open?${params}`
 }
 
-/** Text to paste into Claude Code when the nodehub:// launcher isn't available. */
+/** Text to paste into Claude Code when the nodehub:// launcher isn't available (in the active language). */
 export function claudePrompt(m: SessionTarget): string {
-  return `Helpdesk: client ${m.client}, machine ${m.host} (${m.ip ?? '?'}, user ${m.sshUser}). ` +
-         'Start the session as described in CLAUDE.md, then ask me what the problem is.'
+  const ip = m.ip ?? '?'
+  return getLanguage() === 'pt'
+    ? `Helpdesk: cliente ${m.client}, máquina ${m.host} (${ip}, utilizador ${m.sshUser}). ` +
+      'Começa a sessão como descrito no CLAUDE.md e depois pergunta-me qual é o problema.'
+    : `Helpdesk: client ${m.client}, machine ${m.host} (${ip}, user ${m.sshUser}). ` +
+      'Start the session as described in CLAUDE.md, then ask me what the problem is.'
 }
 
 /** Path of a machine's page in the dashboard. */
