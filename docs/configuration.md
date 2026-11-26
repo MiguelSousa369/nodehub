@@ -34,7 +34,6 @@ This file holds secrets and is never committed.
 | `HOST` | `127.0.0.1` | Interface to listen on. Keep it local (see [security](security.md)). |
 | `NODE_ENV` | `development` | `production` hides internal error messages and restricts CORS. |
 | `LOG_LEVEL` | `info` | Winston level (`error`, `warn`, `info`, `debug`). Logs go to `backend/logs/`. |
-| `FRONTEND_ORIGIN` | `http://localhost:5173` | Allowed CORS origin when `NODE_ENV=production`. |
 
 ## Paths
 

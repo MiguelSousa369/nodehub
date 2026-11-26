@@ -4,7 +4,7 @@
 
 | Part | Tech |
 |---|---|
-| Backend | Node.js 20+, Express 5, TypeScript, Zod, Prisma 7 (`@prisma/adapter-pg`), PostgreSQL 17, Winston, Swagger UI, helmet, cors |
+| Backend | Node.js 20+, Express 5, TypeScript, Zod, Prisma 7 (`@prisma/adapter-pg`), PostgreSQL 17, Winston, Swagger UI, helmet |
 | Frontend | React 19, React Router 7, Vite, TypeScript, Tailwind CSS 3, lucide-react (icons), react-markdown |
 | Tests | Vitest + Supertest against a real PostgreSQL test database |
 | Scripts | PowerShell (installer, launcher), Windows batch (`start.cmd`, `nodehub.cmd`) |

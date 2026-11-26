@@ -102,6 +102,19 @@ describe('auth', () => {
     expect((await request(app).get('/api/health').set('Host', 'evil.example')).status).toBe(403);
   });
 
+  it('refuses requests sent by pages from other sites', async () => {
+    const fromSite = await request(app).post('/api/auth/login').set({ ...HOST, Origin: 'https://evil.example' })
+      .send({ username: 'admin', password: ADMIN_PW });
+    expect(fromSite.status).toBe(403);
+    expect(fromSite.body.code).toBe('FORBIDDEN_ORIGIN');
+    expect((await request(app).get('/api/health').set({ ...HOST, Origin: 'null' })).status).toBe(403);
+
+    // The dashboard itself (and the Vite dev server) are local origins; the CLI sends no Origin
+    expect((await request(app).get('/api/health').set({ ...HOST, Origin: 'http://127.0.0.1:8737' })).status).toBe(200);
+    expect((await request(app).get('/api/health').set({ ...HOST, Origin: 'http://localhost:5173' })).status).toBe(200);
+    expect((await request(app).get('/api/health').set(HOST)).status).toBe(200);
+  });
+
   it('changes your own password', async () => {
     const res = await request(app).post('/api/auth/password').set(as(techToken))
       .send({ currentPassword: TECH_PW, newPassword: 'a-new-password-1' });

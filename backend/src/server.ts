@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import cors from 'cors';
 import express from 'express';
 import fs from 'fs';
 import helmet from 'helmet';
@@ -25,13 +24,8 @@ const PORT = parseInt(process.env.PORT ?? '8737', 10);
 const HOST = process.env.HOST ?? '127.0.0.1';
 const FRONTEND_DIST = path.resolve(process.env.FRONTEND_DIST ?? path.join(__dirname, '../../frontend/dist'));
 
-app.use(localHostOnly);
+app.use(localHostOnly);   // only this PC: right Host, and no requests from other sites' pages
 app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? (process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173')
-    : '*',
-}));
 app.use(express.json({ limit: '1mb' }));
 
 // ---------------------------------------------------------------------------
