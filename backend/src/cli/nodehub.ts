@@ -7,6 +7,7 @@
  *   nodehub log <host> --file s.json   record a session
  *   nodehub update <id> --file s.json  correct a recorded session (only the fields given)
  *   nodehub profile <host> --file p.md replace the machine profile
+ *   nodehub keys [sync]                list the team's SSH keys / apply them to every client PC
  *
  * Run through nodehub.cmd at the repository root. See docs/cli.md.
  */
@@ -15,6 +16,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { keyBody, ownPublicKeys, syncKeys, SyncTarget } from './keys-sync';
 import { apiErrorText, cliLanguage, clientTagFromServer, m, resultWord, setClientTag, setCliLanguage } from './messages';
 
 // ---------------------------------------------------------------------------
@@ -246,6 +248,50 @@ async function cmdUpdate(positional: string[], flags: Record<string, string | tr
   console.log(m().updated(s.id, s.host, resultWord(s.result), s.pending));
 }
 
+interface TeamKey { fingerprint: string; name: string; comment: string; key: string }
+interface MachineRow { host: string; displayName: string; sshUser: string | null; configured: boolean; online: boolean }
+
+/** nodehub keys: the team list. nodehub keys sync [--host h] [--dry-run] [--force]: apply it to client PCs. */
+async function cmdKeys(positional: string[], flags: Record<string, string | true>) {
+  const t = m();
+  const keys = await api<TeamKey[]>('GET', '/api/keys');
+
+  if (positional[1] !== 'sync') {
+    if (keys.length === 0) return console.log(t.keysNone);
+    console.log(t.keysTitle(keys.length));
+    for (const k of keys) console.log(`  ${k.fingerprint}  ${k.name}${k.comment ? `  (${k.comment})` : ''}`);
+    return console.log(`\n${t.keysHint}`);
+  }
+
+  // Safety: never empty the machines, and never cut off the PC doing the sync
+  if (keys.length === 0) throw new CliError(t.syncNoKeys);
+  const team = new Set(keys.map((k) => keyBody(k.key)));
+  if (!flags.force && !ownPublicKeys().some((k) => team.has(k))) throw new CliError(t.syncOwnMissing);
+
+  const onlyHost = flag(flags, 'host')?.toLowerCase();
+  const { machines } = await api<{ machines: MachineRow[] }>('GET', '/api/machines');
+  const configured = machines.filter((mc) => mc.configured && (!onlyHost || mc.host.toLowerCase() === onlyHost));
+  const targets: SyncTarget[] = configured.filter((mc) => mc.online)
+    .map((mc) => ({ host: mc.host, label: mc.displayName ? `${mc.displayName} (${mc.host})` : mc.host, sshUser: mc.sshUser ?? 'nodehub' }));
+  const offline = configured.length - targets.length;
+
+  if (targets.length === 0) {
+    console.log(t.syncNothing);
+  } else {
+    const dryRun = Boolean(flags['dry-run']);
+    console.log(t.syncStart(targets.length, keys.length, dryRun));
+    const results = await syncKeys(targets, keys.map((k) => k.key), dryRun, (r) => console.log(
+      r.status === 'failed' ? t.syncFailed(r.target.label, r.error ?? '')
+        : r.status === 'unchanged' ? t.syncUnchanged(r.target.label)
+        : dryRun ? t.syncWouldUpdate(r.target.label, r.added, r.removed)
+        : t.syncUpdated(r.target.label, r.added, r.removed)));
+    const count = (s: string) => results.filter((r) => r.status === s).length;
+    console.log(`\n${t.syncSummary(count('updated'), count('unchanged'), count('failed'))}`);
+    if (count('failed') > 0) process.exitCode = 1;
+  }
+  if (offline > 0) console.log(t.syncSkipped(offline));
+}
+
 async function cmdProfile(host: string, flags: Record<string, string | true>) {
   const file = flag(flags, 'file');
   const text = flag(flags, 'text');
@@ -270,6 +316,9 @@ const HELP = `nodehub CLI
                                            change (e.g. {"pending": "", "result": "fixed"})
   nodehub update <id> --pending "" --result fixed
   nodehub profile <host> --file profile.md replace the machine profile (Markdown)
+  nodehub keys                             list the team's SSH public keys
+  nodehub keys sync [--host h] [--dry-run] make every online client PC accept exactly those
+                                           keys (run on a PC that already has access)
 
 Docs: docs/cli.md`;
 
@@ -305,6 +354,7 @@ async function main() {
     // For launcher/open.ps1 on technician PCs: "<language> <clientTag>" from the server
     case 'launcher-info': return console.log(`${cliLanguage()} ${clientTagFromServer()}`.trim());
     case 'profile': return cmdProfile(requireHost(positional), flags);
+    case 'keys'   : return cmdKeys(positional, flags);
     default       : return console.log(HELP);
   }
 }

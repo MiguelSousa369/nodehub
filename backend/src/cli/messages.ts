@@ -44,6 +44,21 @@ const en = {
   badSessionId  : 'Missing or invalid session number (e.g. nodehub update 12 ...).',
   profileUsage  : 'Use --file <profile.md> or --text "<profile>".',
   error         : 'Error',
+  keysTitle     : (n: number) => `Team SSH keys (${n}):`,
+  keysNone      : 'No keys yet. An admin adds them in the dashboard (Users → SSH keys).',
+  keysHint      : 'After adding or removing a key, run "nodehub keys sync" to apply the list to the client PCs.',
+  syncNoKeys    : 'The team key list is empty: refusing to remove every key from the client PCs.',
+  syncOwnMissing: 'None of this PC\'s keys (~/.ssh/*.pub) is in the team list: after the sync this PC could no longer reach the machines. Add your key in the dashboard first (or use --force).',
+  syncStart     : (machines: number, keys: number, dryRun: boolean) =>
+    `${dryRun ? '[dry run] ' : ''}Applying ${keys} key(s) to ${machines} machine(s)...`,
+  syncNothing   : 'No online client machines to update.',
+  syncUpdated   : (label: string, added: number, removed: number) => `  ✓ ${label}: updated (+${added} −${removed})`,
+  syncWouldUpdate: (label: string, added: number, removed: number) => `  • ${label}: would change (+${added} −${removed})`,
+  syncUnchanged : (label: string) => `  ✓ ${label}: already up to date`,
+  syncFailed    : (label: string, error: string) => `  ✗ ${label}: ${error}`,
+  syncSkipped   : (n: number) => `${n} offline machine(s) skipped: run the sync again when they are online.`,
+  syncSummary   : (updated: number, unchanged: number, failed: number) =>
+    `Done: ${updated} updated, ${unchanged} already up to date, ${failed} failed.`,
 };
 
 type CliMessages = typeof en;
@@ -87,6 +102,21 @@ const pt: CliMessages = {
   badSessionId  : 'Número da sessão em falta ou inválido (ex.: nodehub update 12 ...).',
   profileUsage  : 'Use --file <perfil.md> ou --text "<perfil>".',
   error         : 'Erro',
+  keysTitle     : (n: number) => `Chaves SSH da equipa (${n}):`,
+  keysNone      : 'Ainda não há chaves. Um administrador adiciona-as no dashboard (Utilizadores → Chaves SSH).',
+  keysHint      : 'Depois de adicionar ou remover uma chave, corra "nodehub keys sync" para aplicar a lista aos PCs dos clientes.',
+  syncNoKeys    : 'A lista de chaves da equipa está vazia: recuso remover todas as chaves dos PCs dos clientes.',
+  syncOwnMissing: 'Nenhuma das chaves deste PC (~/.ssh/*.pub) está na lista da equipa: depois da sincronização este PC deixava de chegar às máquinas. Adicione primeiro a sua chave no dashboard (ou use --force).',
+  syncStart     : (machines: number, keys: number, dryRun: boolean) =>
+    `${dryRun ? '[simulação] ' : ''}A aplicar ${keys} chave(s) a ${machines} máquina(s)...`,
+  syncNothing   : 'Não há máquinas cliente online para atualizar.',
+  syncUpdated   : (label: string, added: number, removed: number) => `  ✓ ${label}: atualizada (+${added} −${removed})`,
+  syncWouldUpdate: (label: string, added: number, removed: number) => `  • ${label}: mudaria (+${added} −${removed})`,
+  syncUnchanged : (label: string) => `  ✓ ${label}: já estava atualizada`,
+  syncFailed    : (label: string, error: string) => `  ✗ ${label}: ${error}`,
+  syncSkipped   : (n: number) => `${n} máquina(s) offline ignorada(s): corra a sincronização outra vez quando estiverem online.`,
+  syncSummary   : (updated: number, unchanged: number, failed: number) =>
+    `Concluído: ${updated} atualizada(s), ${unchanged} já atualizada(s), ${failed} com erro.`,
 };
 
 const MESSAGES: Record<CliLanguage, CliMessages> = { en, pt };
