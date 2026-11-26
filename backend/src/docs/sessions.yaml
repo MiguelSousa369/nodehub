@@ -59,6 +59,23 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/sessions/technicians:
+    get:
+      summary: Users who recorded at least one session (for the history filter)
+      responses:
+        '200':
+          description: Technicians, by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:   { type: integer }
+                    name: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /api/machines/{host}/sessions:
     get:
       summary: Session history of one machine

@@ -359,6 +359,9 @@ describe('sessions', () => {
 
     const byTech = await request(app).get(`/api/sessions?technicianId=${adminId}`).set(as(techToken));
     expect(byTech.body.sessions[0].technician.name).toBe('Admin');
+
+    const technicians = await request(app).get('/api/sessions/technicians').set(as(techToken));
+    expect(technicians.body.map((t: { name: string }) => t.name)).toEqual(['Admin', 'Tech']);
   });
 
   it('shows the newest session date in the machine list', async () => {

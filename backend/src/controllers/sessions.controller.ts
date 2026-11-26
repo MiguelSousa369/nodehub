@@ -17,6 +17,18 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 }
 
 // ---------------------------------------------------------------------------
+// GET /api/sessions/technicians  (who has recorded sessions, for the history filter)
+// ---------------------------------------------------------------------------
+
+export async function technicians(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json(await sessionService.listTechnicians());
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/machines/:host/sessions
 // ---------------------------------------------------------------------------
 

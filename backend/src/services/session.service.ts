@@ -49,6 +49,15 @@ export async function listSessions(query: SessionQuery): Promise<{ sessions: Ses
   return { sessions: await toViews(rows), total };
 }
 
+/** Users who recorded at least one session (for the history's technician filter). */
+export async function listTechnicians(): Promise<{ id: number; name: string }[]> {
+  return prisma.user.findMany({
+    where  : { sessions: { some: {} } },
+    select : { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+}
+
 export async function createSession(host: string, input: CreateSessionInput, technicianId: number): Promise<SessionView> {
   const row = await prisma.session.create({
     data   : { host: await canonicalHost(host), technicianId, ...input },

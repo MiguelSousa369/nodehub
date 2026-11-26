@@ -46,6 +46,7 @@ token.
 | `POST` | `/api/machines/:host/ssh-test` | any | `{ sshUser? }` → `{ ok, message }` |
 | **Sessions** | | | |
 | `GET` | `/api/sessions` | any | All sessions; filters `host`, `technicianId`, `result`, `q`, `limit`, `offset` |
+| `GET` | `/api/sessions/technicians` | any | Users who recorded at least one session (history filter) |
 | `GET` | `/api/machines/:host/sessions` | any | Sessions of one machine (`limit`, `offset`) |
 | `POST` | `/api/machines/:host/sessions` | any | Record a session as the caller |
 | **Installer** | | | |
