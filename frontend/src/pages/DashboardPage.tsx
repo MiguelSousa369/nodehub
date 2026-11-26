@@ -6,7 +6,6 @@ import AddMachineDialog from '../components/AddMachineDialog'
 import ClientGroup from '../components/ClientGroup'
 import { Banner, EmptyState, MachineGridSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
-import MachineDetailDialog from '../components/MachineDetailDialog'
 import MachineFormDialog from '../components/MachineFormDialog'
 import RefreshStatus from '../components/RefreshStatus'
 import Toast from '../components/Toast'
@@ -16,6 +15,7 @@ import { usePersistentState } from '../hooks/usePersistentState'
 import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
 import type { Machine } from '../types'
+import { claudePrompt } from '../utils/machine'
 
 const UNASSIGNED = 'Unassigned'
 
@@ -39,11 +39,6 @@ const SORTS: Record<SortOrder, { label: string; compare: (a: Machine, b: Machine
     label  : 'Recent session',
     compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || a.host.localeCompare(b.host),
   },
-}
-
-function claudePrompt(m: Machine): string {
-  return `Helpdesk: client ${m.client}, machine ${m.host} (${m.ip ?? '?'}, user ${m.sshUser}). ` +
-         'Start the session as described in CLAUDE.md, then ask me what the problem is.'
 }
 
 function matchesText(m: Machine, text: string): boolean {
@@ -72,7 +67,6 @@ export default function DashboardPage() {
   const [params, setParams] = useSearchParams()
   const [adding, setAdding]         = useState(false)
   const [editing, setEditing]       = useState<Machine | null>(null)
-  const [detailHost, setDetailHost] = useState<string | null>(null)
   // Per-client open/closed choice; clients not in here follow the default for the fleet size
   const [openGroups, setOpenGroups] = usePersistentState<Record<string, boolean>>('nodehub.openGroups', {})
 
@@ -253,13 +247,11 @@ export default function DashboardPage() {
             onConfigure={setEditing}
             onRemove={remove}
             onCopy={copy}
-            onHistory={(m) => setDetailHost(m.host)}
           />
         ))}
       </main>
 
       <AddMachineDialog open={adding} onClose={() => setAdding(false)} />
-      <MachineDetailDialog host={detailHost} onClose={() => setDetailHost(null)} />
       <MachineFormDialog machine={editing} clients={clients} onClose={() => setEditing(null)} onSaved={saved} />
       <Toast message={toast.message} />
     </>

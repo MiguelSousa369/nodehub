@@ -1,4 +1,7 @@
+import { Link } from 'react-router'
+
 import type { Session, SessionResult } from '../types'
+import { machinePath } from '../utils/machine'
 
 const RESULT_STYLE: Record<SessionResult, { label: string; className: string }> = {
   FIXED     : { label: 'Fixed',      className: 'bg-online/15 text-online dark:text-online-dark' },
@@ -27,7 +30,12 @@ export default function SessionItem({ session: s, showHost = false }: SessionIte
         <ResultBadge result={s.result} />
         <span className="flex-1 font-medium">{s.summary}</span>
         <span className="text-[13px] text-slate-500 dark:text-slate-400">
-          {showHost && <>{s.host}{s.client ? ` (${s.client})` : ''} · </>}
+          {showHost && (
+            <>
+              <Link to={machinePath(s.host)} className="font-medium hover:underline" onClick={(e) => e.stopPropagation()}>{s.host}</Link>
+              {s.client ? ` (${s.client})` : ''} ·{' '}
+            </>
+          )}
           {s.technician?.name ?? 'deleted user'} · {new Date(s.createdAt).toLocaleString()}
         </span>
       </summary>

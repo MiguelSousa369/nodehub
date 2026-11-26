@@ -18,7 +18,6 @@ interface ClientGroupProps {
   onConfigure: (m: Machine) => void
   onRemove   : (m: Machine) => void
   onCopy     : (m: Machine) => void
-  onHistory  : (m: Machine) => void
 }
 
 // ---------------------------------------------------------------------------
