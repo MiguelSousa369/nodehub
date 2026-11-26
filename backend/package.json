@@ -43,5 +43,8 @@
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "effect": "^3.22.5"
+  }
 }
