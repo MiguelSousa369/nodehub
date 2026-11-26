@@ -3,6 +3,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import prisma from '../lib/prisma';
 import { ChangePasswordInput, LoginInput, PublicUser, Role } from '../schemas/user.schema';
 import { HttpError } from '../utils/http-error';
+import { lockedFor, recordFailure, recordSuccess } from '../utils/login-throttle';
 import { hashPassword, verifyPassword } from '../utils/password';
 
 export interface AuthUser {
@@ -27,11 +28,19 @@ function secret(): string {
 // ---------------------------------------------------------------------------
 
 export async function login({ username, password }: LoginInput): Promise<{ token: string; user: AuthUser }> {
+  const wait = lockedFor(username);
+  if (wait > 0) {
+    throw new HttpError(429, 'TOO_MANY_ATTEMPTS',
+      `Too many failed sign-ins for this user. Try again in ${Math.ceil(wait / 60)} min.`);
+  }
+
   const user = await prisma.user.findUnique({ where: { username } });
   // Same error for unknown user, wrong password or deactivated account
   if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
+    recordFailure(username);
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid username or password.');
   }
+  recordSuccess(username);
 
   const options: SignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN ?? '12h') as SignOptions['expiresIn'] };
   const token = jwt.sign({ sub: String(user.id) } satisfies TokenPayload, secret(), options);

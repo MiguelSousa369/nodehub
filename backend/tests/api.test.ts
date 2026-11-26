@@ -23,6 +23,7 @@ vi.mock('../src/lib/tailscale', () => ({
 
 import prisma from '../src/lib/prisma';
 import app from '../src/server';
+import { MAX_FAILURES, resetLoginThrottle } from '../src/utils/login-throttle';
 import { hashPassword } from '../src/utils/password';
 
 const HOST = { Host: '127.0.0.1' };
@@ -44,6 +45,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  resetLoginThrottle();
   await prisma.cliLoginRequest.deleteMany();
   await prisma.session.deleteMany();
   await prisma.apiToken.deleteMany();
@@ -89,6 +91,18 @@ describe('auth', () => {
     await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
     const inactive = await request(app).post('/api/auth/login').set(HOST).send({ username: 'tech', password: TECH_PW });
     expect(inactive.body.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('locks a username for a while after too many wrong passwords', async () => {
+    for (let i = 0; i < MAX_FAILURES; i++) {
+      await request(app).post('/api/auth/login').set(HOST).send({ username: 'tech', password: 'wrong-guess' });
+    }
+    const locked = await request(app).post('/api/auth/login').set(HOST).send({ username: 'tech', password: TECH_PW });
+    expect(locked.status).toBe(429);
+    expect(locked.body.code).toBe('TOO_MANY_ATTEMPTS');
+
+    // Other users are not affected
+    expect((await request(app).post('/api/auth/login').set(HOST).send({ username: 'admin', password: ADMIN_PW })).status).toBe(200);
   });
 
   it('cuts access immediately when a user is deactivated', async () => {

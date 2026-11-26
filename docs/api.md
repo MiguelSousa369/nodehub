@@ -72,6 +72,7 @@ Every error has the same shape; branch on `code`, not on the message:
 | `SESSION_REQUIRED` | 403 | Account-level action attempted with a PC token |
 | `LOGIN_DENIED` | 403 | The PC connection request was denied |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
+| `TOO_MANY_ATTEMPTS` | 429 | 5 wrong passwords for this username in 15 minutes: wait and try again |
 | `FORBIDDEN_ORIGIN` | 403 | Request sent by a page from another site (its `Origin` is not `127.0.0.1`/`localhost`) |
 | `NOT_FOUND` | 404 | Unknown route, or machine/user/connected PC not found |
 | `LOGIN_NOT_FOUND` | 404 | Unknown or expired PC connection request (dashboard) |
