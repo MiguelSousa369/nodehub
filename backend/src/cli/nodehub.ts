@@ -15,6 +15,8 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
+import { apiErrorText, m, resultWord, setCliLanguage } from './messages';
+
 // ---------------------------------------------------------------------------
 // Config: %APPDATA%\nodehub\cli.json (or ~/.config/nodehub/cli.json)
 // ---------------------------------------------------------------------------
@@ -70,7 +72,7 @@ function flag(flags: Record<string, string | true>, name: string): string | unde
 
 function requireHost(positional: string[]): string {
   const host = positional[1];
-  if (!host || !/^[A-Za-z0-9-]{1,63}$/.test(host)) throw new CliError('Missing or invalid machine name.');
+  if (!host || !/^[A-Za-z0-9-]{1,63}$/.test(host)) throw new CliError(m().badHost);
   return host;
 }
 
@@ -87,23 +89,25 @@ async function request(url: string, method: string, route: string, body?: unknow
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new CliError(`Cannot reach nodehub at ${url}. Is the dashboard running (start.cmd)?`);
+    throw new CliError(m().cannotReach(url));
   }
   const data = res.status === 204 ? undefined : await res.json().catch(() => ({ error: res.statusText }));
   return { status: res.status, ok: res.ok, data };
 }
 
-function errorMessage(data: { error?: string; details?: Array<{ message: string; path: string[] }> } | undefined, status: number): string {
+function errorMessage(
+  data: { error?: string; code?: string; details?: Array<{ message: string; path: string[] }> } | undefined, status: number,
+): string {
   const details = Array.isArray(data?.details) ? ` ${data!.details.map((d) => `${d.path.join('.')}: ${d.message}`).join('; ')}` : '';
-  return `${data?.error ?? `HTTP ${status}`}${details}`;
+  return `${apiErrorText(data?.code, data?.error ?? `HTTP ${status}`)}${details}`;
 }
 
 /** Authenticated API call with the saved token. */
 async function api<T>(method: string, route: string, body?: unknown): Promise<T> {
   const config = loadConfig();
-  if (!config) throw new CliError('This PC is not connected. Run: nodehub login');
+  if (!config) throw new CliError(m().notConnected);
   const res = await request(config.url, method, route, body, config.token);
-  if (res.status === 401) throw new CliError('This PC was disconnected (or your user deactivated). Run: nodehub login');
+  if (res.status === 401) throw new CliError(m().disconnected);
   if (!res.ok) throw new CliError(errorMessage(res.data, res.status));
   return res.data as T;
 }
@@ -130,13 +134,14 @@ interface Session {
 }
 
 function printSession(s: Session): void {
-  console.log(`\n### #${s.id} ${date(s.createdAt)}: ${s.summary}${s.updatedAt ? ` (edited ${date(s.updatedAt)})` : ''}`);
-  console.log(`- Technician: ${s.technician?.name ?? '(deleted user)'}`);
-  for (const [label, value] of [['Problem', s.problem], ['Diagnosis', s.diagnosis], ['Actions', s.actions]] as const) {
+  const t = m();
+  console.log(`\n### #${s.id} ${date(s.createdAt)}: ${s.summary}${s.updatedAt ? ` ${t.edited(date(s.updatedAt))}` : ''}`);
+  console.log(`- ${t.technician}: ${s.technician?.name ?? t.deletedUser}`);
+  for (const [label, value] of [[t.problem, s.problem], [t.diagnosis, s.diagnosis], [t.actions, s.actions]] as const) {
     if (value) console.log(`- ${label}: ${value}`);
   }
-  console.log(`- Result: ${s.result.toLowerCase()}`);
-  if (s.pending) console.log(`- Pending: ${s.pending}`);
+  console.log(`- ${t.result}: ${resultWord(s.result)}`);
+  if (s.pending) console.log(`- ${t.pending}: ${s.pending}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,11 +162,11 @@ async function cmdLogin(flags: Record<string, string | true>) {
     { deviceCode: string; userCode: string; expiresIn: number; interval: number };
 
   const approveUrl = `${url}/connect?code=${userCode}`;
-  console.log(`Connecting "${deviceName}" to nodehub.\n`);
-  console.log(`  Approve it in the browser: ${approveUrl}`);
-  console.log(`  Code: ${userCode}\n`);
+  console.log(`${m().connecting(deviceName)}\n`);
+  console.log(m().approveAt(approveUrl));
+  console.log(`${m().code(userCode)}\n`);
   if (!flags['no-browser']) openBrowser(approveUrl);
-  console.log('Waiting for approval... (Ctrl+C to cancel)');
+  console.log(m().waiting);
 
   const deadline = Date.now() + expiresIn * 1000;
   while (Date.now() < deadline) {
@@ -172,10 +177,10 @@ async function cmdLogin(flags: Record<string, string | true>) {
 
     const { token, user } = res.data as { token: string; user: { name: string; username: string } };
     saveConfig({ url, token });
-    console.log(`\nConnected. This PC now works as ${user.name} (${user.username}).`);
+    console.log(`\n${m().connected(user.name, user.username)}`);
     return;
   }
-  throw new CliError('The connection request expired. Run "nodehub login" again.');
+  throw new CliError(m().expired);
 }
 
 /** Exit code 0 if this PC is connected (used by the launcher with --quiet). */
@@ -187,24 +192,27 @@ async function cmdWhoami(quiet: boolean) {
     return;
   }
   const me = await api<{ name: string; username: string; role: string }>('GET', '/api/auth/me');
-  console.log(`${me.name} (${me.username}, ${me.role.toLowerCase()}) on ${loadConfig()!.url}`);
+  console.log(m().whoami(me.name, me.username, me.role.toLowerCase(), loadConfig()!.url));
+  console.log(m().teamLanguage);
 }
 
 async function cmdMachine(host: string, json: boolean) {
-  const m = await api<{
+  const machine = await api<{
     host: string; client: string; sshUser: string; notes: string; profile: string;
     recentSessions: Session[]; totalSessions: number;
   }>('GET', `/api/machines/${encodeURIComponent(host)}`);
-  if (json) return console.log(JSON.stringify(m, null, 2));
+  if (json) return console.log(JSON.stringify(machine, null, 2));
 
-  console.log(`# ${m.host}\n`);
-  console.log(`Client:   ${m.client}`);
-  console.log(`SSH user: ${m.sshUser}`);
-  if (m.notes) console.log(`Notes:    ${m.notes}`);
-  console.log(`\n## Profile\n\n${m.profile || '(empty: fill it in with "nodehub profile")'}`);
-  console.log(`\n## Recent sessions (${m.recentSessions.length} of ${m.totalSessions})`);
-  if (m.recentSessions.length === 0) console.log('\n(none yet)');
-  m.recentSessions.forEach(printSession);
+  const t = m();
+  console.log(`# ${machine.host}\n`);
+  console.log(`${t.recordsLanguage}\n`);
+  console.log(`${t.client}: ${machine.client}`);
+  console.log(`${t.sshUser}: ${machine.sshUser}`);
+  if (machine.notes) console.log(`${t.notes}: ${machine.notes}`);
+  console.log(`\n## ${t.profile}\n\n${machine.profile || t.emptyProfile}`);
+  console.log(`\n## ${t.recentSessions(machine.recentSessions.length, machine.totalSessions)}`);
+  if (machine.recentSessions.length === 0) console.log(`\n${t.noSessions}`);
+  machine.recentSessions.forEach(printSession);
 }
 
 async function cmdHistory(host: string, flags: Record<string, string | true>) {
@@ -212,14 +220,14 @@ async function cmdHistory(host: string, flags: Record<string, string | true>) {
   const { sessions, total } = await api<{ sessions: Session[]; total: number }>(
     'GET', `/api/machines/${encodeURIComponent(host)}/sessions?limit=${limit}`);
   if (flags.json) return console.log(JSON.stringify({ sessions, total }, null, 2));
-  console.log(`# ${host}: ${sessions.length} of ${total} sessions`);
+  console.log(m().historyTitle(host, sessions.length, total));
   sessions.forEach(printSession);
 }
 
 async function cmdLog(host: string, flags: Record<string, string | true>) {
   const body = sessionFields(flags);
   const s = await api<Session>('POST', `/api/machines/${encodeURIComponent(host)}/sessions`, body);
-  console.log(`Session #${s.id} recorded for ${s.host} (${s.result.toLowerCase()}).`);
+  console.log(m().recorded(s.id, s.host, resultWord(s.result)));
 }
 
 /** Session fields from --file (JSON) or from flags; only what's given is sent. */
@@ -232,18 +240,18 @@ function sessionFields(flags: Record<string, string | true>): Record<string, str
 
 async function cmdUpdate(positional: string[], flags: Record<string, string | true>) {
   const id = Number(String(positional[1] ?? '').replace(/^#/, ''));
-  if (!Number.isInteger(id) || id < 1) throw new CliError('Missing or invalid session number (e.g. nodehub update 12 ...).');
+  if (!Number.isInteger(id) || id < 1) throw new CliError(m().badSessionId);
   const s = await api<Session>('PATCH', `/api/sessions/${id}`, sessionFields(flags));
-  console.log(`Session #${s.id} on ${s.host} updated (${s.result.toLowerCase()}${s.pending ? ', pending: ' + s.pending : ', nothing pending'}).`);
+  console.log(m().updated(s.id, s.host, resultWord(s.result), s.pending));
 }
 
 async function cmdProfile(host: string, flags: Record<string, string | true>) {
   const file = flag(flags, 'file');
   const text = flag(flags, 'text');
-  if (!file && text === undefined) throw new CliError('Use --file <profile.md> or --text "<profile>".');
+  if (!file && text === undefined) throw new CliError(m().profileUsage);
   const profile = file ? fs.readFileSync(file, 'utf-8').replace(/^﻿/, '') : text!;
   await api('PUT', `/api/machines/${encodeURIComponent(host)}/profile`, { profile });
-  console.log(`Profile of ${host} updated.`);
+  console.log(m().profileUpdated(host));
 }
 
 const HELP = `nodehub CLI
@@ -268,11 +276,21 @@ Docs: docs/cli.md`;
 // Main
 // ---------------------------------------------------------------------------
 
+/** Team language for the CLI's messages (public endpoint; English if the server can't be reached). */
+async function loadLanguage(flags: Record<string, string | true>): Promise<void> {
+  const url = (flag(flags, 'url') ?? loadConfig()?.url ?? DEFAULT_URL).replace(/\/+$/, '');
+  try {
+    const res = await fetch(`${url}/api/settings`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) setCliLanguage(((await res.json()) as { language?: string }).language);
+  } catch { /* keep English; the command itself reports connection problems */ }
+}
+
 async function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
+  if (positional[0] && !(positional[0] === 'whoami' && flags.quiet)) await loadLanguage(flags);
   switch (positional[0]) {
     case 'login'  : return cmdLogin(flags);
-    case 'logout' : fs.rmSync(CONFIG_FILE, { force: true }); return console.log('This PC forgot its token. Disconnect it in the dashboard (Connected PCs) to revoke it.');
+    case 'logout' : fs.rmSync(CONFIG_FILE, { force: true }); return console.log(m().loggedOut);
     case 'whoami' : return cmdWhoami(Boolean(flags.quiet));
     case 'machine': return cmdMachine(requireHost(positional), Boolean(flags.json));
     case 'history': return cmdHistory(requireHost(positional), flags);
@@ -284,6 +302,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`Error: ${err instanceof CliError ? err.message : (err as Error).stack}`);
+  console.error(`${m().error}: ${err instanceof CliError ? err.message : (err as Error).stack}`);
   process.exitCode = 1;
 });

@@ -104,6 +104,13 @@ Notes:    Back office server
 - Result: fixed
 ```
 
+## Language
+
+The CLI prints its messages in the **team language** (English or Portuguese), chosen by an admin in
+the dashboard (**Users → Team settings**). `nodehub machine` starts with a *Records language* line:
+Claude writes session records and profiles in that language. JSON keys and `result` values
+(`fixed`, `partial`, `unresolved`) are always in English.
+
 ## Errors
 
 | Message | Fix |

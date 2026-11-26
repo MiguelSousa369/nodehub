@@ -2,7 +2,7 @@
 
 This repository is used to give **remote support** to client PCs on the support Tailscale network. You (Claude) connect to the machines over **SSH** to diagnose and fix problems, at the technician's request, and record what was done with the **`nodehub` CLI**.
 
-**Language:** talk to the technician in the language they write in. Write session records and machine profiles in **English**, so the whole team can read them.
+**Language:** talk to the technician in the language they write in. Write session records and machine profiles in the **team language**: the first line of `nodehub machine` says which (*Records language: English* or *Idioma dos registos: português (Portugal)*). An admin chooses it in the dashboard. Keep the JSON keys and the `result` values (`fixed`, `partial`, `unresolved`) in English either way.
 
 ---
 

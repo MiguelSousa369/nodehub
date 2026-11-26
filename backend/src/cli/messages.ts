@@ -1,0 +1,129 @@
+// ---------------------------------------------------------------------------
+// CLI texts in the team language (GET /api/settings): English or Portuguese (Portugal).
+// Session field names in printed records stay recognisable in both languages for Claude.
+// ---------------------------------------------------------------------------
+
+export type CliLanguage = 'en' | 'pt';
+
+const en = {
+  cannotReach   : (url: string) => `Cannot reach nodehub at ${url}. Is the dashboard running (start.cmd)?`,
+  notConnected  : 'This PC is not connected. Run: nodehub login',
+  disconnected  : 'This PC was disconnected (or your user deactivated). Run: nodehub login',
+  connecting    : (device: string) => `Connecting "${device}" to nodehub.`,
+  approveAt     : (url: string) => `  Approve it in the browser: ${url}`,
+  code          : (code: string) => `  Code: ${code}`,
+  waiting       : 'Waiting for approval... (Ctrl+C to cancel)',
+  connected     : (name: string, username: string) => `Connected. This PC now works as ${name} (${username}).`,
+  expired       : 'The connection request expired. Run "nodehub login" again.',
+  loggedOut     : 'This PC forgot its token. Disconnect it in the dashboard (Connected PCs) to revoke it.',
+  whoami        : (name: string, username: string, role: string, url: string) => `${name} (${username}, ${role}) on ${url}`,
+  teamLanguage  : 'Team language: English',
+  recordsLanguage: 'Records language: English. Write the session record (nodehub log / update) and the profile in English.',
+  client        : 'Client',
+  sshUser       : 'SSH user',
+  notes         : 'Notes',
+  profile       : 'Profile',
+  emptyProfile  : '(empty: fill it in with "nodehub profile")',
+  recentSessions: (shown: number, total: number) => `Recent sessions (${shown} of ${total})`,
+  noSessions    : '(none yet)',
+  historyTitle  : (host: string, shown: number, total: number) => `# ${host}: ${shown} of ${total} sessions`,
+  edited        : (date: string) => `(edited ${date})`,
+  technician    : 'Technician',
+  deletedUser   : '(deleted user)',
+  problem       : 'Problem',
+  diagnosis     : 'Diagnosis',
+  actions       : 'Actions',
+  result        : 'Result',
+  pending       : 'Pending',
+  recorded      : (id: number, host: string, result: string) => `Session #${id} recorded for ${host} (${result}).`,
+  updated       : (id: number, host: string, result: string, pending: string) =>
+    `Session #${id} on ${host} updated (${result}${pending ? `, pending: ${pending}` : ', nothing pending'}).`,
+  profileUpdated: (host: string) => `Profile of ${host} updated.`,
+  badHost       : 'Missing or invalid machine name.',
+  badSessionId  : 'Missing or invalid session number (e.g. nodehub update 12 ...).',
+  profileUsage  : 'Use --file <profile.md> or --text "<profile>".',
+  error         : 'Error',
+};
+
+type CliMessages = typeof en;
+
+const pt: CliMessages = {
+  cannotReach   : (url: string) => `Não foi possível contactar o nodehub em ${url}. O dashboard está a correr (start.cmd)?`,
+  notConnected  : 'Este PC não está ligado. Corra: nodehub login',
+  disconnected  : 'Este PC foi desligado (ou o seu utilizador desativado). Corra: nodehub login',
+  connecting    : (device: string) => `A ligar "${device}" ao nodehub.`,
+  approveAt     : (url: string) => `  Aprove no browser: ${url}`,
+  code          : (code: string) => `  Código: ${code}`,
+  waiting       : 'À espera da aprovação... (Ctrl+C para cancelar)',
+  connected     : (name: string, username: string) => `Ligado. Este PC passa a trabalhar como ${name} (${username}).`,
+  expired       : 'O pedido de ligação expirou. Corra "nodehub login" outra vez.',
+  loggedOut     : 'Este PC esqueceu o token. Desligue-o no dashboard (PCs ligados) para o revogar.',
+  whoami        : (name: string, username: string, role: string, url: string) => `${name} (${username}, ${role}) em ${url}`,
+  teamLanguage  : 'Idioma da equipa: português (Portugal)',
+  recordsLanguage: 'Idioma dos registos: português (Portugal). Escreve o registo da sessão (nodehub log / update) e o perfil em português de Portugal.',
+  client        : 'Cliente',
+  sshUser       : 'Utilizador SSH',
+  notes         : 'Notas',
+  profile       : 'Perfil',
+  emptyProfile  : '(vazio: preencha-o com "nodehub profile")',
+  recentSessions: (shown: number, total: number) => `Sessões recentes (${shown} de ${total})`,
+  noSessions    : '(ainda nenhuma)',
+  historyTitle  : (host: string, shown: number, total: number) => `# ${host}: ${shown} de ${total} sessões`,
+  edited        : (date: string) => `(editada ${date})`,
+  technician    : 'Técnico',
+  deletedUser   : '(utilizador apagado)',
+  problem       : 'Problema',
+  diagnosis     : 'Diagnóstico',
+  actions       : 'Ações',
+  result        : 'Resultado',
+  pending       : 'Pendente',
+  recorded      : (id: number, host: string, result: string) => `Sessão #${id} registada em ${host} (${result}).`,
+  updated       : (id: number, host: string, result: string, pending: string) =>
+    `Sessão #${id} em ${host} atualizada (${result}${pending ? `, pendente: ${pending}` : ', nada pendente'}).`,
+  profileUpdated: (host: string) => `Perfil de ${host} atualizado.`,
+  badHost       : 'Nome da máquina em falta ou inválido.',
+  badSessionId  : 'Número da sessão em falta ou inválido (ex.: nodehub update 12 ...).',
+  profileUsage  : 'Use --file <perfil.md> ou --text "<perfil>".',
+  error         : 'Erro',
+};
+
+const MESSAGES: Record<CliLanguage, CliMessages> = { en, pt };
+
+/** Result values as stored (fixed / partial / unresolved), worded for people. */
+export const RESULT_WORDS: Record<CliLanguage, Record<string, string>> = {
+  en: { FIXED: 'fixed', PARTIAL: 'partial', UNRESOLVED: 'unresolved' },
+  pt: { FIXED: 'resolvido', PARTIAL: 'parcial', UNRESOLVED: 'por resolver' },
+};
+
+/** Portuguese wording for API error codes; in English the server's own message is used. */
+const PT_ERRORS: Record<string, string> = {
+  SESSION_NOT_FOUND     : 'Essa sessão não existe.',
+  MACHINE_NOT_CONFIGURED: 'Essa máquina não está configurada no dashboard.',
+  NOT_FOUND             : 'Não encontrado.',
+  FORBIDDEN             : 'Não tem permissão para esta ação (só quem registou a sessão, ou um administrador).',
+  SESSION_REQUIRED      : 'Esta ação exige ter sessão iniciada no dashboard.',
+  VALIDATION_ERROR      : 'Pedido inválido.',
+  LOGIN_DENIED          : 'O pedido de ligação foi recusado no dashboard.',
+  LOGIN_EXPIRED         : 'O pedido de ligação expirou. Corra "nodehub login" outra vez.',
+  TOO_MANY_REQUESTS     : 'Demasiados pedidos de ligação pendentes. Tente daqui a alguns minutos.',
+  INTERNAL_ERROR        : 'Ocorreu um erro no servidor. Os detalhes estão no log do servidor.',
+};
+
+let current: CliLanguage = 'en';
+
+export function setCliLanguage(language: unknown): void {
+  current = language === 'pt' ? 'pt' : 'en';
+}
+
+export const cliLanguage = (): CliLanguage => current;
+
+/** Texts in the active language. */
+export const m = (): CliMessages => MESSAGES[current];
+
+/** The message for an API error in the active language. */
+export function apiErrorText(code: string | undefined, serverMessage: string): string {
+  return (current === 'pt' && code && PT_ERRORS[code]) || serverMessage;
+}
+
+/** fixed / resolvido, partial / parcial, ... */
+export const resultWord = (result: string): string => RESULT_WORDS[current][result] ?? result.toLowerCase();
