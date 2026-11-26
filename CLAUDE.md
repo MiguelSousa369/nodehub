@@ -90,6 +90,7 @@ Anything that **changes** the machine or affects the user. Explain what you will
 
 - Disable the antivirus or the firewall.
 - Touch the **Tailscale** or **OpenSSH** configuration, the **`nodehub`** user or the `nodehub-SSH` firewall rule: that would cut the support team's access.
+- Run `nodehub keys sync` or edit `administrators_authorized_keys`: the team's SSH keys are managed by an admin in the dashboard.
 - Delete user data (documents, databases, email).
 - Copy client data off the machine, except logs the technician asked for diagnosis.
 - Write passwords, keys or tokens into session records, profiles or files in this repository.

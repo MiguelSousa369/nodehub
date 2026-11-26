@@ -4,8 +4,7 @@
 
 - [x] **Shared server for the team.** nodehub can run on an office server, opened at its IP
   ([server.md](server.md)).
-- [ ] **Distribute SSH keys from the dashboard.** Add (or remove) a technician's key on every online
-  client PC at once, instead of re-running the installer.
+- [x] **Manage and distribute SSH keys.** Users → SSH keys, and `nodehub keys sync`.
 - [ ] **HTTPS on the office server.** Built-in certificate or a documented reverse proxy.
 - [ ] **Containers for the backend.** Backend and frontend in Docker like PostgreSQL, with machine
   status from the Tailscale API or a sidecar instead of the local CLI.
