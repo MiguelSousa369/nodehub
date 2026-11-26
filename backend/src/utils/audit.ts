@@ -20,6 +20,7 @@ export type AuditEvent =
   | 'machine.saved' | 'machine.removed'
   | 'session.updated'
   | 'settings.updated'
+  | 'key.added' | 'key.removed'
   | 'request.forbidden';
 
 const auditLog = winston.createLogger({

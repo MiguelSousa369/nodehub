@@ -209,6 +209,50 @@ describe('auth', () => {
 });
 
 // ---------------------------------------------------------------------------
+// SSH keys
+// ---------------------------------------------------------------------------
+
+describe('ssh keys', () => {
+  const PEDRO = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPedroPedroPedroPedroPedroPedroPedroPedro pedro@PC-PEDRO';
+
+  afterAll(() => fs.rmSync(path.join(keysDir, 'pedro.pub'), { force: true }));
+
+  it('lists the team keys with fingerprints, for anyone signed in (PC tokens too)', async () => {
+    const token = await createToken(techToken);
+    const res = await request(app).get('/api/keys').set(as(token));
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({ type: 'ssh-ed25519', name: 'tech', key: 'ssh-ed25519 AAAATEST tech' });
+    expect(res.body[0].fingerprint).toMatch(/^SHA256:/);
+  });
+
+  it('lets admins add and remove keys, which the installer then includes or drops', async () => {
+    expect((await request(app).post('/api/keys').set(as(techToken)).send({ name: 'pedro', publicKey: PEDRO })).status).toBe(403);
+
+    const added = await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'pedro', publicKey: PEDRO });
+    expect(added.status).toBe(201);
+    expect(fs.readFileSync(path.join(keysDir, 'pedro.pub'), 'utf-8').trim()).toBe(PEDRO);
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'other', publicKey: PEDRO })).body.code).toBe('KEY_EXISTS');
+
+    const installer = (await request(app).get('/api/installer').set(as(adminToken))
+      .buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))); })).body as Buffer;
+    expect(installer.toString('utf-8')).toContain('pedro@PC-PEDRO');
+
+    expect((await request(app).delete(`/api/keys/${added.body.id}`).set(as(adminToken))).status).toBe(204);
+    expect(fs.existsSync(path.join(keysDir, 'pedro.pub'))).toBe(false);
+    expect((await request(app).delete(`/api/keys/${added.body.id}`).set(as(adminToken))).body.code).toBe('KEY_NOT_FOUND');
+  });
+
+  it('refuses private keys and anything that is not a public key', async () => {
+    const priv = await request(app).post('/api/keys').set(as(adminToken))
+      .send({ name: 'oops', publicKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaA==\n-----END OPENSSH PRIVATE KEY-----' });
+    expect(priv.body.code).toBe('PRIVATE_KEY');
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'x', publicKey: 'hello' })).body.code).toBe('INVALID_KEY');
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: '../evil', publicKey: PEDRO })).body.code).toBe('INVALID_KEY');
+    expect((await request(app).post('/api/keys').set(as(adminToken)).send({ name: 'q', publicKey: "ssh-ed25519 AAAA x'; rm" })).body.code).toBe('INVALID_KEY');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
 

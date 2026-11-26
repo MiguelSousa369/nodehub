@@ -4,6 +4,7 @@ import path from 'path';
 import { clientTag } from '../lib/tailscale';
 import { Language } from '../schemas/settings.schema';
 import { HttpError } from '../utils/http-error';
+import { listKeys } from './keys.service';
 
 // ---------------------------------------------------------------------------
 // Client installer: the template in installer/ with the Tailscale auth key and
@@ -13,7 +14,6 @@ import { HttpError } from '../utils/http-error';
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 
 const AUTHKEY_RE    = /^tskey-auth-[A-Za-z0-9-]+$/;
-const PUBLIC_KEY_RE = /^(ssh-ed25519|ssh-rsa|ecdsa-sha2-\S+|sk-\S+) [A-Za-z0-9+/=]+( [^'\r\n]*)?$/;
 
 /** What still has to be configured; the dashboard shows each code in the team language. */
 export type MissingSetting = 'TAILSCALE_AUTHKEY' | 'PUBLIC_KEYS' | 'INSTALLER_TEMPLATE' | 'CLIENT_TAG';
@@ -34,24 +34,14 @@ function templatePath(): string {
   return path.resolve(process.env.INSTALLER_TEMPLATE ?? path.join(REPO_ROOT, 'installer', 'install-client.ps1'));
 }
 
-function publicKeysDir(): string {
-  return path.resolve(process.env.PUBLIC_KEYS_DIR ?? path.join(REPO_ROOT, 'public-keys'));
-}
-
 function authKey(): string | null {
   const key = (process.env.TAILSCALE_AUTHKEY ?? '').trim();
   return AUTHKEY_RE.test(key) ? key : null;
 }
 
+/** The team's public keys (public-keys/*.pub), as written into the installer. */
 export function publicKeys(): string[] {
-  const dir = publicKeysDir();
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter((f) => f.endsWith('.pub'))
-    .sort()
-    .flatMap((f) => fs.readFileSync(path.join(dir, f), 'utf-8').split(/\r?\n/))
-    .map((l) => l.trim())
-    .filter((l) => PUBLIC_KEY_RE.test(l));
+  return listKeys().map((k) => k.key);
 }
 
 export function getInstallerStatus(): InstallerStatus {

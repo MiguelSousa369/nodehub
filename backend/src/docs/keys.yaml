@@ -1,0 +1,81 @@
+components:
+  schemas:
+    PublicKey:
+      type: object
+      properties:
+        id:          { type: string, description: Hex SHA-256 of the key (used in URLs). }
+        fingerprint: { type: string, example: 'SHA256:3dPkqMfGz...', description: As ssh-keygen -l shows it. }
+        type:        { type: string, example: ssh-ed25519 }
+        comment:     { type: string, example: pedro@PC-PEDRO }
+        name:        { type: string, example: pedro, description: File in public-keys/ (without .pub). }
+        key:         { type: string, description: The full public key line. }
+
+paths:
+  /api/keys:
+    get:
+      summary: The team's SSH public keys (public-keys/*.pub)
+      description: |
+        The list client PCs should accept. The installer writes it to new PCs, and
+        `nodehub keys sync` (run on a technician PC that already has access) applies it to every
+        online client PC. PC tokens may read it.
+      responses:
+        '200':
+          description: Keys.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PublicKey' } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      summary: Add a technician's public key (admins, dashboard session)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, publicKey]
+              properties:
+                name:      { type: string, pattern: '^[A-Za-z0-9._-]{1,40}$', example: pedro }
+                publicKey: { type: string, example: 'ssh-ed25519 AAAAC3Nza... pedro@PC-PEDRO' }
+      responses:
+        '201':
+          description: Added (saved as public-keys/<name>.pub).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicKey' }
+        '400':
+          description: INVALID_KEY, PRIVATE_KEY (a private key was pasted) or VALIDATION_ERROR
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: FORBIDDEN (not an admin) or SESSION_REQUIRED (PC token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: KEY_EXISTS or KEY_NAME_TAKEN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/keys/{id}:
+    delete:
+      summary: Remove a key (admins, dashboard session)
+      description: Client PCs stop accepting it after the next `nodehub keys sync`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[0-9a-f]{64}$' } }
+      responses:
+        '204': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: FORBIDDEN or SESSION_REQUIRED
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: KEY_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

@@ -13,6 +13,7 @@ import { allowedHosts, localHostOnly } from './middlewares/local-host.middleware
 import { MIN_SECRET_LENGTH } from './services/auth.service';
 import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
+import keysRoutes from './routes/keys.routes';
 import machinesRoutes from './routes/machines.routes';
 import sessionsRoutes from './routes/sessions.routes';
 import settingsRoutes from './routes/settings.routes';
@@ -44,6 +45,7 @@ app.use('/api/cli-login', cliLoginRoutes); // browser authorisation of a PC (nod
 app.use('/api/machines', authGuard, machinesRoutes);
 app.use('/api/sessions', authGuard, sessionsRoutes);
 app.use('/api/installer', authGuard, installerRoutes);
+app.use('/api/keys', authGuard, keysRoutes); // the team's SSH public keys
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route not found.', code: 'NOT_FOUND' }));
 
 // ---------------------------------------------------------------------------
