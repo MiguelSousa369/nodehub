@@ -8,6 +8,7 @@ import { Banner, EmptyState, MachineGridSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
 import MachineDetailDialog from '../components/MachineDetailDialog'
 import MachineFormDialog from '../components/MachineFormDialog'
+import RefreshStatus from '../components/RefreshStatus'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { useMachines } from '../hooks/useMachines'
@@ -66,7 +67,7 @@ function matchesStatus(m: Machine, status: StatusFilter): boolean {
 
 export default function DashboardPage() {
   const { logout } = useAuth()
-  const { machines, clients, tailscaleError, error, loading, reload } = useMachines(logout)
+  const { machines, clients, tailscaleError, error, loading, refreshing, updatedAt, reload } = useMachines(logout)
   const toast = useToast()
   const [params, setParams] = useSearchParams()
   const [adding, setAdding]         = useState(false)
@@ -210,6 +211,7 @@ export default function DashboardPage() {
           </label>
 
           <div className="flex-1" />
+          <RefreshStatus updatedAt={updatedAt} refreshing={refreshing} onRefresh={reload} />
           {!filtering && groups.length > 1 && (
             <div className="flex gap-1">
               <button className="btn gap-1.5" onClick={() => setAll(true)} title="Expand all clients">
