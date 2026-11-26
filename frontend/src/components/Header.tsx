@@ -7,6 +7,7 @@ import ChangePasswordDialog from './ChangePasswordDialog'
 import ConnectedPcsDialog from './ConnectedPcsDialog'
 import Logo from './Logo'
 import Menu from './Menu'
+import ThemeSwitch from './ThemeSwitch'
 
 interface HeaderProps {
   children?: ReactNode   // page-specific controls (summary, filter, actions)
@@ -75,6 +76,7 @@ export default function Header({ children }: HeaderProps) {
                 </div>
               </>
             }
+            footer={<ThemeSwitch />}
             items={[
               { label: 'Connected PCs', icon: <MonitorSmartphone size={16} />, onClick: () => setDialog('pcs') },
               { label: 'Change password', icon: <KeyRound size={16} />, onClick: () => setDialog('password') },
