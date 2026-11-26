@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router'
 
+import Backdrop from './components/Backdrop'
 import { useAuth } from './context/AuthContext'
 import ConnectPage from './pages/ConnectPage'
 import DashboardPage from './pages/DashboardPage'
@@ -22,13 +23,21 @@ import UsersPage from './pages/UsersPage'
 
 export default function App() {
   const { user } = useAuth()
-  if (!user) return <LoginPage />
 
+  return (
+    <>
+      <Backdrop />
+      {user ? <SignedInRoutes isAdmin={user.role === 'ADMIN'} /> : <LoginPage />}
+    </>
+  )
+}
+
+function SignedInRoutes({ isAdmin }: { isAdmin: boolean }) {
   return (
     <Routes>
       <Route path="/" element={<DashboardPage />} />
       <Route path="/history" element={<HistoryPage />} />
-      <Route path="/users" element={user.role === 'ADMIN' ? <UsersPage /> : <Navigate to="/" replace />} />
+      <Route path="/users" element={isAdmin ? <UsersPage /> : <Navigate to="/" replace />} />
       <Route path="/connect" element={<ConnectPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
