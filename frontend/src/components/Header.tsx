@@ -1,4 +1,4 @@
-import { History, KeyRound, LogOut, Monitor, MonitorSmartphone, Search, Users } from 'lucide-react'
+import { History, KeyRound, KeySquare, LogOut, Monitor, MonitorSmartphone, Search, Users } from 'lucide-react'
 import { ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 
@@ -9,6 +9,7 @@ import CommandPalette from './CommandPalette'
 import ConnectedPcsDialog from './ConnectedPcsDialog'
 import Logo from './Logo'
 import Menu from './Menu'
+import { MySshKeysDialog } from './SshKeys'
 import ThemeSwitch from './ThemeSwitch'
 
 interface HeaderProps {
@@ -31,7 +32,7 @@ export default function Header({ children }: HeaderProps) {
   const user = useUser()
   const { logout } = useAuth()
   const { t } = useI18n()
-  const [dialog, setDialog] = useState<'password' | 'pcs' | 'search' | null>(null)
+  const [dialog, setDialog] = useState<'password' | 'pcs' | 'keys' | 'search' | null>(null)
 
   // Quick search shortcuts: Ctrl+K (or Cmd+K) anywhere, "/" when not typing in a field
   useEffect(() => {
@@ -111,6 +112,7 @@ export default function Header({ children }: HeaderProps) {
             footer={<ThemeSwitch />}
             items={[
               { label: t.header.connectedPcs, icon: <MonitorSmartphone size={16} />, onClick: () => setDialog('pcs') },
+              { label: t.keys.mine, icon: <KeySquare size={16} />, onClick: () => setDialog('keys') },
               { label: t.header.changePassword, icon: <KeyRound size={16} />, onClick: () => setDialog('password') },
               'separator',
               { label: t.header.signOut, icon: <LogOut size={16} />, onClick: logout, danger: true },
@@ -121,6 +123,7 @@ export default function Header({ children }: HeaderProps) {
 
       <ChangePasswordDialog open={dialog === 'password'} onClose={() => setDialog(null)} />
       <ConnectedPcsDialog open={dialog === 'pcs'} onClose={() => setDialog(null)} />
+      <MySshKeysDialog open={dialog === 'keys'} onClose={() => setDialog(null)} />
       <CommandPalette open={dialog === 'search'} onClose={() => setDialog(null)} isAdmin={user.role === 'ADMIN'} />
     </header>
   )

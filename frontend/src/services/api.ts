@@ -170,13 +170,14 @@ export async function listKeys(): Promise<PublicKey[]> {
   return handleResponse(await fetch(`${BASE}/keys`, { headers: headers() }))
 }
 
-export async function addKey(name: string, publicKey: string): Promise<PublicKey> {
+/** Adds a key: your own, or (admins) for `userId`, or a service key with `userId: null`. */
+export async function addKey(name: string, publicKey: string, userId?: number | null): Promise<PublicKey> {
   return handleResponse(await fetch(`${BASE}/keys`, {
-    method: 'POST', headers: headers(json), body: JSON.stringify({ name, publicKey }),
+    method: 'POST', headers: headers(json), body: JSON.stringify({ name, publicKey, ...(userId !== undefined ? { userId } : {}) }),
   }))
 }
 
-export async function removeKey(id: string): Promise<void> {
+export async function removeKey(id: number): Promise<void> {
   return handleResponse(await fetch(`${BASE}/keys/${id}`, { method: 'DELETE', headers: headers() }))
 }
 

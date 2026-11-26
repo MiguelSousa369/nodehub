@@ -46,14 +46,17 @@ export interface InstallerStatus {
   missing: MissingSetting[]
 }
 
-/** One of the team's SSH public keys (public-keys/*.pub on the server). */
+/** One of the team's SSH public keys. */
 export interface PublicKey {
-  id         : string   // hex SHA-256, for URLs
-  fingerprint: string   // SHA256:... as ssh-keygen shows it
+  id         : number
+  name       : string   // label, e.g. "laptop"
   type       : string
   comment    : string
-  name       : string   // file name without .pub
+  fingerprint: string   // SHA256:... as ssh-keygen shows it
   key        : string
+  owner      : { id: number; name: string; username: string; active: boolean } | null   // null = service key
+  effective  : boolean  // applied to client PCs (owner active, or service key)
+  createdAt  : string
 }
 
 /** Team-wide settings (admins change them). */

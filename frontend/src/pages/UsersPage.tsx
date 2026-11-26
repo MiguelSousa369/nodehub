@@ -96,7 +96,7 @@ export default function UsersPage() {
 
       <main id="main" tabIndex={-1} className="mx-auto max-w-4xl px-4 py-5 outline-none sm:px-6">
         <TeamSettings onSaved={toast.show} />
-        <SshKeys onMessage={toast.show} />
+        <SshKeys users={users ?? []} onMessage={toast.show} />
 
         {error && <Banner>{error}</Banner>}
         {!users && !error && <ListSkeleton rows={3} label={t.users.loading} />}
