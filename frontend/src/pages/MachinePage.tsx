@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router'
 import { Banner, EmptyState, ListSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
 import MachineFormDialog from '../components/MachineFormDialog'
+import Markdown from '../components/Markdown'
 import SessionItem from '../components/SessionItem'
 import Toast from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
@@ -148,7 +149,9 @@ export default function MachinePage() {
               </div>
               {editingProfile ? (
                 <>
-                  <label className="sr-only" htmlFor="profile-text">Profile (Markdown)</label>
+                  <label className="mb-1 block text-[13px] text-slate-500 dark:text-slate-400" htmlFor="profile-text">
+                    Markdown: <code>**bold**</code>, <code>- list item</code>
+                  </label>
                   <textarea id="profile-text" className="input min-h-[200px] font-mono" value={draft} onChange={(e) => setDraft(e.target.value)} />
                   <div className="mt-2 flex justify-end gap-2">
                     <button className="btn" onClick={() => setEditingProfile(false)}>Cancel</button>
@@ -156,7 +159,7 @@ export default function MachinePage() {
                   </div>
                 </>
               ) : detail.profile ? (
-                <div className="whitespace-pre-wrap text-sm">{detail.profile}</div>
+                <Markdown>{detail.profile}</Markdown>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">No profile yet. Claude fills it in during sessions, or edit it here.</p>
               )}
