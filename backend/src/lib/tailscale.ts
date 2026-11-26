@@ -27,6 +27,7 @@ const PeerSchema = z.object({
   Online      : z.boolean().nullish(),
   LastSeen    : z.string().nullish(),
   Tags        : z.array(z.string()).nullish(),
+  Created     : z.string().nullish(),
 });
 
 const StatusSchema = z.object({
@@ -40,6 +41,7 @@ export interface TailscalePeer {
   online  : boolean;
   lastSeen: string | null;
   tags    : string[];
+  created : string | null;   // when the device joined the tailnet
 }
 
 export async function getPeers(): Promise<TailscalePeer[]> {
@@ -55,5 +57,6 @@ export async function getPeers(): Promise<TailscalePeer[]> {
     // Tailscale reports 0001-01-01 for peers that are currently online
     lastSeen: p.LastSeen && !p.LastSeen.startsWith('0001') ? p.LastSeen : null,
     tags    : p.Tags ?? [],
+    created : p.Created && !p.Created.startsWith('0001') ? p.Created : null,
   }));
 }

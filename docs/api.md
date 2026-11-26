@@ -43,7 +43,7 @@ token.
 | **Machines** | | | |
 | `GET` | `/api/machines` | any | Client machines (Tailscale + configuration) and known clients |
 | `GET` | `/api/machines/:host` | any | Configuration, profile, 10 latest sessions |
-| `PUT` | `/api/machines/:host` | session | Configure / edit `{ client, sshUser?, notes? }` |
+| `PUT` | `/api/machines/:host` | session | Configure / edit `{ client, displayName?, sshUser?, notes? }` |
 | `DELETE` | `/api/machines/:host` | session | Remove the configuration (history is kept) |
 | `PUT` | `/api/machines/:host/profile` | any | `{ profile }` (Markdown) |
 | `POST` | `/api/machines/:host/ssh-test` | session | `{ sshUser? }` → `{ ok, kind, detail, message }` |

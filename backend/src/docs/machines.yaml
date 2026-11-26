@@ -3,7 +3,8 @@ components:
     Machine:
       type: object
       properties:
-        host:       { type: string, example: srv-bakery }
+        host:       { type: string, example: desktop-7f3k2lq, description: Tailnet name (the key; used for SSH and history). }
+        displayName: { type: string, example: PC-PEDRO, description: Friendly name for the team; empty if not set. }
         client:     { type: string, nullable: true, example: Silva Bakery }
         sshUser:    { type: string, nullable: true, example: nodehub }
         notes:      { type: string }
@@ -14,11 +15,13 @@ components:
         os:         { type: string, nullable: true, example: windows }
         lastSeen:   { type: string, nullable: true, format: date-time }
         lastSessionAt: { type: string, nullable: true, format: date-time, description: Newest helpdesk session on this machine. }
+        addedAt:    { type: string, nullable: true, format: date-time, description: When it was configured (or joined the tailnet, if unassigned). The dashboard marks machines added in the last 7 days as new. }
     MachineConfig:
       type: object
       required: [client]
       properties:
         client:  { type: string, maxLength: 100, description: 'No quotes, ; or $.' }
+        displayName: { type: string, maxLength: 60, default: '', description: 'Friendly name, e.g. PC-PEDRO. No quotes, ; or $.' }
         sshUser: { type: string, default: nodehub }
         notes:   { type: string, maxLength: 500, default: '' }
   parameters:

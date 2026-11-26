@@ -10,9 +10,13 @@ type SessionRow = Prisma.SessionGetPayload<{ include: { technician: { select: { 
 async function toViews(rows: SessionRow[]): Promise<SessionView[]> {
   const hosts = [...new Set(rows.map((r) => r.host))];
   const machines = await prisma.machine.findMany({ where: { host: { in: hosts } }, include: { client: true } });
-  const clientByHost = new Map(machines.map((m) => [m.host, m.client.name]));
+  const byHost = new Map(machines.map((m) => [m.host, m]));
 
-  return rows.map(({ technicianId: _t, ...r }) => ({ ...r, client: clientByHost.get(r.host) ?? null }));
+  return rows.map(({ technicianId: _t, ...r }) => ({
+    ...r,
+    client     : byHost.get(r.host)?.client.name ?? null,
+    machineName: byHost.get(r.host)?.displayName ?? '',
+  }));
 }
 
 async function canonicalHost(host: string): Promise<string> {
@@ -102,6 +106,7 @@ export async function getMachineDetail(host: string) {
   const { sessions, total } = await listSessions({ host: machine.host, limit: 10, offset: 0 });
   return {
     host          : machine.host,
+    displayName   : machine.displayName,
     client        : machine.client.name,
     sshUser       : machine.sshUser,
     notes         : machine.notes,

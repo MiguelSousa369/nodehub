@@ -16,9 +16,9 @@ process.env.PUBLIC_KEYS_DIR = keysDir;
 vi.mock('../src/lib/tailscale', () => ({
   clientTag: () => 'tag:client',
   getPeers: vi.fn(async () => [
-    { host: 'srv-a',     ip: '100.64.0.1', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'] },
-    { host: 'new-pc',    ip: '100.64.0.2', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'] },
-    { host: 'my-laptop', ip: '100.64.0.3', os: 'windows', online: true, lastSeen: null, tags: [] },
+    { host: 'srv-a',     ip: '100.64.0.1', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'], created: '2026-01-01T00:00:00Z' },
+    { host: 'new-pc',    ip: '100.64.0.2', os: 'windows', online: true, lastSeen: null, tags: ['tag:client'], created: '2026-11-20T10:00:00Z' },
+    { host: 'my-laptop', ip: '100.64.0.3', os: 'windows', online: true, lastSeen: null, tags: [], created: null },
   ]),
 }));
 
@@ -252,6 +252,30 @@ describe('machines', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ host: 'new-pc', client: 'Client A', sshUser: 'nodehub' });
     expect(await prisma.client.count()).toBe(1);
+  });
+
+  it('keeps a friendly name for a machine, shown in the list, the detail and its sessions', async () => {
+    const saved = await request(app).put('/api/machines/new-pc').set(as(techToken))
+      .send({ client: 'Client A', displayName: 'PC-PEDRO' });
+    expect(saved.body.displayName).toBe('PC-PEDRO');
+
+    const list = await request(app).get('/api/machines').set(as(techToken));
+    const machine = list.body.machines.find((m: { host: string }) => m.host === 'new-pc');
+    expect(machine).toMatchObject({ host: 'new-pc', displayName: 'PC-PEDRO', configured: true });
+    expect(machine.addedAt).toEqual(expect.any(String));   // configured now
+
+    await request(app).post('/api/machines/new-pc/sessions').set(as(techToken)).send({ summary: 'Test', result: 'fixed' });
+    const detail = await request(app).get('/api/machines/new-pc').set(as(techToken));
+    expect(detail.body.displayName).toBe('PC-PEDRO');
+    expect(detail.body.recentSessions[0].machineName).toBe('PC-PEDRO');
+
+    const bad = await request(app).put('/api/machines/new-pc').set(as(techToken)).send({ client: 'Client A', displayName: 'PC "x"; rm' });
+    expect(bad.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('reports when unassigned machines joined the tailnet', async () => {
+    const list = await request(app).get('/api/machines').set(as(techToken));
+    expect(list.body.machines.find((m: { host: string }) => m.host === 'new-pc').addedAt).toBe('2026-11-20T10:00:00Z');
   });
 
   it('refuses machines that are not in the tailnet with the client tag', async () => {

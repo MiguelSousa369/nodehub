@@ -42,6 +42,7 @@ export async function listMachines(): Promise<MachineList> {
     seen.add(peer.host.toLowerCase());
     machines.push({
       host      : config?.host ?? peer.host,
+      displayName: config?.displayName ?? '',
       client    : config?.client.name ?? null,
       sshUser   : config?.sshUser ?? null,
       notes     : config?.notes ?? '',
@@ -52,15 +53,16 @@ export async function listMachines(): Promise<MachineList> {
       os        : peer.os,
       lastSeen  : peer.lastSeen,
       lastSessionAt: lastSessionAt(peer.host),
+      addedAt   : config?.createdAt ?? peer.created,
     });
   }
 
   for (const m of stored) {
     if (seen.has(m.host.toLowerCase())) continue;
     machines.push({
-      host: m.host, client: m.client.name, sshUser: m.sshUser, notes: m.notes,
+      host: m.host, displayName: m.displayName, client: m.client.name, sshUser: m.sshUser, notes: m.notes,
       configured: true, inTailnet: false, online: false, ip: null, os: null, lastSeen: null,
-      lastSessionAt: lastSessionAt(m.host),
+      lastSessionAt: lastSessionAt(m.host), addedAt: m.createdAt,
     });
   }
 
@@ -104,7 +106,7 @@ export async function saveMachine(host: string, config: MachineConfig): Promise<
   const client = await prisma.client.findFirst({ where: { name: { equals: config.client, mode: 'insensitive' } } })
     ?? await prisma.client.create({ data: { name: config.client } });
 
-  const data = { clientId: client.id, sshUser: config.sshUser, notes: config.notes };
+  const data = { clientId: client.id, sshUser: config.sshUser, displayName: config.displayName, notes: config.notes };
   await prisma.machine.upsert({ where: { host: name }, create: { host: name, ...data }, update: data });
 
   return { host: name, ...config, client: client.name };

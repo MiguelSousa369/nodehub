@@ -198,7 +198,7 @@ async function cmdWhoami(quiet: boolean) {
 
 async function cmdMachine(host: string, json: boolean) {
   const machine = await api<{
-    host: string; client: string; sshUser: string; notes: string; profile: string;
+    host: string; displayName: string; client: string; sshUser: string; notes: string; profile: string;
     recentSessions: Session[]; totalSessions: number;
   }>('GET', `/api/machines/${encodeURIComponent(host)}`);
   if (json) return console.log(JSON.stringify(machine, null, 2));
@@ -206,6 +206,7 @@ async function cmdMachine(host: string, json: boolean) {
   const t = m();
   console.log(`# ${machine.host}\n`);
   console.log(`${t.recordsLanguage}\n`);
+  if (machine.displayName) console.log(`${t.name}: ${machine.displayName}`);
   console.log(`${t.client}: ${machine.client}`);
   console.log(`${t.sshUser}: ${machine.sshUser}`);
   if (machine.notes) console.log(`${t.notes}: ${machine.notes}`);

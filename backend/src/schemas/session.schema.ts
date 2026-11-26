@@ -65,6 +65,7 @@ export interface SessionView {
   id        : number;
   host      : string;
   client    : string | null;                         // current client of the machine
+  machineName: string;                               // its friendly name ('' = none)
   technician: { id: number; name: string } | null;   // null if the user was deleted
   summary   : string;
   problem   : string;

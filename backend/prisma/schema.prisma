@@ -95,6 +95,8 @@ model Machine {
   clientId  Int      @map("client_id")
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
   sshUser   String   @default("nodehub") @map("ssh_user")
+  /// Friendly name for the team (e.g. "PC-PEDRO"); empty = show the tailnet name
+  displayName String @default("") @map("display_name")
   notes     String   @default("")
   /// Free-form profile in Markdown: role, OS, hardware, important software, quirks.
   profile   String   @default("")

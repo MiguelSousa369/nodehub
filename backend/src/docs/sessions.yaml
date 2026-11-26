@@ -6,6 +6,7 @@ components:
         id:         { type: integer }
         host:       { type: string, example: srv-bakery }
         client:     { type: string, nullable: true, description: Current client of the machine. }
+        machineName: { type: string, description: Friendly name of the machine (empty if not set). }
         technician:
           type: object
           nullable: true

@@ -26,6 +26,8 @@ export const HostParamsSchema = z.object({ host: HostnameSchema });
 
 export const MachineConfigSchema = z.object({
   client : z.string().trim().min(1).max(100).regex(SAFE_TEXT, 'Client contains forbidden characters.'),
+  /** Friendly name for the team, e.g. "PC-PEDRO". Empty = show the tailnet name. */
+  displayName: z.string().trim().max(60).regex(SAFE_TEXT, 'Name contains forbidden characters.').default(''),
   sshUser: SshUserSchema.default(DEFAULT_SSH_USER),
   notes  : z.string().trim().max(500).regex(SAFE_TEXT, 'Notes contain forbidden characters.').default(''),
 });
@@ -42,7 +44,8 @@ export type SshTestInput  = z.infer<typeof SshTestSchema>;
 // ---------------------------------------------------------------------------
 
 export interface Machine {
-  host      : string;
+  host      : string;          // tailnet name: the key, used for SSH and history
+  displayName: string;         // friendly name ('' = none)
   client    : string | null;   // null = not assigned to a client yet
   sshUser   : string | null;
   notes     : string;
@@ -53,4 +56,6 @@ export interface Machine {
   os        : string | null;
   lastSeen  : string | null;
   lastSessionAt: Date | null;   // newest helpdesk session on this host
+  /** When it was added: configured in the dashboard, or (unassigned) joined the tailnet. Drives the "New" badge. */
+  addedAt   : Date | string | null;
 }
