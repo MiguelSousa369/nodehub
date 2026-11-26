@@ -113,6 +113,10 @@ const PT_ERRORS: Record<string, string> = {
 
 let current: CliLanguage = 'en';
 
+let tag = '';
+export const setClientTag = (value: unknown): void => { tag = typeof value === 'string' ? value : ''; };
+export const clientTagFromServer = (): string => tag;
+
 export function setCliLanguage(language: unknown): void {
   current = language === 'pt' ? 'pt' : 'en';
 }

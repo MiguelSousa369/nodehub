@@ -18,10 +18,15 @@ paths:
       security: []
       responses:
         '200':
-          description: Current settings.
+          description: Current settings, plus the client tag (read-only, used by the nodehub:// launcher).
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Settings' }
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/Settings' }
+                  - type: object
+                    properties:
+                      clientTag: { type: string, example: 'tag:client' }
     put:
       summary: Change the team settings (admins, dashboard session)
       requestBody:

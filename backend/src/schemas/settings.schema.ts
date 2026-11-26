@@ -21,3 +21,9 @@ export interface Settings {
    */
   language: Language;
 }
+
+/** What GET /api/settings returns: the settings plus read-only facts the launcher needs. */
+export interface PublicSettings extends Settings {
+  /** CLIENT_TAG: the launcher checks it against the local Tailscale client before opening a session. */
+  clientTag: string;
+}

@@ -34,9 +34,16 @@ $Messages = @{
         Prompt         = 'Helpdesk: máquina {0} ({1}, utilizador {2}). Começa a sessão como descrito no CLAUDE.md e depois pergunta-me qual é o problema.'
     }
 }
+# Team language and client tag come from the nodehub server this PC is connected to ("nodehub
+# launcher-info" prints e.g. "pt tag:client"), so technician PCs need no backend\.env.
 $lang = 'en'
+$serverTag = ''
 if (Test-Path $cli) {
-    try { $out = (& node $cli language 2>$null | Out-String).Trim(); if ($Messages.ContainsKey($out)) { $lang = $out } } catch { }
+    try {
+        $info = (& node $cli launcher-info 2>$null | Out-String).Trim() -split '\s+'
+        if ($Messages.ContainsKey($info[0])) { $lang = $info[0] }
+        if ($info.Count -gt 1 -and $info[1] -match '^tag:[A-Za-z0-9-]+$') { $serverTag = $info[1] }
+    } catch { }
 }
 $T = $Messages[$lang]
 
@@ -63,10 +70,13 @@ $sshUser  = Get-Param 'user'
 if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error $T.InvalidHost }
 if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error $T.InvalidUser }
 
-# 2. The host must be in the tailnet with the client tag (CLIENT_TAG in backend/.env, default tag:client)
+# 2. The host must be in the tailnet with the client tag (from the server; else CLIENT_TAG in
+#    backend\.env on this PC; else tag:client)
 $clientTag = 'tag:client'
 $envFile = Join-Path $repo 'backend\.env'
-if (Test-Path $envFile) {
+if ($serverTag) {
+    $clientTag = $serverTag
+} elseif (Test-Path $envFile) {
     foreach ($line in Get-Content $envFile) {
         if ($line -match '^\s*CLIENT_TAG\s*=\s*(tag:[A-Za-z0-9-]+)\s*$') { $clientTag = $Matches[1] }
     }

@@ -24,7 +24,7 @@ token.
 | `GET` | `/api/auth/me` | any | Current user |
 | `POST` | `/api/auth/password` | session | `{ currentPassword, newPassword }` → `{ token }`; signs out your other sessions |
 | **Settings** | | | |
-| `GET` | `/api/settings` | – | `{ language }` (`en` or `pt`): team language |
+| `GET` | `/api/settings` | – | `{ language, clientTag }`: team language (`en` or `pt`) and `CLIENT_TAG` (for the launcher) |
 | `PUT` | `/api/settings` | session, admin | `{ language }` |
 | **Connecting a PC** (`nodehub login`) | | | |
 | `POST` | `/api/cli-login` | – | `{ deviceName }` → `{ deviceCode, userCode, expiresIn, interval }` |

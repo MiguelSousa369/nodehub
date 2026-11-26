@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
-import { UpdateSettingsSchema } from '../schemas/settings.schema';
+import { clientTag } from '../lib/tailscale';
+import { PublicSettings, UpdateSettingsSchema } from '../schemas/settings.schema';
 import * as settingsService from '../services/settings.service';
 import { audit } from '../utils/audit';
 
@@ -10,7 +11,8 @@ import { audit } from '../utils/audit';
 
 export async function get(_req: Request, res: Response, next: NextFunction) {
   try {
-    res.json(await settingsService.getSettings());
+    const settings: PublicSettings = { ...(await settingsService.getSettings()), clientTag: clientTag() };
+    res.json(settings);
   } catch (err) {
     next(err);
   }

@@ -15,7 +15,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-import { apiErrorText, cliLanguage, m, resultWord, setCliLanguage } from './messages';
+import { apiErrorText, cliLanguage, clientTagFromServer, m, resultWord, setClientTag, setCliLanguage } from './messages';
 
 // ---------------------------------------------------------------------------
 // Config: %APPDATA%\nodehub\cli.json (or ~/.config/nodehub/cli.json)
@@ -282,7 +282,11 @@ async function loadLanguage(flags: Record<string, string | true>): Promise<void>
   const url = (flag(flags, 'url') ?? loadConfig()?.url ?? DEFAULT_URL).replace(/\/+$/, '');
   try {
     const res = await fetch(`${url}/api/settings`, { signal: AbortSignal.timeout(3000) });
-    if (res.ok) setCliLanguage(((await res.json()) as { language?: string }).language);
+    if (res.ok) {
+      const settings = (await res.json()) as { language?: string; clientTag?: string };
+      setCliLanguage(settings.language);
+      setClientTag(settings.clientTag);
+    }
   } catch { /* keep English; the command itself reports connection problems */ }
 }
 
@@ -297,7 +301,9 @@ async function main() {
     case 'history': return cmdHistory(requireHost(positional), flags);
     case 'log'    : return cmdLog(requireHost(positional), flags);
     case 'update' : return cmdUpdate(positional, flags);
-    case 'language': return console.log(cliLanguage());   // team language (en | pt), for launcher/open.ps1
+    case 'language': return console.log(cliLanguage());   // team language (en | pt)
+    // For launcher/open.ps1 on technician PCs: "<language> <clientTag>" from the server
+    case 'launcher-info': return console.log(`${cliLanguage()} ${clientTagFromServer()}`.trim());
     case 'profile': return cmdProfile(requireHost(positional), flags);
     default       : return console.log(HELP);
   }
