@@ -7,6 +7,8 @@
 | `start.cmd`: *Something failed (is Docker Desktop running?)* | Start Docker Desktop and wait until it says *running*, then retry. |
 | *backend\.env is missing* | `copy backend\.env.example backend\.env` and fill it in ([configuration](configuration.md)). |
 | *JWT_SECRET must be at least 32 characters* | Set a long random `JWT_SECRET` in `backend\.env` (the command is in `.env.example`). |
+| *Forbidden host* when opening the server's IP | Add that IP (or name) to `ALLOWED_HOSTS` in the server's `backend\.env` and restart ([server.md](server.md)). |
+| Other PCs can't open the server's dashboard | `HOST=0.0.0.0` in `backend\.env`, the firewall rule for port 8737 ([server.md](server.md)), and the server's IP hasn't changed. |
 | Port 8737 or 5433 already in use | Change `PORT` in `backend\.env`, or `POSTGRES_PORT` (and `DATABASE_URL`). |
 | Lost the first admin password | `docker exec -it nodehub-db psql -U nodehub -c "DELETE FROM users;"`, set `ADMIN_PASSWORD` in `.env` and run `npm run seed` in `backend\`. Only do this before other users exist. |
 

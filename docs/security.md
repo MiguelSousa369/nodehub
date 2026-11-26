@@ -18,11 +18,11 @@ protects against and how, and the responsibilities that stay with you.
 
 | Protection | How |
 |---|---|
-| **Local only** | The backend listens on `127.0.0.1`; PostgreSQL too. |
-| **DNS rebinding** | Requests whose `Host` isn't `127.0.0.1`/`localhost` are rejected. |
-| **Other websites** | A page from another site, open in the technician's browser, can still send requests to `127.0.0.1`. Every request with an `Origin` that isn't a local page is refused (`FORBIDDEN_ORIGIN`), and there is no CORS: such a page can't sign in, guess passwords or read anything. |
+| **Local by default** | The backend listens on `127.0.0.1`; PostgreSQL always does. On an [office server](server.md) it listens on the network, answering only at the addresses in `ALLOWED_HOSTS`, with the firewall rule limited to the local subnet. |
+| **DNS rebinding** | Requests whose `Host` isn't `127.0.0.1`/`localhost` or one of `ALLOWED_HOSTS` are rejected. |
+| **Other websites** | A page from another site, open in a technician's browser, can still send requests to nodehub's address. Every request with an `Origin` that isn't nodehub itself is refused (`FORBIDDEN_ORIGIN`), and there is no CORS: such a page can't sign in, guess passwords or read anything. |
 | **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors and response times don't reveal whether a username exists. |
-| **Password guessing** | After 5 wrong passwords in 15 minutes, that username is locked for the rest of the 15 minutes (`TOO_MANY_ATTEMPTS`). |
+| **Password guessing** | After 5 wrong passwords in 15 minutes, that username is locked for the rest of the 15 minutes; after 20 from one address (any usernames), that address is (`TOO_MANY_ATTEMPTS`). |
 | **Sessions** | Dashboard sign-ins are JWTs signed with HS256 only (other algorithms, including `none`, are rejected) and a secret of at least 32 characters. Changing your password signs out your other sessions; an admin resetting a password signs that user out everywhere. |
 | **Roles** | Only admins manage users. You can't remove your own admin access or delete yourself; there is always one active admin. |
 | **Immediate revocation** | Each request reloads the user: deactivating someone ends their dashboard sessions and disconnects their PCs at once. |
@@ -63,7 +63,7 @@ How nodehub stands against each category, reviewed on 2026-11-26.
 | Category | Status | In nodehub |
 |---|---|---|
 | **A01 Broken Access Control** | ✅ | Every API route except sign-in and `nodehub login` needs a token. Admin-only routes check the role; account, user, machine-list and installer routes refuse PC tokens. Users only see and disconnect their own PCs. Cross-site requests are refused. |
-| **A02 Cryptographic Failures** | ✅ | scrypt for passwords, SHA-256 for PC tokens and device codes (random 256-bit secrets), HS256 JWTs with a long secret. Traffic to client machines goes through WireGuard (Tailscale) and SSH. The dashboard is plain HTTP, but only on `127.0.0.1`. |
+| **A02 Cryptographic Failures** | ✅ | scrypt for passwords, SHA-256 for PC tokens and device codes (random 256-bit secrets), HS256 JWTs with a long secret. Traffic to client machines goes through WireGuard (Tailscale) and SSH. The dashboard is plain HTTP: on `127.0.0.1` nothing leaves the PC; on an office server it crosses the LAN unencrypted (see Known limits). |
 | **A03 Injection** | ✅ | Prisma (parameterised queries); `ssh` is run with `execFile` (no shell) and validated host/user; values written into the installer are validated and quoted; React escapes output and Markdown has no raw HTML. |
 | **A04 Insecure Design** | ✅ | Tagged auth keys + ACL isolate clients; Claude needs the technician's approval to change anything; PC tokens have only the rights Claude needs; `nodehub://` links carry no free text and are checked against Tailscale. |
 | **A05 Security Misconfiguration** | ✅ | Local-only by default (backend and PostgreSQL); helmet headers and CSP; no CORS; generic 500 errors; the backend refuses to start with a missing or short `JWT_SECRET`. |
@@ -80,7 +80,10 @@ How nodehub stands against each category, reviewed on 2026-11-26.
 - The dashboard token lives in the browser's `localStorage`. The CSP and React's escaping protect
   it from scripts; signing out removes it, and it expires after `JWT_EXPIRES_IN`.
 - Connected PC tokens don't expire by themselves: disconnect PCs you no longer use.
-- The sign-in lockout is per username, so someone on the same PC could lock an account for 15 minutes.
+- The sign-in lockout is per username (and per address), so someone could lock an account for 15 minutes.
+- On an office server the dashboard is plain HTTP on the LAN: passwords and session tokens can be
+  read by anyone able to capture office traffic. Use a reverse proxy with HTTPS if the network isn't
+  trusted.
 
 ## Your responsibilities
 

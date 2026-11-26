@@ -2,18 +2,16 @@
 
 ## Next
 
-- [ ] **Shared server for the team.** Run the backend and dashboard on one server (with its own
-  Tailscale node) instead of on each technician PC. Users, roles and access tokens are already
-  in place. Needs:
-  - backend and frontend in containers (PostgreSQL already is);
-  - machine status from the Tailscale API or a Tailscale sidecar container, instead of the local
-    CLI;
-  - HTTPS and listening beyond `127.0.0.1` (relaxing the local-host guard).
-  The launcher and Claude Code keep running on each technician PC.
+- [x] **Shared server for the team.** nodehub can run on an office server, opened at its IP
+  ([server.md](server.md)).
+- [ ] **Distribute SSH keys from the dashboard.** Add (or remove) a technician's key on every online
+  client PC at once, instead of re-running the installer.
+- [ ] **HTTPS on the office server.** Built-in certificate or a documented reverse proxy.
+- [ ] **Containers for the backend.** Backend and frontend in Docker like PostgreSQL, with machine
+  status from the Tailscale API or a sidecar instead of the local CLI.
 - [ ] **Client uninstaller.** Remove the `nodehub` user, the keys, the firewall rule, and take the
   machine off the tailnet, from the dashboard.
-- [ ] **Audit log.** Who configured, edited or removed each machine, created users, or revoked
-  tokens, and when.
+- [x] **Audit log.** `backend/logs/audit.log` (see [security.md](security.md)).
 
 ## Later
 

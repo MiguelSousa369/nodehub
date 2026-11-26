@@ -104,6 +104,12 @@ Notes:    Back office server
 - Result: fixed
 ```
 
+## Using a nodehub server
+
+On a technician PC that uses a [shared server](server.md), only the CLI is needed:
+`npm install` and `npm run build:cli` in `backend\`, then
+`.\nodehub.cmd login --url http://<server-ip>:8737`. The address is remembered.
+
 ## Language
 
 The CLI prints its messages in the **team language** (English or Portuguese), chosen by an admin in

@@ -36,7 +36,8 @@ Not in `.env`: an admin sets it in the dashboard (**Users → Team settings**), 
 | Setting | Default | Description |
 |---|---|---|
 | `PORT` | `8737` | HTTP port of the backend and dashboard. |
-| `HOST` | `127.0.0.1` | Interface to listen on. Keep it local (see [security](security.md)). |
+| `HOST` | `127.0.0.1` | Interface to listen on. `127.0.0.1`: only this PC. `0.0.0.0`: the office network (with `ALLOWED_HOSTS`, see [server.md](server.md)). |
+| `ALLOWED_HOSTS` | – | Comma-separated addresses the team opens nodehub at, besides `localhost` (server mode), e.g. `192.168.1.50,nodehub-srv`. Requests to other addresses get `FORBIDDEN_HOST`. |
 | `LOG_LEVEL` | `info` | Winston level (`error`, `warn`, `info`, `debug`). Logs go to `backend/logs/`. |
 
 ## Paths

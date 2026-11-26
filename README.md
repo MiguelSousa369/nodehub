@@ -80,6 +80,7 @@ Tailscale setup: **[docs/installation.md](docs/installation.md)**.
 |---|---|
 | [Installation](docs/installation.md) | Tailscale (tags, ACL, auth key), SSH keys, technician PC, first run |
 | [Configuration](docs/configuration.md) | Every setting in `backend/.env` |
+| [Office server](docs/server.md) | Run nodehub on a server so the whole team opens it at the server's IP |
 | [Using the dashboard](docs/usage.md) | Machines, adding clients, history, users, connected PCs |
 | [Helpdesk sessions with Claude](docs/helpdesk-sessions.md) | How a session runs, what Claude may and may not do |
 | [nodehub CLI](docs/cli.md) | The command-line tool Claude uses to read and record history |
