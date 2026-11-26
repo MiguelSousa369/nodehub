@@ -1,9 +1,10 @@
-import { History, KeyRound, LogOut, Monitor, MonitorSmartphone, Users } from 'lucide-react'
-import { ReactNode, useState } from 'react'
+import { History, KeyRound, LogOut, Monitor, MonitorSmartphone, Search, Users } from 'lucide-react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 
 import { useAuth, useUser } from '../context/AuthContext'
 import ChangePasswordDialog from './ChangePasswordDialog'
+import CommandPalette from './CommandPalette'
 import ConnectedPcsDialog from './ConnectedPcsDialog'
 import Logo from './Logo'
 import Menu from './Menu'
@@ -28,7 +29,21 @@ function initials(name: string): string {
 export default function Header({ children }: HeaderProps) {
   const user = useUser()
   const { logout } = useAuth()
-  const [dialog, setDialog] = useState<'password' | 'pcs' | null>(null)
+  const [dialog, setDialog] = useState<'password' | 'pcs' | 'search' | null>(null)
+
+  // Quick search shortcuts: Ctrl+K (or Cmd+K) anywhere, "/" when not typing in a field
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const typing = target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+      if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey)) {
+        e.preventDefault()
+        setDialog('search')
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   // Tabs are links, so the browser's back button, new tabs and bookmarks work
   const tab = (to: string, label: string, icon: ReactNode) => (
@@ -62,7 +77,18 @@ export default function Header({ children }: HeaderProps) {
           {children}
         </div>
 
-        <div className="ml-auto md:ml-0">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <button
+            type="button"
+            onClick={() => setDialog('search')}
+            aria-label="Quick search (Ctrl+K)"
+            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-surface px-2.5 text-sm text-slate-400
+                       transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:bg-surface-dark dark:hover:text-slate-300"
+          >
+            <Search size={15} aria-hidden="true" />
+            <span className="hidden lg:inline">Search…</span>
+            <kbd className="hidden rounded border border-slate-200 px-1 font-sans text-[11px] lg:inline dark:border-slate-700">Ctrl K</kbd>
+          </button>
           <Menu
             label={`Account menu for ${user.name}`}
             triggerClass="flex h-9 w-9 items-center justify-center rounded-full bg-brand/15 text-[13px] font-semibold
@@ -89,6 +115,7 @@ export default function Header({ children }: HeaderProps) {
 
       <ChangePasswordDialog open={dialog === 'password'} onClose={() => setDialog(null)} />
       <ConnectedPcsDialog open={dialog === 'pcs'} onClose={() => setDialog(null)} />
+      <CommandPalette open={dialog === 'search'} onClose={() => setDialog(null)} isAdmin={user.role === 'ADMIN'} />
     </header>
   )
 }
