@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
+import { audit } from '../utils/audit';
+
 // ---------------------------------------------------------------------------
 // nodehub only serves this PC. Two checks keep web pages from other sites out:
 //
@@ -27,12 +29,14 @@ function isLocalOrigin(origin: string): boolean {
 export function localHostOnly(req: Request, res: Response, next: NextFunction) {
   const host = (req.get('Host') ?? '').replace(/:\d+$/, '');
   if (!LOCAL_HOSTS.has(host)) {
+    audit('request.forbidden', null, { reason: 'host', host: host.slice(0, 100), path: req.path.slice(0, 200) });
     res.status(403).json({ error: 'Forbidden host.', code: 'FORBIDDEN_HOST' });
     return;
   }
 
   const origin = req.get('Origin');
   if (origin !== undefined && !isLocalOrigin(origin)) {
+    audit('request.forbidden', null, { reason: 'origin', origin: origin.slice(0, 200), path: req.path.slice(0, 200) });
     res.status(403).json({ error: 'Requests from other sites are not allowed.', code: 'FORBIDDEN_ORIGIN' });
     return;
   }

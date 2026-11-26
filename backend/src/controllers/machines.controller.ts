@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import { HostParamsSchema, MachineConfigSchema, SshTestSchema } from '../schemas/machine.schema';
 import * as machineService from '../services/machine.service';
 import { testSsh } from '../services/ssh.service';
+import { audit } from '../utils/audit';
 
 // ---------------------------------------------------------------------------
 // GET /api/machines
@@ -24,7 +25,9 @@ export async function save(req: Request, res: Response, next: NextFunction) {
   try {
     const { host } = HostParamsSchema.parse(req.params);
     const config = MachineConfigSchema.parse(req.body ?? {});
-    res.json(await machineService.saveMachine(host, config));
+    const saved = await machineService.saveMachine(host, config);
+    audit('machine.saved', req.user!, { host: saved.host, client: saved.client, sshUser: saved.sshUser });
+    res.json(saved);
   } catch (err) {
     next(err);
   }
@@ -41,6 +44,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       res.status(404).json({ error: `Machine '${host}' is not configured.`, code: 'NOT_FOUND' });
       return;
     }
+    audit('machine.removed', req.user!, { host });
     res.status(204).end();
   } catch (err) {
     next(err);

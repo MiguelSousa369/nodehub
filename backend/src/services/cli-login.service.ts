@@ -60,13 +60,14 @@ export async function getLogin(userCode: string) {
   return { userCode: r.userCode, deviceName: r.deviceName, status: r.status, createdAt: r.createdAt, expiresAt: r.expiresAt };
 }
 
-export async function decideLogin(userCode: string, userId: number, approve: boolean): Promise<void> {
+export async function decideLogin(userCode: string, userId: number, approve: boolean): Promise<{ deviceName: string }> {
   const r = await findOpen(userCode);
   if (r.status !== 'PENDING') throw new HttpError(409, 'LOGIN_ALREADY_DECIDED', 'This connection request was already answered.');
   await prisma.cliLoginRequest.update({
     where: { id: r.id },
     data : { status: approve ? 'APPROVED' : 'DENIED', userId },
   });
+  return { deviceName: r.deviceName };
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 
 import prisma from '../lib/prisma';
 import { ChangePasswordInput, LoginInput, PublicUser, Role } from '../schemas/user.schema';
+import { audit } from '../utils/audit';
 import { HttpError } from '../utils/http-error';
 import { lockedFor, recordFailure, recordSuccess } from '../utils/login-throttle';
 import { hashPassword, verifyPassword } from '../utils/password';
@@ -43,6 +44,7 @@ function signToken(userId: number): string {
 export async function login({ username, password }: LoginInput): Promise<{ token: string; user: AuthUser }> {
   const wait = lockedFor(username);
   if (wait > 0) {
+    audit('login.locked', { username });
     throw new HttpError(429, 'TOO_MANY_ATTEMPTS',
       `Too many failed sign-ins for this user. Try again in ${Math.ceil(wait / 60)} min.`);
   }
@@ -51,9 +53,11 @@ export async function login({ username, password }: LoginInput): Promise<{ token
   // Same error for unknown user, wrong password or deactivated account
   if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
     recordFailure(username);
+    audit('login.failure', { username }, { reason: !user ? 'unknown user' : !user.active ? 'inactive' : 'wrong password' });
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid username or password.');
   }
   recordSuccess(username);
+  audit('login.success', { id: user.id, username: user.username });
 
   return { token: signToken(user.id), user: { id: user.id, username: user.username, name: user.name, role: user.role } };
 }
@@ -88,6 +92,7 @@ export async function changePassword(userId: number, input: ChangePasswordInput)
     where: { id: userId },
     data : { passwordHash: await hashPassword(input.newPassword), sessionsValidFrom: wholeSecond(new Date()) },
   });
+  audit('password.changed', { id: user.id, username: user.username });
   return { token: signToken(userId) };
 }
 

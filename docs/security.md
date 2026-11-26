@@ -28,6 +28,7 @@ protects against and how, and the responsibilities that stay with you.
 | **Input validation** | Every request body, parameter and query is validated with Zod. Values that end up on a command line (client name, notes, SSH user, hostname) can't contain quotes, `;` or `$`. |
 | **Only tagged machines** | Machines can only be configured if they are in the tailnet with `CLIENT_TAG`. |
 | **Security headers** | `helmet()` defaults; CORS restricted in production. |
+| **Audit log** | `backend/logs/audit.log` records sign-ins (and failures, lockouts), password changes, user changes, PCs approved / connected / disconnected, installer downloads, machine list changes and refused cross-site requests: one JSON line each, with who and when, never passwords or tokens. |
 | **Errors** | Unexpected errors answer a generic message; the details (SQL, paths, stack) go only to `backend/logs/error.log`. |
 
 ## The `nodehub://` launcher

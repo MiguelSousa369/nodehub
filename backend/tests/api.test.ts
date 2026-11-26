@@ -25,6 +25,7 @@ vi.mock('../src/lib/tailscale', () => ({
 import prisma from '../src/lib/prisma';
 import app from '../src/server';
 import { MAX_FAILURES, resetLoginThrottle } from '../src/utils/login-throttle';
+import logger from '../src/utils/logger';
 import { hashPassword } from '../src/utils/password';
 
 const HOST = { Host: '127.0.0.1' };
@@ -92,6 +93,19 @@ describe('auth', () => {
     await prisma.user.update({ where: { username: 'tech' }, data: { active: false } });
     const inactive = await request(app).post('/api/auth/login').set(HOST).send({ username: 'tech', password: TECH_PW });
     expect(inactive.body.code).toBe('INVALID_CREDENTIALS');
+  });
+
+  it('audits sign-ins without ever logging the password', async () => {
+    const log = vi.spyOn(logger, 'log');
+    await request(app).post('/api/auth/login').set(HOST).send({ username: 'admin', password: 'wrong-secret-guess' });
+    await request(app).post('/api/auth/login').set(HOST).send({ username: 'admin', password: ADMIN_PW });
+
+    const events = log.mock.calls.map(([, message]) => message);
+    expect(events).toContain('audit login.failure');
+    expect(events).toContain('audit login.success');
+    expect(JSON.stringify(log.mock.calls)).not.toContain('wrong-secret-guess');
+    expect(JSON.stringify(log.mock.calls)).not.toContain(ADMIN_PW);
+    log.mockRestore();
   });
 
   it('locks a username for a while after too many wrong passwords', async () => {
