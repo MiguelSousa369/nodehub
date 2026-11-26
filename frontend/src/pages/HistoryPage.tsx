@@ -3,18 +3,15 @@ import { useCallback, useEffect, useState } from 'react'
 import Header from '../components/Header'
 import SessionItem from '../components/SessionItem'
 import { ApiError, listSessions } from '../services/api'
-import type { AuthUser, Page, Session, SessionResult } from '../types'
+import { useAuth, useUser } from '../context/AuthContext'
+import type { Session, SessionResult } from '../types'
 
 const PAGE_SIZE = 50
 
-interface HistoryPageProps {
-  user    : AuthUser
-  onNav   : (page: Page) => void
-  onLogout: () => void
-}
-
 /** Helpdesk sessions across all machines, newest first, with filters. */
-export default function HistoryPage({ user, onNav, onLogout }: HistoryPageProps) {
+export default function HistoryPage() {
+  const user = useUser()
+  const { logout: onLogout } = useAuth()
   const [q, setQ]               = useState('')
   const [result, setResult]     = useState<SessionResult | ''>('')
   const [mineOnly, setMineOnly] = useState(false)
@@ -48,7 +45,7 @@ export default function HistoryPage({ user, onNav, onLogout }: HistoryPageProps)
 
   return (
     <>
-      <Header user={user} page="history" onNav={onNav} onLogout={onLogout}>
+      <Header>
         <div className="text-sm text-slate-500 dark:text-slate-400">{loading ? 'loading…' : `${total} sessions`}</div>
         <div className="flex-1" />
       </Header>

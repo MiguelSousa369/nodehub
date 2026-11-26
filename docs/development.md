@@ -5,7 +5,7 @@
 | Part | Tech |
 |---|---|
 | Backend | Node.js 20+, Express 5, TypeScript, Zod, Prisma 7 (`@prisma/adapter-pg`), PostgreSQL 17, Winston, Swagger UI, helmet, cors |
-| Frontend | React 19, Vite, TypeScript, Tailwind CSS 3 |
+| Frontend | React 19, React Router 7, Vite, TypeScript, Tailwind CSS 3 |
 | Tests | Vitest + Supertest against a real PostgreSQL test database |
 | Scripts | PowerShell (installer, launcher), Windows batch (`start.cmd`, `nodehub.cmd`) |
 
@@ -38,7 +38,8 @@ nodehub/
 │   └── .env.example
 ├── frontend/
 │   └── src/
-│       ├── App.tsx            manual router (Machines / History / Users / Connect)
+│       ├── App.tsx            routes (react-router): /, /history, /users, /connect
+│       ├── context/           AuthContext (signed-in user, login, logout)
 │       ├── pages/             Dashboard, History, Users, Login, Connect (PC approval)
 │       ├── components/        machine cards, dialogs, header, session items
 │       ├── hooks/             useMachines, useToast

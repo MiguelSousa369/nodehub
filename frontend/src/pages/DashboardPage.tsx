@@ -9,23 +9,19 @@ import Toast from '../components/Toast'
 import { useMachines } from '../hooks/useMachines'
 import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
-import type { AuthUser, Machine, Page } from '../types'
+import { useAuth } from '../context/AuthContext'
+import type { Machine } from '../types'
 
 const UNASSIGNED = 'Unassigned'
-
-interface DashboardPageProps {
-  user    : AuthUser
-  onNav   : (page: Page) => void
-  onLogout: () => void
-}
 
 function claudePrompt(m: Machine): string {
   return `Helpdesk: client ${m.client}, machine ${m.host} (${m.ip ?? '?'}, user ${m.sshUser}). ` +
          'Start the session as described in CLAUDE.md, then ask me what the problem is.'
 }
 
-export default function DashboardPage({ user, onNav, onLogout }: DashboardPageProps) {
-  const { machines, clients, tailscaleError, error, loading, reload } = useMachines(onLogout)
+export default function DashboardPage() {
+  const { logout } = useAuth()
+  const { machines, clients, tailscaleError, error, loading, reload } = useMachines(logout)
   const toast = useToast()
   const [filter, setFilter]     = useState('')
   const [adding, setAdding]     = useState(false)
@@ -88,7 +84,7 @@ export default function DashboardPage({ user, onNav, onLogout }: DashboardPagePr
 
   return (
     <>
-      <Header user={user} page="dashboard" onNav={onNav} onLogout={onLogout}>
+      <Header>
         <div className="text-sm text-slate-500 dark:text-slate-400">
           {loading ? 'loading…' : `${clients.length} clients · ${machines.length} machines · ${onlineCount} online`}
         </div>

@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router'
 
+import { useAuth, useUser } from '../context/AuthContext'
 import { ApiError, decideCliLogin, getCliLogin } from '../services/api'
-import type { AuthUser, CliLoginRequest } from '../types'
-
-interface ConnectPageProps {
-  user    : AuthUser
-  code    : string
-  onDone  : () => void   // back to the dashboard
-  onLogout: () => void
-}
+import type { CliLoginRequest } from '../types'
 
 type State = 'loading' | 'ask' | 'approved' | 'denied' | 'error'
 
 /** Approval page opened by "nodehub login": connects a PC to the signed-in account. */
-export default function ConnectPage({ user, code, onDone, onLogout }: ConnectPageProps) {
+export default function ConnectPage() {
+  const user = useUser()
+  const { logout: onLogout } = useAuth()
+  const code = useSearchParams()[0].get('code') ?? ''
   const [request, setRequest] = useState<CliLoginRequest | null>(null)
   const [state, setState]     = useState<State>('loading')
   const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
+    if (!code) {
+      setError('This link has no connection code. Run "nodehub login" again.')
+      setState('error')
+      return
+    }
     getCliLogin(code)
       .then((r) => {
         setRequest(r)
@@ -88,7 +91,7 @@ export default function ConnectPage({ user, code, onDone, onLogout }: ConnectPag
 
         {state !== 'ask' && state !== 'loading' && (
           <div className="flex justify-end">
-            <button className="btn" onClick={onDone}>Go to the dashboard</button>
+            <Link className="btn" to="/" replace>Go to the dashboard</Link>
           </div>
         )}
       </div>

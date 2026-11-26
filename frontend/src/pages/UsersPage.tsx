@@ -5,15 +5,12 @@ import Toast from '../components/Toast'
 import UserFormDialog from '../components/UserFormDialog'
 import { useToast } from '../hooks/useToast'
 import { ApiError, deleteUser, listUsers } from '../services/api'
-import type { AuthUser, Page, User } from '../types'
+import { useAuth, useUser } from '../context/AuthContext'
+import type { User } from '../types'
 
-interface UsersPageProps {
-  user    : AuthUser
-  onNav   : (page: Page) => void
-  onLogout: () => void
-}
-
-export default function UsersPage({ user: me, onNav, onLogout }: UsersPageProps) {
+export default function UsersPage() {
+  const me = useUser()
+  const { logout: onLogout } = useAuth()
   const [users, setUsers]     = useState<User[]>([])
   const [error, setError]     = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -50,7 +47,7 @@ export default function UsersPage({ user: me, onNav, onLogout }: UsersPageProps)
 
   return (
     <>
-      <Header user={me} page="users" onNav={onNav} onLogout={onLogout}>
+      <Header>
         <div className="flex-1" />
         <button className="btn-primary" onClick={() => openForm(null)}>+ Add user</button>
       </Header>

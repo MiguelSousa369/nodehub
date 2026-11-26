@@ -1,13 +1,10 @@
 import { FormEvent, useState } from 'react'
 
+import { useAuth } from '../context/AuthContext'
 import { login } from '../services/api'
-import type { AuthUser } from '../types'
 
-interface LoginPageProps {
-  onLogin: (token: string, user: AuthUser) => void
-}
-
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage() {
+  const { login: onLogin } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState<string | null>(null)
