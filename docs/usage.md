@@ -22,6 +22,8 @@ how many of its machines are online (e.g. **6/10 online**) and opens or closes i
 
 | On the card | Meaning |
 |---|---|
+| **PC-PEDRO** + `desktop-7f3k2lq` | The friendly name you gave it (if any), with the name in the tailnet underneath |
+| **New** | Added in the last 7 days (configured, or joined the tailnet if still unassigned) |
 | ● green (pulsing) / ○ grey | Online / offline in Tailscale. Offline cards say when the machine was last seen |
 | `100.x.y.z` | Tailscale IP |
 | `nodehub` | SSH user Claude connects with |
@@ -40,7 +42,8 @@ Machines with the client tag that aren't assigned to a client yet appear at the 
 The toolbar above the list is built for a large number of clients:
 
 - **Search** by machine, client, notes or IP.
-- **All / Online / Offline / Unassigned** narrows the list by status.
+- **All / Online / Offline / New / Unassigned** narrows the list by status.
+- **Search** also finds machines by their friendly name.
 - **Sort** machines by name (natural order: `pc2` before `pc10`), online first, or most recent session.
 - **Expand all / Collapse all.** With more than 40 machines, clients start collapsed; nodehub
   remembers which ones you opened. While searching or filtering, every matching client is open.
@@ -72,6 +75,9 @@ machine or client name:
    Details of what it changes: [client-installer.md](client-installer.md).
 3. Within 30 seconds the machine shows up under **Unassigned**. Click **Configure**:
    - **Client:** pick an existing client or type a new one (letter case doesn't matter).
+   - **Name (optional):** how the team calls it, e.g. *PC-PEDRO*. The machine keeps its name in the
+     tailnet (the Windows computer name in lowercase, e.g. `desktop-7f3k2lq`), which is what SSH and
+     the history use, so you can change the friendly name at any time.
    - **SSH user:** leave `nodehub` (the account the installer creates).
    - **Notes:** optional, e.g. *Front desk PC*.
    - **Test SSH** checks the connection before saving.
@@ -84,7 +90,7 @@ machine or client name:
 
 ## Editing and removing machines
 
-- **⋯ → Edit:** change the client, SSH user or notes.
+- **⋯ → Edit:** change the client, friendly name, SSH user or notes.
 - **⋯ → Remove:** takes the machine out of the dashboard. It **keeps its access**: if it's still
   in the tailnet, it reappears under *Unassigned*, and its history is kept (it comes back if the
   machine is configured again). To cut access for good, see
