@@ -31,8 +31,8 @@ export function claudePrompt(m: SessionTarget): string {
       'Start the session as described in CLAUDE.md, then ask me what the problem is.'
 }
 
-/** Machines added in the last NEW_DAYS days get a "New" badge. */
-export const NEW_DAYS = 7
+/** Machines added in the last NEW_HOURS hours get a "New" badge. */
+export const NEW_HOURS = 2
 
 /** What the team calls the machine: its friendly name, or the tailnet name. */
 export function machineLabel(m: { host: string; displayName?: string }): string {
@@ -42,7 +42,7 @@ export function machineLabel(m: { host: string; displayName?: string }): string 
 /** Added recently (configured, or joined the tailnet if unassigned). Unassigned machines with no date count as new. */
 export function isNew(m: { configured: boolean; addedAt: string | null }): boolean {
   if (!m.addedAt) return !m.configured
-  return Date.now() - new Date(m.addedAt).getTime() < NEW_DAYS * 86_400_000
+  return Date.now() - new Date(m.addedAt).getTime() < NEW_HOURS * 3_600_000
 }
 
 /** Path of a machine's page in the dashboard. */

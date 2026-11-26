@@ -15,7 +15,7 @@ components:
         os:         { type: string, nullable: true, example: windows }
         lastSeen:   { type: string, nullable: true, format: date-time }
         lastSessionAt: { type: string, nullable: true, format: date-time, description: Newest helpdesk session on this machine. }
-        addedAt:    { type: string, nullable: true, format: date-time, description: When it was configured (or joined the tailnet, if unassigned). The dashboard marks machines added in the last 7 days as new. }
+        addedAt:    { type: string, nullable: true, format: date-time, description: When it was configured (or joined the tailnet, if unassigned). The dashboard marks machines added in the last 2 hours as new. }
     MachineConfig:
       type: object
       required: [client]

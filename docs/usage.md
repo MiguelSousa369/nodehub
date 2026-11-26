@@ -23,7 +23,7 @@ how many of its machines are online (e.g. **6/10 online**) and opens or closes i
 | On the card | Meaning |
 |---|---|
 | **PC-PEDRO** + `desktop-7f3k2lq` | The friendly name you gave it (if any), with the name in the tailnet underneath |
-| **New** | Added in the last 7 days (configured, or joined the tailnet if still unassigned) |
+| **New** | Added in the last 2 hours (configured, or joined the tailnet if still unassigned) |
 | ● green (pulsing) / ○ grey | Online / offline in Tailscale. Offline cards say when the machine was last seen |
 | `100.x.y.z` | Tailscale IP |
 | `nodehub` | SSH user Claude connects with |
