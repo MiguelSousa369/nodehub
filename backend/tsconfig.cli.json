@@ -1,0 +1,6 @@
+{
+  // Builds only the nodehub CLI (dist/cli/), for technician PCs that use a nodehub server:
+  // no database and no Prisma client needed. npm run build:cli
+  "extends": "./tsconfig.json",
+  "include": ["src/cli/**/*.ts"]
+}
