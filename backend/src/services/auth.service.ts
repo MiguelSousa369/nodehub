@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
 
 import prisma from '../lib/prisma';
@@ -29,6 +30,13 @@ function secret(): string {
   return s;
 }
 
+/** A real scrypt hash of a random password, computed once, to compare against for unknown users. */
+let dummy: Promise<string> | null = null;
+function dummyHash(): Promise<string> {
+  dummy ??= hashPassword(crypto.randomBytes(16).toString('hex'));
+  return dummy;
+}
+
 function signToken(userId: number): string {
   const options: SignOptions = {
     algorithm: ALGORITHM,
@@ -50,8 +58,10 @@ export async function login({ username, password }: LoginInput): Promise<{ token
   }
 
   const user = await prisma.user.findUnique({ where: { username } });
-  // Same error for unknown user, wrong password or deactivated account
-  if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
+  // Always run the password hash, even for unknown users, so the response time doesn't reveal
+  // which usernames exist. Same error for unknown user, wrong password or deactivated account.
+  const passwordOk = await verifyPassword(password, user?.passwordHash ?? await dummyHash());
+  if (!user || !user.active || !passwordOk) {
     recordFailure(username);
     audit('login.failure', { username }, { reason: !user ? 'unknown user' : !user.active ? 'inactive' : 'wrong password' });
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid username or password.');
