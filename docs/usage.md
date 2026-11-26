@@ -4,31 +4,60 @@ The dashboard runs at **http://127.0.0.1:8737** (start it with `start.cmd`). Sig
 nodehub account.
 
 - [Machines](#machines)
+- [Quick search](#quick-search)
 - [Adding a machine](#adding-a-machine)
 - [Editing and removing machines](#editing-and-removing-machines)
 - [History and profiles](#history-and-profiles)
 - [Users](#users)
-- [Your account: password and connected PCs](#your-account)
+- [Your account: password, connected PCs and theme](#your-account)
+- [Links you can bookmark](#links-you-can-bookmark)
 
 ---
 
 ## Machines
 
-The **Machines** tab lists every client machine, grouped by client:
+The **Machines** tab lists every client machine, grouped by client. Each client's heading shows
+how many of its machines are online (e.g. **6/10 online**) and opens or closes its machines.
 
 | On the card | Meaning |
 |---|---|
-| ● green / ○ grey | Online / offline in Tailscale (refreshed every 30 seconds) |
+| ● green (pulsing) / ○ grey | Online / offline in Tailscale. Offline cards say when the machine was last seen |
 | `100.x.y.z` | Tailscale IP |
 | `nodehub` | SSH user Claude connects with |
+| `windows` | Operating system reported by Tailscale |
+| *session 2 days ago* | When the last helpdesk session on this machine was recorded |
+| Machine name | Opens the [machine's page](#history-and-profiles) |
 | **Open in Claude** | Opens a terminal with Claude Code connected to the machine (see [helpdesk sessions](helpdesk-sessions.md)) |
 | **Copy** | Copies the same start message, to paste into a Claude Code session opened in the nodehub folder |
 | **⋯** | History & profile, Edit, Remove |
 
-Machines with the client tag that aren't assigned to a client yet appear under **Unassigned**
-with a dashed border and a **Configure** button.
+Machines with the client tag that aren't assigned to a client yet appear at the top under
+**Unassigned**, with a dashed border and a **Configure** button.
 
-Use the filter box to find a client or machine by name.
+### Finding machines among many clients
+
+The toolbar above the list is built for a large number of clients:
+
+- **Search** by machine, client, notes or IP.
+- **All / Online / Offline / Unassigned** narrows the list by status.
+- **Sort** machines by name (natural order: `pc2` before `pc10`), online first, or most recent session.
+- **Expand all / Collapse all.** With more than 40 machines, clients start collapsed; nodehub
+  remembers which ones you opened. While searching or filtering, every matching client is open.
+- Clients with more than 60 machines show the first 60 and a **Show all** button.
+
+The list refreshes every 30 seconds while the tab is visible (it pauses in background tabs).
+**Updated … ago** shows when, and the ⟳ button refreshes now.
+
+---
+
+## Quick search
+
+Press **Ctrl+K** (or **/**) on any page, or click **Search…** in the top bar, and type part of a
+machine or client name:
+
+- **Enter** on a machine opens it **in Claude** straight away; **Shift+Enter** opens its page.
+- Online machines are listed first. Clients and pages (Machines, History, Users) are listed too.
+- **↑ ↓** move between results, **Esc** closes.
 
 ---
 
@@ -64,18 +93,21 @@ Use the filter box to find a client or machine by name.
 
 ## History and profiles
 
-**Per machine:** **⋯ → History & profile** shows:
+**Per machine:** click the machine's name (or **⋯ → History & profile**) to open its page,
+`/machines/<host>`. It shows:
 
+- the live **status**, IP and SSH user, with **Open in Claude**, **Copy** and **Edit**;
 - the **profile**: role, OS, hardware, important software, quirks. Claude keeps it up to date;
-  you can also edit it here (Markdown);
+  you can also edit it here. It is written in Markdown and shown formatted;
 - the **sessions**, newest first. Click a session to see the problem, diagnosis, actions and
-  anything pending.
+  anything pending. **Search in history** opens the History tab filtered to this machine.
 
-**Across all clients:** the **History** tab lists every session with:
+**Across all clients:** the **History** tab lists every session, grouped by day, with:
 
 - text search (machine, summary, problem, diagnosis, actions, pending);
 - a result filter (*Fixed*, *Partial*, *Unresolved*): handy to find open issues;
-- *Only my sessions*.
+- a technician filter (you are listed first);
+- a machine filter, when you come from a machine's page.
 
 Each session shows who did it: the technician the PC running Claude is connected as.
 
@@ -104,9 +136,9 @@ least one active admin.
 
 ## Your account
 
-In the top bar:
+Click your initials in the top-right corner:
 
-- **Password:** change your password.
+- **Change password.**
 - **Connected PCs:** the PCs where Claude Code can read history and record sessions **in your
   name**, with when each was connected and last used.
   - A PC connects the first time you click **Open in Claude** on it: a browser tab asks
@@ -115,3 +147,21 @@ In the top bar:
   - **Disconnect** a PC you no longer use, or one that was lost. The others keep working.
   - A connected PC can't manage PCs, users or passwords: those need a dashboard sign-in.
 - **Sign out.** Sessions also expire after `JWT_EXPIRES_IN` (12 hours by default).
+- **Theme:** *System* (follows Windows), *Light* or *Dark*. Remembered in this browser.
+
+---
+
+## Links you can bookmark
+
+Every page and filter has its own address, so the browser's back button works and links can be
+shared with the team:
+
+| Address | Shows |
+|---|---|
+| `/` | Machines |
+| `/?q=bakery&status=offline` | Machines filtered by search and status (`status`: `online`, `offline`, `unassigned`; `sort`: `online`, `recent`) |
+| `/machines/srv-bakery` | One machine: status, profile and sessions |
+| `/history?result=UNRESOLVED` | Sessions filtered (`q`, `result`, `technician`, `host`) |
+| `/users` | Users (admins) |
+
+If you aren't signed in, nodehub asks you to sign in and then opens the address you asked for.

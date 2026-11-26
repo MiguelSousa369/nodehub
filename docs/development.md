@@ -5,7 +5,7 @@
 | Part | Tech |
 |---|---|
 | Backend | Node.js 20+, Express 5, TypeScript, Zod, Prisma 7 (`@prisma/adapter-pg`), PostgreSQL 17, Winston, Swagger UI, helmet, cors |
-| Frontend | React 19, React Router 7, Vite, TypeScript, Tailwind CSS 3 |
+| Frontend | React 19, React Router 7, Vite, TypeScript, Tailwind CSS 3, lucide-react (icons), react-markdown |
 | Tests | Vitest + Supertest against a real PostgreSQL test database |
 | Scripts | PowerShell (installer, launcher), Windows batch (`start.cmd`, `nodehub.cmd`) |
 
@@ -38,13 +38,14 @@ nodehub/
 │   └── .env.example
 ├── frontend/
 │   └── src/
-│       ├── App.tsx            routes (react-router): /, /history, /users, /connect
-│       ├── context/           AuthContext (signed-in user, login, logout)
-│       ├── pages/             Dashboard, History, Users, Login, Connect (PC approval)
-│       ├── components/        machine cards, dialogs, header, session items
-│       ├── hooks/             useMachines, useToast
+│       ├── App.tsx            routes (react-router): /, /machines/:host, /history, /users, /connect
+│       ├── context/           AuthContext (signed-in user), ThemeContext (system / light / dark)
+│       ├── pages/             Dashboard, Machine, History, Users, Login, Connect (PC approval)
+│       ├── components/        header, menus, quick search, machine cards, dialogs, backdrop, …
+│       ├── hooks/             useMachines (polling), usePersistentState, useToast
 │       ├── services/api.ts    fetch-based API client
-│       └── types/index.ts     shared types
+│       ├── types/index.ts     shared types
+│       └── utils/             dates and sorting, launcher links
 ├── installer/                 client installer template
 ├── launcher/                  nodehub:// handler and registration
 ├── public-keys/               technicians' SSH public keys (not committed)
@@ -107,6 +108,22 @@ docker exec nodehub-db psql -U nodehub -c "CREATE DATABASE nodehub_test OWNER no
 6. Tests in `tests/`.
 7. Client function in `frontend/src/services/api.ts`, types in `frontend/src/types/index.ts`.
 8. New error codes: add them to [api.md](api.md).
+
+## Frontend notes
+
+- **Styling:** Tailwind utility classes; shared pieces (`.btn`, `.btn-primary`, `.input`, `.card`) and
+  the animated background live in `src/index.css`. Colours are tokens in `tailwind.config.js`
+  (status colours pass WCAG AA on white).
+- **Dark mode:** the `dark` class on `<html>` (`darkMode: 'class'`). `public/theme-init.js` sets it
+  before the first paint; it is a separate file because the backend's Content-Security-Policy
+  blocks inline scripts.
+- **URLs as state:** filters use the query string (`useSearchParams`), so views can be bookmarked.
+  Per-browser preferences (theme, opened client groups) use `localStorage`.
+- **Many machines:** the dashboard filters and groups in memory (fine for thousands), collapses
+  clients when there are more than 40 machines and pages groups larger than 60.
+- **Accessibility:** dialogs use the native `<dialog>` (focus trap, Escape); menus and quick search
+  support the keyboard; animations stop with *reduce motion*.
+- **Markdown** (machine profiles) goes through `components/Markdown.tsx`, which never renders raw HTML.
 
 ## Conventions
 

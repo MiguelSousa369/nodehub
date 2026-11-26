@@ -134,7 +134,7 @@ It:
 
 Then:
 
-1. Sign in as `admin` and change the password (**Password**).
+1. Sign in as `admin` and change the password (your initials, top right → **Change password**).
 2. Click **Open in Claude** on any machine. The first time, a browser tab asks to **connect this
    PC** to your account: check the code and **Approve**. (Or run `.\nodehub.cmd login` beforehand.)
 3. Add your first client machine: [usage.md → Adding a machine](usage.md#adding-a-machine).
