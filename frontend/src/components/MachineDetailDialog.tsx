@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { getMachine, listSessions, updateProfile } from '../services/api'
 import type { MachineDetail, Session } from '../types'
 import Dialog from './Dialog'
+import { ListSkeleton } from './Feedback'
 import SessionItem from './SessionItem'
 
 interface MachineDetailDialogProps {
@@ -46,7 +47,7 @@ export default function MachineDetailDialog({ host, onClose }: MachineDetailDial
   return (
     <Dialog open={host !== null} title={host ?? ''} onClose={onClose} wide>
       {error && <div className="mb-3 text-sm text-danger dark:text-danger-dark">{error}</div>}
-      {!detail && !error && <div className="text-sm text-slate-500">Loading…</div>}
+      {!detail && !error && <ListSkeleton rows={3} label="Loading machine" />}
 
       {detail && (
         <div className="space-y-5">

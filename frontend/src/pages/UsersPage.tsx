@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
+import { Banner, ListSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
 import Toast from '../components/Toast'
 import UserFormDialog from '../components/UserFormDialog'
@@ -12,7 +13,7 @@ import type { User } from '../types'
 export default function UsersPage() {
   const me = useUser()
   const { logout: onLogout } = useAuth()
-  const [users, setUsers]     = useState<User[]>([])
+  const [users, setUsers]     = useState<User[] | null>(null)   // null while loading
   const [error, setError]     = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
@@ -54,8 +55,9 @@ export default function UsersPage() {
       </Header>
 
       <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
-        {error && <div className="mb-4 text-center text-sm text-warn dark:text-warn-dark">{error}</div>}
-        <div className="card overflow-x-auto">
+        {error && <Banner>{error}</Banner>}
+        {!users && !error && <ListSkeleton rows={3} label="Loading users" />}
+        {users && <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-[13px] text-slate-500 dark:text-slate-400">
               <tr className="border-b border-slate-200 dark:border-slate-700/60">
@@ -84,7 +86,7 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </div>}
       </main>
 
       <UserFormDialog open={formOpen} user={editing} onClose={() => setFormOpen(false)}

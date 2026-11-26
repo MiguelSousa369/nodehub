@@ -1,5 +1,7 @@
+import { ClipboardList } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 
+import { Banner, EmptyState, ListSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
 import SessionItem from '../components/SessionItem'
 import { ApiError, listSessions } from '../services/api'
@@ -66,8 +68,14 @@ export default function HistoryPage() {
           </label>
         </div>
 
-        {error && <div className="mb-4 text-sm text-warn dark:text-warn-dark">{error}</div>}
-        {!loading && sessions.length === 0 && <div className="py-8 text-center text-slate-500">No sessions found.</div>}
+        {error && <Banner>{error}</Banner>}
+        {loading && sessions.length === 0 && <ListSkeleton label="Loading sessions" />}
+        {!loading && sessions.length === 0 && (
+          <EmptyState icon={<ClipboardList size={22} />} title="No sessions found">
+            Sessions appear here when Claude records them at the end of a helpdesk session
+            (<code>nodehub log</code>). Try clearing the filters.
+          </EmptyState>
+        )}
 
         <div className="space-y-2">
           {sessions.map((s) => <SessionItem key={s.id} session={s} showHost />)}

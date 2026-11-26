@@ -1,8 +1,9 @@
-import { Plus } from 'lucide-react'
+import { MonitorUp, Plus, SearchX } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import AddMachineDialog from '../components/AddMachineDialog'
 import ClientGroup from '../components/ClientGroup'
+import { Banner, EmptyState, MachineGridSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
 import MachineDetailDialog from '../components/MachineDetailDialog'
 import MachineFormDialog from '../components/MachineFormDialog'
@@ -96,11 +97,20 @@ export default function DashboardPage() {
       </Header>
 
       <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
-        {(error || tailscaleError) && (
-          <div className="mb-5 text-center text-sm text-warn dark:text-warn-dark">{error ?? tailscaleError}</div>
+        {(error || tailscaleError) && <Banner>{error ?? tailscaleError}</Banner>}
+        {loading && <MachineGridSkeleton />}
+        {!loading && machines.length === 0 && (
+          <EmptyState
+            icon={<MonitorUp size={22} />}
+            title="No machines yet"
+            action={<button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />Add machine</button>}
+          >
+            Download the installer, run it on a client PC, and the PC shows up here within a minute.
+          </EmptyState>
         )}
-        {!loading && groups.length === 0 && (
-          <div className="py-8 text-center text-slate-500">No machines. Use "Add machine" to get started.</div>
+        {!loading && machines.length > 0 && groups.length === 0 && (
+          <EmptyState icon={<SearchX size={22} />} title="No machines match the filter"
+                      action={<button className="btn" onClick={() => setFilter('')}>Clear filter</button>} />
         )}
         {groups.map(([name, list]) => (
           <ClientGroup key={name} name={name} unassigned={name === UNASSIGNED} machines={list}

@@ -4,6 +4,7 @@ import { listTokens, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
 import { timeAgo } from '../utils/time'
 import Dialog from './Dialog'
+import { ListSkeleton } from './Feedback'
 
 interface ConnectedPcsDialogProps {
   open   : boolean
@@ -50,7 +51,12 @@ export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialog
       {error && <div className="mb-3 text-sm text-danger dark:text-danger-dark">{error}</div>}
 
       <ul className="space-y-2">
-        {!loading && pcs.length === 0 && <li className="text-sm text-slate-500">No PCs connected yet.</li>}
+        {loading && pcs.length === 0 && <li><ListSkeleton rows={2} label="Loading connected PCs" /></li>}
+        {!loading && pcs.length === 0 && (
+          <li className="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-center text-sm text-slate-500 dark:border-slate-700">
+            No PCs connected yet.
+          </li>
+        )}
         {pcs.map((pc) => (
           <li key={pc.id} className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-700/60">
             <div className="flex-1">
