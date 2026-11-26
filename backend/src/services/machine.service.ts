@@ -77,24 +77,28 @@ export async function listMachines(): Promise<MachineList> {
 // Configure / edit / remove
 // ---------------------------------------------------------------------------
 
+/**
+ * The tailnet peer for `host`, which must carry the client tag. Anything that makes the backend
+ * connect to a machine goes through this, so it can only reach client machines (no SSRF).
+ */
+export async function findClientPeer(host: string): Promise<TailscalePeer> {
+  let peers: TailscalePeer[];
+  try {
+    peers = await getPeers();
+  } catch (err) {
+    throw new HttpError(503, 'TAILSCALE_UNAVAILABLE', `Could not read Tailscale status: ${(err as Error).message}`);
+  }
+  const peer = peers.find((p) => p.host.toLowerCase() === host.toLowerCase());
+  if (!peer || !peer.tags.includes(clientTag())) {
+    throw new HttpError(404, 'MACHINE_NOT_IN_TAILNET', `Machine '${host}' is not in the tailnet with ${clientTag()}.`);
+  }
+  return peer;
+}
+
 export async function saveMachine(host: string, config: MachineConfig): Promise<{ host: string } & MachineConfig> {
   const existing = await prisma.machine.findFirst({ where: { host: { equals: host, mode: 'insensitive' } } });
-  let name = existing?.host;
-
-  if (!name) {
-    // New machines must be in the tailnet with the client tag
-    let peers: TailscalePeer[];
-    try {
-      peers = await getPeers();
-    } catch (err) {
-      throw new HttpError(503, 'TAILSCALE_UNAVAILABLE', `Could not read Tailscale status: ${(err as Error).message}`);
-    }
-    const peer = peers.find((p) => p.host.toLowerCase() === host.toLowerCase());
-    if (!peer || !peer.tags.includes(clientTag())) {
-      throw new HttpError(404, 'MACHINE_NOT_IN_TAILNET', `Machine '${host}' is not in the tailnet with ${clientTag()}.`);
-    }
-    name = peer.host;
-  }
+  // New machines must be in the tailnet with the client tag
+  const name = existing?.host ?? (await findClientPeer(host)).host;
 
   // Reuse an existing client regardless of letter case, or create it
   const client = await prisma.client.findFirst({ where: { name: { equals: config.client, mode: 'insensitive' } } })

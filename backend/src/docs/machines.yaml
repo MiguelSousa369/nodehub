@@ -136,6 +136,7 @@ paths:
   /api/machines/{host}/ssh-test:
     post:
       summary: Test the SSH connection (runs `hostname`)
+      description: Only for machines in the tailnet with the client tag (`CLIENT_TAG`).
       parameters: [{ $ref: '#/components/parameters/Host' }]
       requestBody:
         content:
@@ -157,3 +158,13 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/SessionRequired' }
+        '404':
+          description: MACHINE_NOT_IN_TAILNET (only client machines can be tested)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: TAILSCALE_UNAVAILABLE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

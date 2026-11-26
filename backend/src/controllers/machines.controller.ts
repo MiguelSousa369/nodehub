@@ -55,7 +55,8 @@ export async function sshTest(req: Request, res: Response, next: NextFunction) {
   try {
     const { host } = HostParamsSchema.parse(req.params);
     const { sshUser } = SshTestSchema.parse(req.body ?? {});
-    res.json(await testSsh(host, sshUser));
+    const peer = await machineService.findClientPeer(host);   // only client machines in the tailnet
+    res.json(await testSsh(peer.host, sshUser));
   } catch (err) {
     next(err);
   }

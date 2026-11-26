@@ -226,6 +226,14 @@ describe('machines', () => {
     }
   });
 
+  it('only tests SSH against client machines in the tailnet', async () => {
+    for (const host of ['intranet-server', 'my-laptop']) {   // unknown, and one of our own (untagged) devices
+      const res = await request(app).post(`/api/machines/${host}/ssh-test`).set(as(techToken)).send({});
+      expect(res.status, host).toBe(404);
+      expect(res.body.code).toBe('MACHINE_NOT_IN_TAILNET');
+    }
+  });
+
   it('validates input', async () => {
     const bad = [
       ['srv-a', { client: 'a;b' }],
