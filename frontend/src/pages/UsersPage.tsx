@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { Banner, ListSkeleton } from '../components/Feedback'
 import Header from '../components/Header'
+import SshKeys from '../components/SshKeys'
 import Toast from '../components/Toast'
 import UserFormDialog from '../components/UserFormDialog'
 import { useAuth, useUser } from '../context/AuthContext'
@@ -12,7 +13,7 @@ import { ApiError, deleteUser, listUsers, updateSettings } from '../services/api
 import type { User } from '../types'
 
 // ---------------------------------------------------------------------------
-// Admins only: team settings (language) and the user list.
+// Admins only: team settings (language), the team's SSH keys and the user list.
 // ---------------------------------------------------------------------------
 
 /** Team language: what Claude writes records in, the CLI and installer language, and everyone's default. */
@@ -95,6 +96,7 @@ export default function UsersPage() {
 
       <main id="main" tabIndex={-1} className="mx-auto max-w-4xl px-4 py-5 outline-none sm:px-6">
         <TeamSettings onSaved={toast.show} />
+        <SshKeys onMessage={toast.show} />
 
         {error && <Banner>{error}</Banner>}
         {!users && !error && <ListSkeleton rows={3} label={t.users.loading} />}

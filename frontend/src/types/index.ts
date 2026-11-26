@@ -46,6 +46,16 @@ export interface InstallerStatus {
   missing: MissingSetting[]
 }
 
+/** One of the team's SSH public keys (public-keys/*.pub on the server). */
+export interface PublicKey {
+  id         : string   // hex SHA-256, for URLs
+  fingerprint: string   // SHA256:... as ssh-keygen shows it
+  type       : string
+  comment    : string
+  name       : string   // file name without .pub
+  key        : string
+}
+
 /** Team-wide settings (admins change them). */
 export interface Settings {
   language: 'en' | 'pt'

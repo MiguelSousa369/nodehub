@@ -1,7 +1,7 @@
 import { getMessages } from '../i18n'
 import type {
   AccessToken, AuthUser, CliLoginRequest, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
-  SessionFilters, SessionList, Settings, SshTestResult, Technician, User, UserInput,
+  PublicKey, SessionFilters, SessionList, Settings, SshTestResult, Technician, User, UserInput,
 } from '../types'
 
 const BASE = '/api'
@@ -160,6 +160,24 @@ export async function decideCliLogin(userCode: string, approve: boolean): Promis
   return handleResponse(await fetch(`${BASE}/cli-login/${encodeURIComponent(userCode)}/${approve ? 'approve' : 'deny'}`, {
     method: 'POST', headers: headers(),
   }))
+}
+
+// ---------------------------------------------------------------------------
+// The team's SSH public keys (admins add and remove)
+// ---------------------------------------------------------------------------
+
+export async function listKeys(): Promise<PublicKey[]> {
+  return handleResponse(await fetch(`${BASE}/keys`, { headers: headers() }))
+}
+
+export async function addKey(name: string, publicKey: string): Promise<PublicKey> {
+  return handleResponse(await fetch(`${BASE}/keys`, {
+    method: 'POST', headers: headers(json), body: JSON.stringify({ name, publicKey }),
+  }))
+}
+
+export async function removeKey(id: string): Promise<void> {
+  return handleResponse(await fetch(`${BASE}/keys/${id}`, { method: 'DELETE', headers: headers() }))
 }
 
 // ---------------------------------------------------------------------------
