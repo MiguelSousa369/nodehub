@@ -6,7 +6,7 @@ import * as authService from '../services/auth.service';
 // POST /api/auth/login
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    res.json(await authService.login(LoginSchema.parse(req.body ?? {})));
+    res.json(await authService.login(LoginSchema.parse(req.body ?? {}), req.ip ?? ''));
   } catch (err) {
     next(err);
   }

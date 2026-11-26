@@ -9,7 +9,7 @@ import prisma from './lib/prisma';
 import { swaggerSpec } from './lib/swagger';
 import { authGuard } from './middlewares/auth.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
-import { localHostOnly } from './middlewares/local-host.middleware';
+import { allowedHosts, localHostOnly } from './middlewares/local-host.middleware';
 import { MIN_SECRET_LENGTH } from './services/auth.service';
 import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
@@ -70,7 +70,15 @@ async function start() {
     await prisma.$connect();
     const users = await prisma.user.count();
     if (users === 0) logger.warn('No users yet: run "npm run seed" in backend/ to create the first admin.');
-    app.listen(PORT, HOST, () => logger.info(`nodehub running on http://${HOST}:${PORT}`));
+    const extraHosts = [...allowedHosts()].filter((h) => h !== '127.0.0.1' && h !== 'localhost');
+    if (!['127.0.0.1', 'localhost', '::1'].includes(HOST) && extraHosts.length === 0) {
+      logger.warn(`Listening on ${HOST} but ALLOWED_HOSTS is empty: other PCs will get FORBIDDEN_HOST. ` +
+        'Set ALLOWED_HOSTS to the address the team uses (e.g. ALLOWED_HOSTS=192.168.1.50).');
+    }
+    app.listen(PORT, HOST, () => {
+      logger.info(`nodehub running on http://${HOST}:${PORT}`);
+      for (const h of extraHosts) logger.info(`  open it from other PCs at http://${h}:${PORT}`);
+    });
   } catch (err) {
     logger.error('Failed to start server', { err: (err as Error).message });
     process.exit(1);

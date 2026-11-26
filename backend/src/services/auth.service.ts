@@ -49,10 +49,11 @@ function signToken(userId: number): string {
 // Login and token verification
 // ---------------------------------------------------------------------------
 
-export async function login({ username, password }: LoginInput): Promise<{ token: string; user: AuthUser }> {
-  const wait = lockedFor(username);
+/** `ip` is the caller's address (per-IP lockout when nodehub runs on a server). */
+export async function login({ username, password }: LoginInput, ip = ''): Promise<{ token: string; user: AuthUser }> {
+  const wait = lockedFor(username, ip);
   if (wait > 0) {
-    audit('login.locked', { username });
+    audit('login.locked', { username }, { ip });
     throw new HttpError(429, 'TOO_MANY_ATTEMPTS',
       `Too many failed sign-ins for this user. Try again in ${Math.ceil(wait / 60)} min.`);
   }
@@ -62,12 +63,12 @@ export async function login({ username, password }: LoginInput): Promise<{ token
   // which usernames exist. Same error for unknown user, wrong password or deactivated account.
   const passwordOk = await verifyPassword(password, user?.passwordHash ?? await dummyHash());
   if (!user || !user.active || !passwordOk) {
-    recordFailure(username);
-    audit('login.failure', { username }, { reason: !user ? 'unknown user' : !user.active ? 'inactive' : 'wrong password' });
+    recordFailure(username, ip);
+    audit('login.failure', { username }, { ip, reason: !user ? 'unknown user' : !user.active ? 'inactive' : 'wrong password' });
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid username or password.');
   }
   recordSuccess(username);
-  audit('login.success', { id: user.id, username: user.username });
+  audit('login.success', { id: user.id, username: user.username }, { ip });
 
   return { token: signToken(user.id), user: { id: user.id, username: user.username, name: user.name, role: user.role } };
 }
