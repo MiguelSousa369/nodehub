@@ -163,7 +163,11 @@ export default function MachinePage() {
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">No profile yet. Claude fills it in during sessions, or edit it here.</p>
               )}
-              <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-400" title={fullDate(detail.updatedAt)}>Updated {timeAgo(detail.updatedAt)}</p>
+              {detail.profile && !editingProfile && (
+                <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-400" title={fullDate(detail.updatedAt)}>
+                  Machine record updated {timeAgo(detail.updatedAt)}
+                </p>
+              )}
             </section>
 
             {/* Sessions */}

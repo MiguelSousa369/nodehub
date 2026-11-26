@@ -152,7 +152,8 @@ export default function DashboardPage() {
   // Render
   // ---------------------------------------------------------------------------
 
-  const number = (n: number) => n.toLocaleString()
+  /** "1 client", "1,204 machines" */
+  const count = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`
 
   return (
     <>
@@ -160,8 +161,8 @@ export default function DashboardPage() {
         <div className="text-sm text-slate-500 dark:text-slate-400">
           {loading ? 'Loading…' : (
             <>
-              {number(clients.length)} clients · {number(machines.length)} machines ·{' '}
-              <span className="text-online dark:text-online-dark">{number(counts.online)} online</span>
+              {count(clients.length, 'client')} · {count(machines.length, 'machine')} ·{' '}
+              <span className="text-online dark:text-online-dark">{counts.online.toLocaleString()} online</span>
             </>
           )}
         </div>
