@@ -101,7 +101,7 @@ export default function MachinePage() {
     <>
       <Header />
 
-      <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-5xl px-4 py-5 sm:px-6">
         <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
           <ArrowLeft size={15} aria-hidden="true" />Machines
         </Link>
@@ -163,7 +163,7 @@ export default function MachinePage() {
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">No profile yet. Claude fills it in during sessions, or edit it here.</p>
               )}
-              <p className="mt-3 text-[12px] text-slate-400" title={fullDate(detail.updatedAt)}>Updated {timeAgo(detail.updatedAt)}</p>
+              <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-400" title={fullDate(detail.updatedAt)}>Updated {timeAgo(detail.updatedAt)}</p>
             </section>
 
             {/* Sessions */}

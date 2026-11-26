@@ -169,7 +169,7 @@ export default function DashboardPage() {
         <button className="btn-primary gap-1.5" onClick={() => setAdding(true)}><Plus size={16} aria-hidden="true" />Add machine</button>
       </Header>
 
-      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-7xl px-4 py-5 sm:px-6">
         {/* Toolbar: search, status, sort, expand/collapse */}
         <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <label className="relative w-full sm:w-72">

@@ -7,6 +7,11 @@
     @apply min-h-screen bg-surface text-slate-800 antialiased dark:bg-surface-dark dark:text-slate-200;
     font-family: system-ui, 'Segoe UI', sans-serif;
   }
+  /* Visible focus ring for keyboard users (not shown on mouse clicks) */
+  :focus-visible {
+    @apply rounded-md outline outline-2 outline-offset-2 outline-brand dark:outline-brand-dark;
+  }
+
   /* Native controls (scrollbars, checkboxes, date pickers) follow the theme */
   :root      { color-scheme: light; }
   :root.dark { color-scheme: dark; }
@@ -27,7 +32,8 @@
   }
   .input {
     @apply w-full rounded-lg border border-slate-200 bg-surface px-3 py-2 text-sm outline-none
-           focus:border-brand dark:border-slate-700 dark:bg-surface-dark dark:focus:border-brand-dark;
+           focus:border-brand focus:ring-2 focus:ring-brand/20 focus-visible:outline-none
+           dark:border-slate-700 dark:bg-surface-dark dark:focus:border-brand-dark dark:focus:ring-brand-dark/25;
   }
   .card {
     @apply rounded-xl border border-slate-200 bg-surface-card dark:border-slate-700/60 dark:bg-surface-card-dark;

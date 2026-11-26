@@ -149,7 +149,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <kbd className="hidden rounded border border-slate-200 px-1.5 text-[11px] text-slate-400 sm:block dark:border-slate-700">Esc</kbd>
+        <kbd className="hidden rounded border border-slate-200 px-1.5 text-[11px] text-slate-500 sm:block dark:border-slate-700">Esc</kbd>
       </div>
 
       <ul id="palette-results" role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto p-1.5">
@@ -178,7 +178,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
               <span className="block truncate text-sm font-medium">{r.title}</span>
               <span className="block truncate text-[12px] text-slate-500 dark:text-slate-400">{r.subtitle}</span>
             </span>
-            {i === active && r.alt && <span className="hidden flex-none text-[11px] text-slate-400 sm:block">Enter: Claude · Shift+Enter: page</span>}
+            {i === active && r.alt && <span className="hidden flex-none text-[11px] text-slate-500 sm:block dark:text-slate-400">Enter: Claude · Shift+Enter: page</span>}
           </li>
         ))}
       </ul>

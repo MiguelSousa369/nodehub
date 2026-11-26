@@ -47,7 +47,7 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <main id="main" className="flex min-h-screen items-center justify-center px-4">
       <div className="card w-full max-w-md space-y-4 p-6">
         <h1><Logo /></h1>
 
@@ -96,6 +96,6 @@ export default function ConnectPage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

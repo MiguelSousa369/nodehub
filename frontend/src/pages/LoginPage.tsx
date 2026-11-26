@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-7 px-4 py-10">
+    <main id="main" className="flex min-h-screen flex-col items-center justify-center gap-7 px-4 py-10">
       <div className="text-center">
         <h1><Logo size="lg" /></h1>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Remote helpdesk for your clients&apos; PCs</p>

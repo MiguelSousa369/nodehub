@@ -119,7 +119,7 @@ export default function HistoryPage() {
         </div>
       </Header>
 
-      <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-5xl px-4 py-5 sm:px-6">
         <div className="mb-5 flex flex-wrap items-center gap-2.5">
           <label className="relative w-full sm:w-72">
             <span className="sr-only">Search sessions</span>

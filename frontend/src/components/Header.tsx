@@ -63,6 +63,10 @@ export default function Header({ children }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-surface-card/80 backdrop-blur-md
                        dark:border-slate-700/60 dark:bg-surface-card-dark/75">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded-lg
+                                focus:bg-brand focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+        Skip to content
+      </a>
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3 sm:px-6">
         <Link to="/" className="mr-1 rounded-md" aria-label="nodehub, go to machines"><Logo /></Link>
 
@@ -82,7 +86,7 @@ export default function Header({ children }: HeaderProps) {
             type="button"
             onClick={() => setDialog('search')}
             aria-label="Quick search (Ctrl+K)"
-            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-surface px-2.5 text-sm text-slate-400
+            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-surface px-2.5 text-sm text-slate-500
                        transition hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:bg-surface-dark dark:hover:text-slate-300"
           >
             <Search size={15} aria-hidden="true" />

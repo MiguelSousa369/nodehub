@@ -54,7 +54,7 @@ export default function UsersPage() {
         <button className="btn-primary gap-1.5" onClick={() => openForm(null)}><Plus size={16} aria-hidden="true" />Add user</button>
       </Header>
 
-      <main className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto outline-none max-w-4xl px-4 py-5 sm:px-6">
         {error && <Banner>{error}</Banner>}
         {!users && !error && <ListSkeleton rows={3} label="Loading users" />}
         {users && <div className="card overflow-x-auto">
@@ -64,23 +64,23 @@ export default function UsersPage() {
                 <th className="px-4 py-2.5 font-medium">User</th>
                 <th className="px-4 py-2.5 font-medium">Role</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5" />
+                <th className="px-4 py-2.5"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
                   <td className="px-4 py-2.5">
-                    <div className="font-medium">{u.name}{u.id === me.id && <span className="text-slate-400"> (you)</span>}</div>
+                    <div className="font-medium">{u.name}{u.id === me.id && <span className="font-normal text-slate-500 dark:text-slate-400"> (you)</span>}</div>
                     <div className="text-[13px] text-slate-500 dark:text-slate-400">{u.username}</div>
                   </td>
                   <td className="px-4 py-2.5">{u.role === 'ADMIN' ? 'Admin' : 'Technician'}</td>
-                  <td className={`px-4 py-2.5 ${u.active ? 'text-online dark:text-online-dark' : 'text-slate-400'}`}>
+                  <td className={`px-4 py-2.5 ${u.active ? 'text-online dark:text-online-dark' : 'text-slate-500 dark:text-slate-400'}`}>
                     {u.active ? 'Active' : 'Inactive'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-right">
-                    <button className="btn mr-2" onClick={() => openForm(u)}>Edit</button>
-                    {u.id !== me.id && <button className="btn text-danger dark:text-danger-dark" onClick={() => remove(u)}>Delete</button>}
+                    <button className="btn mr-2" onClick={() => openForm(u)} aria-label={`Edit ${u.username}`}>Edit</button>
+                    {u.id !== me.id && <button className="btn text-danger dark:text-danger-dark" onClick={() => remove(u)} aria-label={`Delete ${u.username}`}>Delete</button>}
                   </td>
                 </tr>
               ))}
