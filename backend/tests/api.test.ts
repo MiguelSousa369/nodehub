@@ -48,6 +48,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   resetLoginThrottle();
+  await prisma.setting.deleteMany();
   await prisma.cliLoginRequest.deleteMany();
   await prisma.session.deleteMany();
   await prisma.apiToken.deleteMany();
@@ -178,6 +179,27 @@ describe('auth', () => {
     for (const token of [none, otherSecret, hs512]) {
       expect((await request(app).get('/api/auth/me').set(as(token))).status).toBe(401);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+describe('settings', () => {
+  it('has English by default, readable without signing in', async () => {
+    const res = await request(app).get('/api/settings').set(HOST);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ language: 'en' });
+  });
+
+  it('lets admins (and only admins, in the dashboard) change the team language', async () => {
+    expect((await request(app).put('/api/settings').set(as(techToken)).send({ language: 'pt' })).status).toBe(403);
+    expect((await request(app).put('/api/settings').set(as(adminToken)).send({ language: 'fr' })).body.code).toBe('VALIDATION_ERROR');
+
+    const res = await request(app).put('/api/settings').set(as(adminToken)).send({ language: 'pt' });
+    expect(res.body).toEqual({ language: 'pt' });
+    expect((await request(app).get('/api/settings').set(HOST)).body.language).toBe('pt');
   });
 });
 

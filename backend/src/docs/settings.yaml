@@ -1,0 +1,44 @@
+components:
+  schemas:
+    Settings:
+      type: object
+      properties:
+        language:
+          type: string
+          enum: [en, pt]
+          description: |
+            Team language (en = English, pt = Portuguese, Portugal): the dashboard's default, the
+            language Claude writes session records and profiles in, and the language of the CLI and
+            the client installer.
+
+paths:
+  /api/settings:
+    get:
+      summary: Team settings (no sign-in needed)
+      security: []
+      responses:
+        '200':
+          description: Current settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Settings' }
+    put:
+      summary: Change the team settings (admins, dashboard session)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Settings' }
+      responses:
+        '200':
+          description: Saved settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Settings' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: FORBIDDEN (not an admin) or SESSION_REQUIRED (PC token)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }

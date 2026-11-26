@@ -15,6 +15,7 @@ import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
 import machinesRoutes from './routes/machines.routes';
 import sessionsRoutes from './routes/sessions.routes';
+import settingsRoutes from './routes/settings.routes';
 import cliLoginRoutes from './routes/cli-login.routes';
 import tokensRoutes from './routes/tokens.routes';
 import usersRoutes from './routes/users.routes';
@@ -36,6 +37,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
+app.use('/api/settings', settingsRoutes); // team language (read: public, change: admins)
 app.use('/api/users', usersRoutes); // admins only
 app.use('/api/tokens', tokensRoutes); // your connected PCs
 app.use('/api/cli-login', cliLoginRoutes); // browser authorisation of a PC (nodehub login)

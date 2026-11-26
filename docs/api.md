@@ -23,6 +23,9 @@ token.
 | `POST` | `/api/auth/login` | – | `{ username, password }` → `{ token, user }` |
 | `GET` | `/api/auth/me` | any | Current user |
 | `POST` | `/api/auth/password` | session | `{ currentPassword, newPassword }` → `{ token }`; signs out your other sessions |
+| **Settings** | | | |
+| `GET` | `/api/settings` | – | `{ language }` (`en` or `pt`): team language |
+| `PUT` | `/api/settings` | session, admin | `{ language }` |
 | **Connecting a PC** (`nodehub login`) | | | |
 | `POST` | `/api/cli-login` | – | `{ deviceName }` → `{ deviceCode, userCode, expiresIn, interval }` |
 | `POST` | `/api/cli-login/poll` | – | `{ deviceCode }` → `202` pending, `200` `{ token, user }` once approved |

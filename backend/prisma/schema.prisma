@@ -136,3 +136,12 @@ model Session {
   @@index([technicianId])
   @@map("sessions")
 }
+
+/// Team-wide settings, one row per key (e.g. language = en | pt). Read through settings.service.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

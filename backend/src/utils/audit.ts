@@ -19,6 +19,7 @@ export type AuditEvent =
   | 'installer.downloaded'
   | 'machine.saved' | 'machine.removed'
   | 'session.updated'
+  | 'settings.updated'
   | 'request.forbidden';
 
 const auditLog = winston.createLogger({
