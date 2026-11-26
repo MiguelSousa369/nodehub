@@ -82,15 +82,16 @@ step 4. Tagged devices don't expire, so machines stay connected after the key ex
 ## SSH keys
 
 Every technician needs an SSH key pair. The **public** key goes to every client machine through
-the installer.
+the installer and **Sync keys**.
 
 ```powershell
 ssh-keygen -t ed25519 -C "<your name>"      # if you don't have one yet
-copy $env:USERPROFILE\.ssh\id_ed25519.pub public-keys\<your-name>.pub
 ```
 
-Keys in `public-keys/` are not committed (they are specific to each installation). See
-[public-keys/README.md](../public-keys/README.md).
+After the first sign-in (step 5), add it in the dashboard: account menu → **My SSH keys** → **Add
+key**, and paste the contents of `%USERPROFILE%\.ssh\id_ed25519.pub`. Keys belong to your
+account. (Keys dropped in `public-keys\*.pub` are imported at startup, see
+[public-keys/README.md](../public-keys/README.md).)
 
 ---
 
@@ -146,10 +147,9 @@ Then:
 For each new technician:
 
 1. An admin creates their account (**Users → + Add user**).
-2. Their public key goes into `public-keys/` (step 3). Re-run the installer on existing client
-   machines so they accept the new key.
+2. They add their public key (account menu → **My SSH keys**), and someone with access clicks
+   **Sync keys** so existing client machines accept it.
 3. They set up their own PC (step 4); it connects to their account the first time they click
    **Open in Claude**.
 
-> Today each technician runs nodehub on their own PC, all pointing at the same tailnet. A shared
-> server for the whole team is on the [roadmap](roadmap.md).
+> To share one nodehub between the whole team, run it on an [office server](server.md).

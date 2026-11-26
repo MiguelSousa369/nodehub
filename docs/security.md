@@ -32,7 +32,7 @@ protects against and how, and the responsibilities that stay with you.
 | **Only tagged machines** | Machines can only be configured, and the SSH test only runs, if they are in the tailnet with `CLIENT_TAG`: the backend can't be used to reach other hosts. |
 | **Security headers** | `helmet()` defaults, including a Content-Security-Policy that only allows scripts from nodehub itself. |
 | **Rendering** | React escapes all text; machine profiles are rendered as Markdown without raw HTML. |
-| **SSH keys** | Only admins (dashboard session) can add or remove the team's public keys; private keys are refused. The server never connects to client PCs to distribute them: `nodehub keys sync` runs on a technician PC that already has access, and refuses to empty a machine or lock out the PC running it. |
+| **SSH keys** | Each key belongs to an account: technicians manage their own, admins any (dashboard session only, never with a PC token); private keys are refused. Keys of deactivated accounts are no longer applied. The server never connects to client PCs to distribute them: the sync runs on a technician PC that already has access, shows the changes and asks before applying (so a `nodehub://keys-sync` link from another site can't change anything by itself), and refuses to empty a machine or lock out the PC running it. |
 | **Audit log** | `backend/logs/audit.log` records sign-ins (and failures, lockouts), password changes, user changes, PCs approved / connected / disconnected, installer downloads, SSH keys added or removed, machine list changes and refused cross-site requests: one JSON line each, with who and when, never passwords or tokens. |
 | **Errors** | Unexpected errors answer a generic message; the details (SQL, paths, stack) go only to `backend/logs/error.log`. |
 
@@ -90,8 +90,8 @@ How nodehub stands against each category, reviewed on 2026-11-26.
 
 - **Protect the technicians' private SSH keys.** Anyone with a private key and access to the
   tailnet can reach every client machine. Use a passphrase (with `ssh-agent`) or a hardware key.
-  When someone leaves: remove their key in **Users → SSH keys** and run `nodehub keys sync`,
-  deactivate their nodehub account and remove their devices from the tailnet.
+  When someone leaves: deactivate their nodehub account (their keys stop being applied), click
+  **Sync keys**, and remove their devices from the tailnet.
 - **Protect `backend/.env`**: it holds the JWT secret and the Tailscale auth key.
 - **Client consent:** permanent remote access must be agreed with each client (e.g. in the support
   contract).

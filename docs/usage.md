@@ -124,11 +124,10 @@ Each session shows who did it: the technician the PC running Claude is connected
 
 *Admins only.* The **Users** tab manages who can sign in, the team language and the team's SSH keys.
 
-**SSH keys** lists the technicians' public keys: who can reach client PCs. **Add key** (a name and
-the contents of the `.pub` file) or **Remove**, then run `.\nodehub.cmd keys sync` on a PC that
-already has access to apply the list to every online client PC (details in
-[server.md](server.md#adding-or-removing-a-technician)). New installers always include the current
-list.
+**SSH keys** lists every key with its owner: who can reach client PCs. Admins can add a key for
+anyone, or a *service key* (no owner), and remove any key. Keys of deactivated accounts are marked
+*not applied*. After a change, **Sync keys** updates every online client PC (details in
+[server.md](server.md#adding-or-removing-a-technician)). New installers always include the active keys.
 
 | Role | Can |
 |---|---|
@@ -152,6 +151,8 @@ least one active admin.
 Click your initials in the top-right corner:
 
 - **Change password.**
+- **My SSH keys:** the keys you reach client PCs with. **Add key** (paste the `.pub` file),
+  **Remove**, and **Sync keys** to apply the change to the client PCs.
 - **Connected PCs:** the PCs where Claude Code can read history and record sessions **in your
   name**, with when each was connected and last used.
   - A PC connects the first time you click **Open in Claude** on it: a browser tab asks

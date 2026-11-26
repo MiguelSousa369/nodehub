@@ -49,7 +49,7 @@ nodehub/
 │       └── utils/             dates and sorting, launcher links
 ├── installer/                 client installer template
 ├── launcher/                  nodehub:// handler and registration
-├── public-keys/               technicians' SSH public keys (not committed)
+├── public-keys/               *.pub files imported into the database at startup (not committed)
 └── docs/
 ```
 

@@ -48,9 +48,10 @@ Docker Desktop, Node.js 20+, Git, and **Tailscale signed in to the support tailn
 4. Run `start.cmd`. The log shows `open it from other PCs at http://192.168.1.50:8737`.
 5. Keep it running after reboots: a Task Scheduler task *At startup* that runs `start.cmd` (with
    *Run whether user is logged on or not*), or run it inside the server's own session.
-6. Add every technician's **public** SSH key in the dashboard (**Users → SSH keys**). They are
-   stored in `public-keys\` on the server; the installer adds them to new client PCs, and
-   `nodehub keys sync` to existing ones (see [Adding or removing a technician](#adding-or-removing-a-technician)).
+6. Each technician adds their **public** SSH key in the dashboard (account menu → **My SSH keys**);
+   admins see them all in **Users → SSH keys**. The installer adds them to new client PCs, and
+   **Sync keys** to existing ones (see [Adding or removing a technician](#adding-or-removing-a-technician)).
+   Keys left in `public-keys\*.pub` from an older setup are imported automatically.
 
 PostgreSQL stays on `127.0.0.1` of the server: nothing but nodehub talks to it.
 
@@ -76,8 +77,8 @@ Claude connects to client PCs from **your** PC, so it needs:
 
 1. **Tailscale**, signed in to the support tailnet as a team device.
 2. **Claude Code**, **Node.js 20+**, **Git** and Windows Terminal.
-3. **An SSH key** (`ssh-keygen -t ed25519`): send the `.pub` file to an admin, who adds it in
-   **Users → SSH keys** and runs `nodehub keys sync` (next section).
+3. **An SSH key** (`ssh-keygen -t ed25519`): add the `.pub` in the dashboard (account menu →
+   **My SSH keys**), then someone who already has access clicks **Sync keys** (next section).
 4. **The nodehub folder**, with only the CLI built (no database or `.env` needed on this PC):
 
    ```powershell
@@ -99,23 +100,24 @@ Claude connects to client PCs from **your** PC, so it needs:
 
 ## Adding or removing a technician
 
-Client PCs accept exactly the keys in **Users → SSH keys**, once they are synced:
+Every SSH key belongs to an account (or is an admin's *service key*). Client PCs accept the keys of
+**active** accounts, once they are synced:
 
-1. An admin adds (or removes) the key in the dashboard.
-2. Someone whose PC **already has access** runs, in the nodehub folder:
+- **New technician:** they add their key in **My SSH keys** (or an admin does it for them in
+  **Users → SSH keys**).
+- **Someone leaves:** deactivate their account (**Users → Edit → Active**). Their keys stay listed,
+  marked *not applied*, and the next sync takes them off every client PC.
 
-   ```powershell
-   .\nodehub.cmd keys sync --dry-run   # shows what would change on each machine
-   .\nodehub.cmd keys sync             # applies it
-   ```
+Then **Sync keys** (on the Users page or in My SSH keys), on a PC that **already has access**. It
+opens a window on that PC which checks every online client PC, shows what would change
+(`+1 −0`), and asks before applying. Offline machines are listed as skipped: sync again later.
+From a terminal it's the same: `.\nodehub.cmd keys sync` (`--dry-run` to only look, `--yes` to
+skip the question).
 
-   Every **online** client PC is updated over SSH: new keys start working, removed keys stop
-   working. Offline machines are listed as skipped: run the sync again later.
-
-Safety: the sync refuses to run with an empty list, and refuses if none of the keys of the PC
-running it is in the list (it would lock that PC out). Keys added by hand on a machine are removed:
-the dashboard list is the only source of truth. When someone leaves, also deactivate their nodehub
-account and remove their devices from the tailnet.
+Safety: the server never connects to client PCs; the sync runs on a technician's PC. It refuses to
+run with no active keys, and refuses if none of the keys of the PC running it would stay (it would
+lock that PC out). Keys added by hand on a machine are removed: the dashboard is the only source of
+truth. When someone leaves, also remove their devices from the tailnet.
 
 ---
 

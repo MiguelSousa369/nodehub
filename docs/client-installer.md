@@ -8,7 +8,7 @@ filled in:
 | Placeholder | Filled with |
 |---|---|
 | `__NODEHUB_AUTHKEY__` | `TAILSCALE_AUTHKEY` |
-| `__NODEHUB_PUBKEYS__` | Every key in `public-keys/*.pub` |
+| `__NODEHUB_PUBKEYS__` | The team's active SSH keys (accounts that are active, plus service keys) |
 | `__NODEHUB_CLIENT_TAG__` | `CLIENT_TAG` |
 
 ## Running it

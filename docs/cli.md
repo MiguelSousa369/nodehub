@@ -54,8 +54,8 @@ PC forget its token.
 | `log <host> --summary "..." --result fixed [--problem ...] [--diagnosis ...] [--actions ...] [--pending ...]` | Record a session from flags |
 | `update <id> --file changes.json` | Correct a recorded session: only the fields in the file change, e.g. `{"pending": "", "result": "fixed"}` |
 | `update <id> --pending "" --result fixed` | The same with flags |
-| `keys` | List the team's SSH public keys (fingerprint, name) |
-| `keys sync [--host <h>] [--dry-run] [--force]` | Make every online client PC accept exactly the team's keys, over SSH from this PC. `--dry-run` shows the changes; `--host` limits it to one machine; `--force` skips the "your own key must be in the list" check. Not for Claude: the technician runs it |
+| `keys` | List the team's SSH keys with owner, and which are not applied (inactive accounts) |
+| `keys sync [--host <h>] [--dry-run] [--yes] [--force]` | Make every online client PC accept exactly the active keys, over SSH from this PC. In a terminal it previews the changes and asks first (`--yes` skips the question); `--dry-run` only shows them; `--host` limits it to one machine; `--force` skips the "your own key must stay" check. The dashboard's **Sync keys** button opens this in a window. Not for Claude: the technician runs it |
 | `profile <host> --file profile.md` | Replace the machine profile (Markdown) |
 | `profile <host> --text "..."` | Same, from text |
 

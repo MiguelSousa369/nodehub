@@ -18,7 +18,7 @@
 |---|---|
 | *Could not read Tailscale status* | Tailscale isn't running or signed in on this PC. Check `tailscale status`. Set `TAILSCALE_BIN` if it's installed elsewhere. |
 | A new machine doesn't appear | It needs the client tag: check the auth key has `CLIENT_TAG`, and that `CLIENT_TAG` in `.env` matches. In the Tailscale console, check the device and its tags. |
-| *Download installer* is disabled | The dialog lists what's missing: `TAILSCALE_AUTHKEY`, a key in `public-keys/`, or a valid `CLIENT_TAG`. |
+| *Download installer* is disabled | The dialog lists what's missing: `TAILSCALE_AUTHKEY`, at least one active SSH key (**My SSH keys**), or a valid `CLIENT_TAG`. |
 | *Open in Claude* does nothing | Register the protocol: `.\launcher\register-protocol.ps1`. Allow the browser's "open nodehub?" prompt. |
 | *Machine … is not a client machine in the tailnet* (launcher) | The machine lost its tag or left the tailnet, or `CLIENT_TAG` in `.env` differs from the real tag. |
 | Signed out unexpectedly | The session expired (`JWT_EXPIRES_IN`) or an admin deactivated your account. |
@@ -27,7 +27,9 @@
 
 | Symptom | Cause / fix |
 |---|---|
-| *Test SSH*: `Permission denied (publickey…)` | Your public key isn't on the machine: add it to `public-keys/` and re-run the installer there. Check the SSH user (`nodehub`). |
+| *Test SSH*: `Permission denied (publickey…)` | The key isn't on the machine: add it in **My SSH keys** and **Sync keys** (from a PC that has access). On a server, *Test SSH* uses the server's own key: add it as a service key. Check the SSH user (`nodehub`). |
+| **Sync keys** does nothing | The `nodehub://` protocol isn't registered on this PC (`.\launcher\register-protocol.ps1`) or the CLI isn't built (`npm run build:cli` in `backend\`). |
+| Sync: *None of this PC's keys is in the team list* | Add this PC's key (`%USERPROFILE%\.ssh\*.pub`) in **My SSH keys** first, so the sync doesn't lock this PC out. |
 | *Test SSH*: timeout | Machine offline, or `sshd` stopped, or the firewall rule missing. Check the machine in the Tailscale console. |
 | `Host key verification failed` | The machine was reinstalled. Remove its line from `%USERPROFILE%\.ssh\known_hosts` (`ssh-keygen -R <host>`). |
 | Warning about *post-quantum key exchange* | Harmless: the client PC has an older OpenSSH. |

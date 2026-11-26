@@ -44,7 +44,7 @@ Not in `.env`: an admin sets it in the dashboard (**Users → Team settings**), 
 
 | Setting | Default | Description |
 |---|---|---|
-| `PUBLIC_KEYS_DIR` | `../public-keys` | Technicians' SSH public keys (`*.pub`) embedded in the installer. |
+| `PUBLIC_KEYS_DIR` | `../public-keys` | Folder whose `*.pub` files are imported into the database at startup (keys are managed in the dashboard). |
 | `INSTALLER_TEMPLATE` | `../installer/install-client.ps1` | Installer template. |
 | `FRONTEND_DIST` | `../frontend/dist` | Built dashboard served at `/`. |
 | `DATABASE_URL_TEST` | `DATABASE_URL` with database `nodehub_test` | Database used by `npm test`. |

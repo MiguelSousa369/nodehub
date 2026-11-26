@@ -88,4 +88,4 @@ Each technician needs, once:
 1. The `nodehub://` protocol registered: `.\launcher\register-protocol.ps1`.
 2. Their PC connected to their account: happens automatically the first time they click
    **Open in Claude** (approve it in the browser).
-3. Their SSH public key in `public-keys/`, included in the installer the machine was set up with.
+3. Their SSH public key added in the dashboard (**My SSH keys**) and synced to the machines (**Sync keys**).
