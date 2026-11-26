@@ -13,6 +13,7 @@ paths:
                   ready:   { type: boolean }
                   missing: { type: array, items: { type: string } }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
 
   /api/installer:
     get:
@@ -25,6 +26,7 @@ paths:
             application/octet-stream:
               schema: { type: string, format: binary }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
         '409':
           description: INSTALLER_NOT_CONFIGURED
           content:

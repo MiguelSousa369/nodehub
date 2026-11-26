@@ -85,6 +85,7 @@ paths:
           description: Saved configuration.
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
         '404':
           description: MACHINE_NOT_IN_TAILNET
           content:
@@ -102,6 +103,7 @@ paths:
       responses:
         '204': { description: Removed. }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }
         '404':
           description: NOT_FOUND
           content:
@@ -154,3 +156,4 @@ paths:
                   message: { type: string }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/SessionRequired' }

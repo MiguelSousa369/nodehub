@@ -40,18 +40,18 @@ token.
 | **Machines** | | | |
 | `GET` | `/api/machines` | any | Client machines (Tailscale + configuration) and known clients |
 | `GET` | `/api/machines/:host` | any | Configuration, profile, 10 latest sessions |
-| `PUT` | `/api/machines/:host` | any | Configure / edit `{ client, sshUser?, notes? }` |
-| `DELETE` | `/api/machines/:host` | any | Remove the configuration (history is kept) |
+| `PUT` | `/api/machines/:host` | session | Configure / edit `{ client, sshUser?, notes? }` |
+| `DELETE` | `/api/machines/:host` | session | Remove the configuration (history is kept) |
 | `PUT` | `/api/machines/:host/profile` | any | `{ profile }` (Markdown) |
-| `POST` | `/api/machines/:host/ssh-test` | any | `{ sshUser? }` → `{ ok, message }` |
+| `POST` | `/api/machines/:host/ssh-test` | session | `{ sshUser? }` → `{ ok, message }` |
 | **Sessions** | | | |
 | `GET` | `/api/sessions` | any | All sessions; filters `host`, `technicianId`, `result`, `q`, `limit`, `offset` |
 | `GET` | `/api/sessions/technicians` | any | Users who recorded at least one session (history filter) |
 | `GET` | `/api/machines/:host/sessions` | any | Sessions of one machine (`limit`, `offset`) |
 | `POST` | `/api/machines/:host/sessions` | any | Record a session as the caller |
 | **Installer** | | | |
-| `GET` | `/api/installer/status` | any | `{ ready, missing[] }` |
-| `GET` | `/api/installer` | any | Download `nodehub-install.ps1` |
+| `GET` | `/api/installer/status` | session | `{ ready, missing[] }` |
+| `GET` | `/api/installer` | session | Download `nodehub-install.ps1` (contains the Tailscale auth key) |
 
 ## Errors
 
@@ -69,7 +69,7 @@ Every error has the same shape; branch on `code`, not on the message:
 | `UNAUTHORIZED` | 401 | No token, expired session, revoked token or deactivated user |
 | `INVALID_CREDENTIALS` | 401 | Wrong username or password |
 | `FORBIDDEN` | 403 | Admin-only action |
-| `SESSION_REQUIRED` | 403 | Account-level action attempted with a PC token |
+| `SESSION_REQUIRED` | 403 | Action reserved for the dashboard (account, users, machine list, installer) attempted with a PC token |
 | `LOGIN_DENIED` | 403 | The PC connection request was denied |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
 | `TOO_MANY_ATTEMPTS` | 429 | 5 wrong passwords for this username in 15 minutes: wait and try again |

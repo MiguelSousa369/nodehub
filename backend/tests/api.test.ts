@@ -330,6 +330,20 @@ describe('connecting a PC (nodehub login)', () => {
     expect((await request(app).get('/api/machines').set(as(desktop))).status).toBe(200);
   });
 
+  it('PC tokens cannot change the machine list or download the installer (it holds the Tailscale key)', async () => {
+    const token = await createToken(techToken);
+    for (const [method, url] of [
+      ['put', '/api/machines/new-pc'], ['delete', '/api/machines/srv-a'], ['post', '/api/machines/srv-a/ssh-test'],
+      ['get', '/api/installer'], ['get', '/api/installer/status'],
+    ] as const) {
+      const res = await request(app)[method](url).set(as(token)).send({ client: 'X' });
+      expect(res.body.code, `${method} ${url}`).toBe('SESSION_REQUIRED');
+    }
+    // What Claude needs still works
+    expect((await request(app).get('/api/machines/srv-a').set(as(token))).status).toBe(200);
+    expect((await request(app).put('/api/machines/srv-a/profile').set(as(token)).send({ profile: 'x' })).status).toBe(200);
+  });
+
   it('PC tokens cannot manage PCs, users or passwords, and stop working when the user is deactivated', async () => {
     const token = await createToken(adminToken, 'ADMIN-PC');
     for (const [method, url] of [['get', '/api/tokens'], ['get', '/api/users'], ['post', '/api/auth/password']] as const) {
