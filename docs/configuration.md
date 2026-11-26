@@ -32,7 +32,6 @@ This file holds secrets and is never committed.
 |---|---|---|
 | `PORT` | `8737` | HTTP port of the backend and dashboard. |
 | `HOST` | `127.0.0.1` | Interface to listen on. Keep it local (see [security](security.md)). |
-| `NODE_ENV` | `development` | `production` hides internal error messages and restricts CORS. |
 | `LOG_LEVEL` | `info` | Winston level (`error`, `warn`, `info`, `debug`). Logs go to `backend/logs/`. |
 
 ## Paths

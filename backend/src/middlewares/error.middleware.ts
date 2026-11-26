@@ -21,12 +21,11 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
     return;
   }
 
+  // Unexpected errors: details go to the log only, never to the client (they can include SQL,
+  // file paths or library internals). Look them up in backend/logs/error.log.
   if (err instanceof Error) {
     logger.error('Unhandled error', { message: err.message, stack: err.stack });
-    res.status(500).json({
-      error: process.env.NODE_ENV === 'production' ? 'Internal server error.' : err.message,
-      code : 'INTERNAL_ERROR',
-    });
+    res.status(500).json({ error: 'Internal server error. Details are in the server log.', code: 'INTERNAL_ERROR' });
     return;
   }
 
