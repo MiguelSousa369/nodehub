@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 
 import type { Session, SessionResult } from '../types'
 import { machinePath } from '../utils/machine'
-import { fullDate } from '../utils/time'
+import { formatDateTime, formatTime, fullDate } from '../utils/time'
 
 const RESULT_STYLE: Record<SessionResult, { label: string; className: string }> = {
   FIXED     : { label: 'Fixed',      className: 'bg-online/15 text-online dark:text-online-dark' },
@@ -30,9 +30,7 @@ interface SessionItemProps {
 export default function SessionItem({ session: s, showHost = false, timeOnly = false }: SessionItemProps) {
   const fields = [['Problem', s.problem], ['Diagnosis', s.diagnosis], ['Actions', s.actions], ['Pending', s.pending]]
     .filter(([, value]) => value)
-  const when = timeOnly
-    ? new Date(s.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-    : new Date(s.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+  const when = timeOnly ? formatTime(s.createdAt) : formatDateTime(s.createdAt)
 
   return (
     <details className="card group px-3.5 py-2.5 open:shadow-md open:shadow-slate-900/5 dark:open:shadow-black/20">

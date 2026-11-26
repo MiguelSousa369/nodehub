@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { listTokens, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
-import { timeAgo } from '../utils/time'
+import { formatDate, timeAgo } from '../utils/time'
 import Dialog from './Dialog'
 import { ListSkeleton } from './Feedback'
 
@@ -62,7 +62,7 @@ export default function ConnectedPcsDialog({ open, onClose }: ConnectedPcsDialog
             <div className="flex-1">
               <div className="font-medium">{pc.name}</div>
               <div className="text-[13px] text-slate-500 dark:text-slate-400">
-                Connected {new Date(pc.createdAt).toLocaleDateString()}
+                Connected {formatDate(pc.createdAt)}
                 {' · '}{pc.lastUsedAt ? `last used ${timeAgo(pc.lastUsedAt)}` : 'never used'}
               </div>
             </div>

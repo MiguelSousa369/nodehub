@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 import { listMachines } from '../services/api'
 import type { Machine } from '../types'
 import { launcherLink, machinePath } from '../utils/machine'
+import { byName } from '../utils/time'
 
 /** Results shown at most: enough to pick from, and fast with thousands of machines. */
 const MAX_RESULTS = 40
@@ -75,7 +76,7 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
 
     const found = machines.filter((m) => words.length === 0 ? m.configured : matches(m, words))
     // Online first: those are the ones you can work on right now
-    found.sort((a, b) => Number(b.online) - Number(a.online) || a.host.localeCompare(b.host))
+    found.sort((a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host))
 
     const machineResults: Result[] = found.slice(0, MAX_RESULTS).map((m) => ({
       key     : `m-${m.host}`,

@@ -16,6 +16,7 @@ import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
 import type { Machine } from '../types'
 import { claudePrompt } from '../utils/machine'
+import { byName } from '../utils/time'
 
 const UNASSIGNED = 'Unassigned'
 
@@ -33,11 +34,11 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
 ]
 
 const SORTS: Record<SortOrder, { label: string; compare: (a: Machine, b: Machine) => number }> = {
-  name  : { label: 'Name', compare: (a, b) => a.host.localeCompare(b.host) },
-  online: { label: 'Online first', compare: (a, b) => Number(b.online) - Number(a.online) || a.host.localeCompare(b.host) },
+  name  : { label: 'Name', compare: (a, b) => byName(a.host, b.host) },
+  online: { label: 'Online first', compare: (a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host) },
   recent: {
     label  : 'Recent session',
-    compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || a.host.localeCompare(b.host),
+    compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || byName(a.host, b.host),
   },
 }
 
@@ -104,7 +105,7 @@ export default function DashboardPage() {
     // Unassigned first (it needs attention), then clients by name
     return [...map.entries()]
       .map(([name, list]) => [name, list.sort(compare)] as const)
-      .sort(([a], [b]) => Number(b === UNASSIGNED) - Number(a === UNASSIGNED) || a.localeCompare(b))
+      .sort(([a], [b]) => Number(b === UNASSIGNED) - Number(a === UNASSIGNED) || byName(a, b))
   }, [machines, status, text, sort])
 
   const counts = useMemo(() => ({

@@ -8,6 +8,7 @@ import SessionItem from '../components/SessionItem'
 import { useAuth, useUser } from '../context/AuthContext'
 import { ApiError, listSessions, listTechnicians } from '../services/api'
 import type { Session, SessionResult, Technician } from '../types'
+import { LOCALE } from '../utils/time'
 
 const PAGE_SIZE = 50
 
@@ -25,7 +26,7 @@ function dayLabel(date: Date): string {
   yesterday.setDate(today.getDate() - 1)
   if (date.toDateString() === today.toDateString()) return 'Today'
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
-  return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  return date.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 /** Splits sessions (newest first) into consecutive days. */
