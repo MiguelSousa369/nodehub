@@ -70,7 +70,14 @@ paths:
                 currentPassword: { type: string, format: password }
                 newPassword:     { type: string, format: password, minLength: 10 }
       responses:
-        '204': { description: Changed. }
+        '200':
+          description: Changed. Your other dashboard sessions are signed out; use this new token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
         '400':
           description: VALIDATION_ERROR or WRONG_PASSWORD
           content:

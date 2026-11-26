@@ -15,12 +15,25 @@ export interface AuthUser {
 
 interface TokenPayload {
   sub: string;
+  iat: number;   // issued at, seconds (added by jsonwebtoken)
 }
+
+/** Only HMAC-SHA256: tokens claiming any other algorithm (including "none") are rejected. */
+const ALGORITHM = 'HS256';
+export const MIN_SECRET_LENGTH = 32;
 
 function secret(): string {
   const s = process.env.JWT_SECRET;
-  if (!s) throw new Error('JWT_SECRET is not set.');
+  if (!s || s.length < MIN_SECRET_LENGTH) throw new Error(`JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters.`);
   return s;
+}
+
+function signToken(userId: number): string {
+  const options: SignOptions = {
+    algorithm: ALGORITHM,
+    expiresIn: (process.env.JWT_EXPIRES_IN ?? '12h') as SignOptions['expiresIn'],
+  };
+  return jwt.sign({ sub: String(userId) }, secret(), options);
 }
 
 // ---------------------------------------------------------------------------
@@ -42,30 +55,45 @@ export async function login({ username, password }: LoginInput): Promise<{ token
   }
   recordSuccess(username);
 
-  const options: SignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN ?? '12h') as SignOptions['expiresIn'] };
-  const token = jwt.sign({ sub: String(user.id) } satisfies TokenPayload, secret(), options);
-  return { token, user: { id: user.id, username: user.username, name: user.name, role: user.role } };
+  return { token: signToken(user.id), user: { id: user.id, username: user.username, name: user.name, role: user.role } };
 }
 
-/** Verifies the token and reloads the user, so deactivated users lose access immediately. */
+/**
+ * Verifies the token and reloads the user, so deactivated users lose access immediately, and
+ * sign-ins from before the last password change stop working.
+ */
 export async function verifyToken(token: string): Promise<AuthUser | null> {
   let payload: TokenPayload;
   try {
-    payload = jwt.verify(token, secret()) as TokenPayload;
+    payload = jwt.verify(token, secret(), { algorithms: [ALGORITHM] }) as TokenPayload;
   } catch {
     return null;
   }
   const user = await prisma.user.findUnique({ where: { id: Number(payload.sub) } });
   if (!user || !user.active) return null;
+  if (payload.iat < Math.floor(user.sessionsValidFrom.getTime() / 1000)) return null;
   return { id: user.id, username: user.username, name: user.name, role: user.role };
 }
 
-export async function changePassword(userId: number, input: ChangePasswordInput): Promise<void> {
+/**
+ * Changes your own password and signs out your other dashboard sessions (another browser, a
+ * forgotten tab). Returns a fresh token for the session that made the change.
+ */
+export async function changePassword(userId: number, input: ChangePasswordInput): Promise<{ token: string }> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
     throw new HttpError(400, 'WRONG_PASSWORD', 'Current password is incorrect.');
   }
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(input.newPassword) } });
+  await prisma.user.update({
+    where: { id: userId },
+    data : { passwordHash: await hashPassword(input.newPassword), sessionsValidFrom: wholeSecond(new Date()) },
+  });
+  return { token: signToken(userId) };
+}
+
+/** JWT times have one-second resolution: round down so a token issued right after still counts. */
+export function wholeSecond(date: Date): Date {
+  return new Date(Math.floor(date.getTime() / 1000) * 1000);
 }
 
 export type { PublicUser };

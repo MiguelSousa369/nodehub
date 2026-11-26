@@ -42,7 +42,8 @@ export async function getMe(): Promise<AuthUser> {
   return handleResponse(await fetch(`${BASE}/auth/me`, { headers: headers() }))
 }
 
-export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+/** Changes your password; returns a fresh token (your other sessions are signed out). */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ token: string }> {
   return handleResponse(await fetch(`${BASE}/auth/password`, {
     method: 'POST', headers: headers(json), body: JSON.stringify({ currentPassword, newPassword }),
   }))

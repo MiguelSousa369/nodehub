@@ -24,6 +24,8 @@ model User {
   passwordHash String     @map("password_hash")
   role         Role       @default(TECHNICIAN)
   active       Boolean    @default(true)
+  /// Dashboard sign-ins (JWTs) issued before this are rejected: moved forward when the password changes
+  sessionsValidFrom DateTime @default(now()) @map("sessions_valid_from")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
   apiTokens    ApiToken[]

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 import os from 'os';
 import path from 'path';
 import request from 'supertest';
@@ -129,11 +130,40 @@ describe('auth', () => {
     expect((await request(app).get('/api/health').set(HOST)).status).toBe(200);
   });
 
-  it('changes your own password', async () => {
+  /** A dashboard token for `username` signed `secondsAgo` in the past (another browser, earlier). */
+  async function oldToken(username: string, secondsAgo = 60): Promise<string> {
+    const iat = Math.floor(Date.now() / 1000) - secondsAgo;
+    // The test users were just created; pretend the account is older than the token
+    const user = await prisma.user.update({ where: { username }, data: { sessionsValidFrom: new Date((iat - 3600) * 1000) } });
+    return jwt.sign({ sub: String(user.id), iat }, process.env.JWT_SECRET!, { algorithm: 'HS256', expiresIn: '12h' });
+  }
+
+  it('changes your own password, keeping this session and signing out the others', async () => {
+    const elsewhere = await oldToken('tech');
+    expect((await request(app).get('/api/auth/me').set(as(elsewhere))).status).toBe(200);
+
     const res = await request(app).post('/api/auth/password').set(as(techToken))
       .send({ currentPassword: TECH_PW, newPassword: 'a-new-password-1' });
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(200);
+    expect((await request(app).get('/api/auth/me').set(as(res.body.token))).status).toBe(200);
+    expect((await request(app).get('/api/auth/me').set(as(elsewhere))).status).toBe(401);
     expect(await signIn('tech', 'a-new-password-1')).toBeTruthy();
+  });
+
+  it('signs a user out everywhere when an admin resets their password', async () => {
+    const session = await oldToken('tech');
+    const tech = await prisma.user.findUniqueOrThrow({ where: { username: 'tech' } });
+    await request(app).patch(`/api/users/${tech.id}`).set(as(adminToken)).send({ password: 'reset-by-admin-1' });
+    expect((await request(app).get('/api/auth/me').set(as(session))).status).toBe(401);
+  });
+
+  it('only accepts HS256 tokens signed with the secret', async () => {
+    const none = jwt.sign({ sub: String(adminId) }, '', { algorithm: 'none' });
+    const otherSecret = jwt.sign({ sub: String(adminId) }, 'another-secret-another-secret-123', { algorithm: 'HS256' });
+    const hs512 = jwt.sign({ sub: String(adminId) }, process.env.JWT_SECRET!, { algorithm: 'HS512' });
+    for (const token of [none, otherSecret, hs512]) {
+      expect((await request(app).get('/api/auth/me').set(as(token))).status).toBe(401);
+    }
   });
 });
 

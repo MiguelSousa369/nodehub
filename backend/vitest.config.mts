@@ -12,7 +12,7 @@ export default defineConfig({
     env: {
       NODE_ENV         : 'test',
       DATABASE_URL     : testUrl,
-      JWT_SECRET       : 'test-secret',
+      JWT_SECRET       : 'test-secret-that-is-at-least-32-characters-long',
       TAILSCALE_AUTHKEY: 'tskey-auth-kTEST123-abcDEF',
     },
   },

@@ -8,7 +8,7 @@ This file holds secrets and is never committed.
 | Setting | Example | Description |
 |---|---|---|
 | `DATABASE_URL` | `postgresql://nodehub:nodehub@127.0.0.1:5433/nodehub` | PostgreSQL connection. The default matches `docker-compose.yml`. |
-| `JWT_SECRET` | 96 hex characters | Signs dashboard sign-in tokens. Changing it signs everyone out. |
+| `JWT_SECRET` | 96 hex characters | Signs dashboard sign-in tokens (HS256). At least 32 characters, or the backend refuses to start. Changing it signs everyone out. |
 
 ## Tailscale and the client installer
 

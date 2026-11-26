@@ -10,6 +10,7 @@ import { swaggerSpec } from './lib/swagger';
 import { authGuard } from './middlewares/auth.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
 import { localHostOnly } from './middlewares/local-host.middleware';
+import { MIN_SECRET_LENGTH } from './services/auth.service';
 import authRoutes from './routes/auth.routes';
 import installerRoutes from './routes/installer.routes';
 import machinesRoutes from './routes/machines.routes';
@@ -61,7 +62,9 @@ app.use(errorMiddleware); // ALWAYS mounted last
 
 async function start() {
   try {
-    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not set (see backend/.env.example).');
+    if ((process.env.JWT_SECRET ?? '').length < MIN_SECRET_LENGTH) {
+      throw new Error(`JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters (see backend/.env.example).`);
+    }
     await prisma.$connect();
     const users = await prisma.user.count();
     if (users === 0) logger.warn('No users yet: run "npm run seed" in backend/ to create the first admin.');

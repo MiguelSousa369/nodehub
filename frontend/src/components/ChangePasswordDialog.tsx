@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 
+import { useAuth, useUser } from '../context/AuthContext'
 import { changePassword } from '../services/api'
 import Dialog from './Dialog'
 
@@ -13,6 +14,8 @@ export default function ChangePasswordDialog({ open, onClose }: ChangePasswordDi
   const [next, setNext]       = useState('')
   const [confirm, setConfirm] = useState('')
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
+  const user = useUser()
+  const { login } = useAuth()
 
   useEffect(() => {
     if (!open) return
@@ -23,8 +26,9 @@ export default function ChangePasswordDialog({ open, onClose }: ChangePasswordDi
     e.preventDefault()
     if (next !== confirm) return setMessage({ text: 'The new passwords do not match.', ok: false })
     try {
-      await changePassword(current, next)
-      setMessage({ text: 'Password changed.', ok: true })
+      const { token } = await changePassword(current, next)
+      login(token, user)   // this session continues with the new token; the others are signed out
+      setMessage({ text: 'Password changed. Your other sessions were signed out.', ok: true })
       setCurrent(''); setNext(''); setConfirm('')
     } catch (err) {
       setMessage({ text: (err as Error).message, ok: false })

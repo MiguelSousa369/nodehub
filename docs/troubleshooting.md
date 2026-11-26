@@ -6,7 +6,7 @@
 |---|---|
 | `start.cmd`: *Something failed (is Docker Desktop running?)* | Start Docker Desktop and wait until it says *running*, then retry. |
 | *backend\.env is missing* | `copy backend\.env.example backend\.env` and fill it in ([configuration](configuration.md)). |
-| *JWT_SECRET is not set* | Set `JWT_SECRET` in `backend\.env`. |
+| *JWT_SECRET must be at least 32 characters* | Set a long random `JWT_SECRET` in `backend\.env` (the command is in `.env.example`). |
 | Port 8737 or 5433 already in use | Change `PORT` in `backend\.env`, or `POSTGRES_PORT` (and `DATABASE_URL`). |
 | Lost the first admin password | `docker exec -it nodehub-db psql -U nodehub -c "DELETE FROM users;"`, set `ADMIN_PASSWORD` in `.env` and run `npm run seed` in `backend\`. Only do this before other users exist. |
 

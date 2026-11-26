@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { CreateUserInput, PublicUser, UpdateUserInput } from '../schemas/user.schema';
 import { HttpError } from '../utils/http-error';
 import { hashPassword } from '../utils/password';
+import { wholeSecond } from './auth.service';
 
 const publicFields = { id: true, username: true, name: true, role: true, active: true, createdAt: true } as const;
 
@@ -50,6 +51,8 @@ export async function updateUser(id: number, input: UpdateUserInput, actorId: nu
       role        : input.role,
       active      : input.active,
       passwordHash: input.password ? await hashPassword(input.password) : undefined,
+      // A password reset signs the user out of every dashboard session
+      sessionsValidFrom: input.password ? wholeSecond(new Date()) : undefined,
     },
     select: publicFields,
   });

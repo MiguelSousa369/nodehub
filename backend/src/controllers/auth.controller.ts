@@ -20,8 +20,7 @@ export function me(req: Request, res: Response) {
 // POST /api/auth/password
 export async function changePassword(req: Request, res: Response, next: NextFunction) {
   try {
-    await authService.changePassword(req.user!.id, ChangePasswordSchema.parse(req.body ?? {}));
-    res.status(204).end();
+    res.json(await authService.changePassword(req.user!.id, ChangePasswordSchema.parse(req.body ?? {})));
   } catch (err) {
     next(err);
   }
