@@ -65,6 +65,12 @@ try {
         $msi = Join-Path $env:TEMP 'tailscale-setup.msi'
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest 'https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi' -OutFile $msi -UseBasicParsing
+        # Only install it if Windows confirms it is signed by Tailscale and unmodified
+        $signature = Get-AuthenticodeSignature $msi
+        if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '(^|, )O=Tailscale Inc\.(,|$)') {
+            Remove-Item $msi -Force -ErrorAction SilentlyContinue
+            throw "The downloaded Tailscale installer is not validly signed by Tailscale Inc. ($($signature.Status)). Nothing was installed."
+        }
         $p = Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /quiet /norestart TS_UNATTENDEDMODE=always" -Wait -PassThru
         if ($p.ExitCode -notin 0, 3010) { throw "Tailscale installation failed (exit code $($p.ExitCode))." }
         Remove-Item $msi -Force

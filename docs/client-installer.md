@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File nodehub-install.ps1 -NoPause
 
 | Step | Change |
 |---|---|
-| **1. Tailscale** | Installs Tailscale (unattended mode, survives sign-outs) if missing, and joins the tailnet with the auth key, which applies the client tag. The machine name is the Windows computer name in lowercase. **If the machine is already on the tailnet with the client tag, this step changes nothing** (so its name and history stay the same). |
+| **1. Tailscale** | Installs Tailscale (unattended mode, survives sign-outs) if missing, after checking that the downloaded MSI is validly signed by *Tailscale Inc.* (otherwise it stops without installing anything), and joins the tailnet with the auth key, which applies the client tag. The machine name is the Windows computer name in lowercase. **If the machine is already on the tailnet with the client tag, this step changes nothing** (so its name and history stay the same). |
 | **2. `nodehub` user** | Creates a local user `nodehub` in the Administrators group (by SID, any Windows language), with a random password nobody knows, never expiring, hidden from the sign-in screen. Re-running resets the password to a new random one. |
 | **3. OpenSSH Server** | Installs the Windows *OpenSSH Server* capability, starts `sshd` automatically, sets PowerShell as the default shell, disables password authentication, and **adds** the technicians' public keys to `C:\ProgramData\ssh\administrators_authorized_keys` (existing keys are kept; duplicates are skipped). |
 | **4. Firewall** | Disables the default *OpenSSH-Server-In-TCP* rule and creates `nodehub-SSH`: port 22 only from `100.64.0.0/10` (the Tailscale range). |
