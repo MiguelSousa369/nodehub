@@ -125,8 +125,7 @@ Each session shows who did it: the technician the PC running Claude is connected
 *Admins only.* The **Users** tab manages who can sign in, the team language and the team's SSH keys.
 
 **SSH keys** lists the technicians' public keys: who can reach client PCs. **Add key** (a name and
-the contents of the `.pub` file) or **Remove**, then run `.
-odehub.cmd keys sync` on a PC that
+the contents of the `.pub` file) or **Remove**, then run `.\nodehub.cmd keys sync` on a PC that
 already has access to apply the list to every online client PC (details in
 [server.md](server.md#adding-or-removing-a-technician)). New installers always include the current
 list.

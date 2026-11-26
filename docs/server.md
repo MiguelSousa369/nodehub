@@ -105,10 +105,8 @@ Client PCs accept exactly the keys in **Users → SSH keys**, once they are sync
 2. Someone whose PC **already has access** runs, in the nodehub folder:
 
    ```powershell
-   .
-odehub.cmd keys sync --dry-run   # shows what would change on each machine
-   .
-odehub.cmd keys sync             # applies it
+   .\nodehub.cmd keys sync --dry-run   # shows what would change on each machine
+   .\nodehub.cmd keys sync             # applies it
    ```
 
    Every **online** client PC is updated over SSH: new keys start working, removed keys stop
