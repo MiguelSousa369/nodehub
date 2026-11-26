@@ -26,6 +26,11 @@ This file holds secrets and is never committed.
 | `ADMIN_USERNAME` | `admin` | First admin, created by `npm run seed` only when there are no users. |
 | `ADMIN_PASSWORD` | random, printed once | Password of that first admin. Remove it from the file after signing in. |
 
+## Team language
+
+Not in `.env`: an admin sets it in the dashboard (**Users → Team settings**), stored in the database
+(`settings` table). English by default. See [usage.md → Language](usage.md#language-english-or-portuguese).
+
 ## Server
 
 | Setting | Default | Description |

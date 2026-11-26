@@ -34,6 +34,7 @@ knowledge that lives in one technician's head. nodehub changes that:
 | **Zero-typing onboarding** | Download the installer, run it on the client PC, pick the client in the dashboard. |
 | **History** | Session log per machine and across all clients, grouped by day, with search and filters. |
 | **Machine profiles** | Role, hardware, important software and quirks, kept up to date by Claude. |
+| **English or Portuguese** | One switch for the team: dashboard, records written by Claude, CLI and client installer. Each person can also pick their own dashboard language. |
 | **Team accounts** | Users with Admin / Technician roles. PCs connect to an account with one click in the browser, no tokens to copy. |
 | **API** | Documented REST API with Swagger at `/api/docs`. |
 

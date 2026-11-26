@@ -9,7 +9,8 @@ nodehub account.
 - [Editing and removing machines](#editing-and-removing-machines)
 - [History and profiles](#history-and-profiles)
 - [Users](#users)
-- [Your account: password, connected PCs and theme](#your-account)
+- [Your account: password, connected PCs, theme and language](#your-account)
+- [Language: English or Portuguese](#language-english-or-portuguese)
 - [Links you can bookmark](#links-you-can-bookmark)
 
 ---
@@ -148,6 +149,26 @@ Click your initials in the top-right corner:
   - A connected PC can't manage PCs, users or passwords: those need a dashboard sign-in.
 - **Sign out.** Sessions also expire after `JWT_EXPIRES_IN` (12 hours by default).
 - **Theme:** *System* (follows Windows), *Light* or *Dark*. Remembered in this browser.
+- **Language:** *Team* (the team language, see below), *English* or *Português*. Changes only your
+  dashboard, in this browser.
+
+---
+
+## Language: English or Portuguese
+
+nodehub works in **English** or **Portuguese (Portugal)**. An admin sets the **team language** in
+**Users → Team settings**. It decides:
+
+| What | Language |
+|---|---|
+| The dashboard | The team language by default; each person can switch their own in the account menu |
+| Session records and machine profiles written by Claude | The team language (`nodehub machine` tells Claude) |
+| Claude's replies in the conversation | The language you write to it in |
+| The `nodehub` CLI messages, the `nodehub://` launcher and the start message | The team language |
+| The client installer's messages (what the client sees) | The team language |
+
+Changing the team language doesn't translate existing records: they stay in the language they were
+written in. The technical documentation in `docs/` is in English.
 
 ---
 

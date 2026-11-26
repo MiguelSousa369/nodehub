@@ -44,6 +44,7 @@ nodehub/
 │       ├── components/        header, menus, quick search, machine cards, dialogs, backdrop, …
 │       ├── hooks/             useMachines (polling), usePersistentState, useToast
 │       ├── services/api.ts    fetch-based API client
+│       ├── i18n/              en.tsx, pt.tsx (texts), index.tsx (language context)
 │       ├── types/index.ts     shared types
 │       └── utils/             dates and sorting, launcher links
 ├── installer/                 client installer template
@@ -124,6 +125,12 @@ docker exec nodehub-db psql -U nodehub -c "CREATE DATABASE nodehub_test OWNER no
 - **Accessibility:** dialogs use the native `<dialog>` (focus trap, Escape); menus and quick search
   support the keyboard; animations stop with *reduce motion*.
 - **Markdown** (machine profiles) goes through `components/Markdown.tsx`, which never renders raw HTML.
+- **Texts and languages:** every visible text lives in `src/i18n/en.tsx` and `src/i18n/pt.tsx`
+  (same shape; TypeScript reports a missing translation). Components read them with
+  `const { t } = useI18n()`; non-React code (API errors, dates) uses `getMessages()`. The team language
+  comes from `GET /api/settings`; API errors are translated by `code`. To add a text, add it to both
+  files. The CLI's texts are in `backend/src/cli/messages.ts`, the installer's and launcher's in a
+  `$Messages` table at the top of each script.
 
 ## Conventions
 
