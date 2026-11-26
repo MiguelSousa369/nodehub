@@ -32,6 +32,8 @@ powershell -ExecutionPolicy Bypass -File nodehub-install.ps1 -NoPause
 | **4. Firewall** | Disables the default *OpenSSH-Server-In-TCP* rule and creates `nodehub-SSH`: port 22 only from `100.64.0.0/10` (the Tailscale range). |
 | **5. Clean-up** | Deletes itself, because it contains the Tailscale auth key. |
 
+The messages on the client PC are in the **team language** (English or Portuguese), set by an admin in the dashboard.
+
 It is safe to run again: use that to add a new technician's key to a machine that is already set up.
 
 ## Requirements and known limitations

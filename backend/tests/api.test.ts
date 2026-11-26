@@ -315,6 +315,14 @@ describe('installer', () => {
     expect(text).toContain("'ssh-ed25519 AAAATEST tech'");
     expect(text).toContain("$ClientTag  = 'tag:client'");
     expect(text).not.toContain('__NODEHUB_');
+    expect(text).toContain("$Language   = 'en'");
+  });
+
+  it('shows the installer messages in the team language', async () => {
+    await prisma.setting.create({ data: { key: 'language', value: 'pt' } });
+    const res = await request(app).get('/api/installer').set(as(techToken))
+      .buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))); });
+    expect((res.body as Buffer).toString('utf-8')).toContain("$Language   = 'pt'");
   });
 });
 

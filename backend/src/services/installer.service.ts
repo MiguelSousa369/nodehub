@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { clientTag } from '../lib/tailscale';
+import { Language } from '../schemas/settings.schema';
 import { HttpError } from '../utils/http-error';
 
 // ---------------------------------------------------------------------------
@@ -62,8 +63,11 @@ export function getInstallerStatus(): InstallerStatus {
   return { ready: missing.length === 0, missing };
 }
 
-/** Returns the installer as UTF-8 with BOM and CRLF (Windows PowerShell 5.1 needs the BOM). */
-export function buildInstaller(): Buffer {
+/**
+ * Returns the installer as UTF-8 with BOM and CRLF (Windows PowerShell 5.1 needs the BOM, also for
+ * the accents in the Portuguese messages). `language` is the team language its messages are shown in.
+ */
+export function buildInstaller(language: Language = 'en'): Buffer {
   const status = getInstallerStatus();
   if (!status.ready) {
     throw new HttpError(409, 'INSTALLER_NOT_CONFIGURED', `Installer not configured: ${status.missing.map((m) => MISSING_TEXT[m]).join(' ')}`);
@@ -75,6 +79,7 @@ export function buildInstaller(): Buffer {
     .replace("'__NODEHUB_AUTHKEY__'", `'${authKey()}'`)
     .replace("'__NODEHUB_PUBKEYS__'", keys)
     .replace("'__NODEHUB_CLIENT_TAG__'", `'${clientTag()}'`)
+    .replace("'__NODEHUB_LANGUAGE__'", `'${language}'`)
     .replace(/\r?\n/g, '\r\n');
 
   return Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(script, 'utf-8')]);
