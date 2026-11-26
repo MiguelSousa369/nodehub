@@ -48,6 +48,7 @@ export default function SessionItem({ session: s, showHost = false, timeOnly = f
             </>
           )}
           {s.technician?.name ?? 'deleted user'} · <time dateTime={s.createdAt} title={fullDate(s.createdAt)}>{when}</time>
+          {s.updatedAt && <span title={`Corrected ${fullDate(s.updatedAt)}`}> · edited</span>}
         </span>
       </summary>
       {fields.length > 0 ? (

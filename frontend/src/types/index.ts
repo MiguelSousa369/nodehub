@@ -87,6 +87,7 @@ export interface Session {
   result    : SessionResult
   pending   : string
   createdAt : string
+  updatedAt : string | null   // last correction (nodehub update), null if never edited
 }
 
 /** A user who recorded sessions (history filter). */
