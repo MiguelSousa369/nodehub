@@ -78,6 +78,7 @@ export const pt: Messages = {
     searchPlaceholder: 'Pesquisar máquina, cliente, notas, IP…',
     status           : 'Estado',
     all              : 'Todas',
+    statusNew        : 'Novas',
     sort             : 'Ordenar',
     sortName         : 'Nome',
     sortOnline       : 'Online primeiro',
@@ -124,6 +125,9 @@ export const pt: Messages = {
     historyProfile  : 'Histórico e perfil',
     moreActions     : (host: string) => `Mais ações para ${host}`,
     copyTitle       : 'Copiar uma mensagem para colar no Claude Code',
+    new             : 'Novo',
+    added           : (date: string) => `Adicionada a ${date}`,
+    tailnetName     : 'Nome na tailnet (usado no SSH e no histórico)',
   },
 
   machine: {
@@ -269,6 +273,9 @@ export const pt: Messages = {
     configureTitle   : (host: string) => `Configurar ${host}`,
     client           : 'Cliente',
     clientPlaceholder: 'Escolha da lista ou escreva um cliente novo',
+    displayName      : 'Nome (opcional)',
+    displayNamePlaceholder: 'ex.: PC-PEDRO',
+    displayNameHelp  : (host: string) => `Como a equipa lhe chama. O nome na tailnet (${host}) e o histórico não mudam.`,
     sshUser          : 'Utilizador SSH',
     notes            : 'Notas',
     notesPlaceholder : 'ex.: PC da receção',

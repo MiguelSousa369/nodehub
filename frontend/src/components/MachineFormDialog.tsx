@@ -20,6 +20,7 @@ type Feedback = { text: string; kind: 'info' | 'ok' | 'error' } | null
 export default function MachineFormDialog({ machine, clients, onClose, onSaved }: MachineFormDialogProps) {
   const { t } = useI18n()
   const [client, setClient]     = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [sshUser, setSshUser]   = useState(DEFAULT_SSH_USER)
   const [notes, setNotes]       = useState('')
   const [feedback, setFeedback] = useState<Feedback>(null)
@@ -28,6 +29,7 @@ export default function MachineFormDialog({ machine, clients, onClose, onSaved }
   useEffect(() => {
     if (!machine) return
     setClient(machine.client ?? '')
+    setDisplayName(machine.displayName)
     setSshUser(machine.sshUser ?? DEFAULT_SSH_USER)
     setNotes(machine.notes)
     setFeedback(null)
@@ -52,7 +54,9 @@ export default function MachineFormDialog({ machine, clients, onClose, onSaved }
     if (!machine) return
     setSaving(true)
     try {
-      await saveMachine(machine.host, { client: client.trim(), sshUser: sshUser.trim(), notes: notes.trim() })
+      await saveMachine(machine.host, {
+        client: client.trim(), displayName: displayName.trim(), sshUser: sshUser.trim(), notes: notes.trim(),
+      })
       onSaved(machine.host)
     } catch (err) {
       setFeedback({ text: (err as Error).message, kind: 'error' })
@@ -77,6 +81,12 @@ export default function MachineFormDialog({ machine, clients, onClose, onSaved }
                  placeholder={t.machineForm.clientPlaceholder}
                  value={client} onChange={(e) => setClient(e.target.value)} />
           <datalist id="client-list">{clients.map((c) => <option key={c} value={c} />)}</datalist>
+        </label>
+        <label className="block">
+          <span className={label}>{t.machineForm.displayName}</span>
+          <input className="input" maxLength={60} autoComplete="off" placeholder={t.machineForm.displayNamePlaceholder}
+                 value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          {machine && <span className="mt-1 block text-[12px] text-slate-500 dark:text-slate-400">{t.machineForm.displayNameHelp(machine.host)}</span>}
         </label>
         <label className="block">
           <span className={label}>{t.machineForm.sshUser}</span>

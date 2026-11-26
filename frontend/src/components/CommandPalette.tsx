@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router'
 import { useI18n } from '../i18n'
 import { listMachines } from '../services/api'
 import type { Machine } from '../types'
-import { launcherLink, machinePath } from '../utils/machine'
+import { launcherLink, machineLabel, machinePath } from '../utils/machine'
 import { byName } from '../utils/time'
 
 /** Results shown at most: enough to pick from, and fast with thousands of machines. */
@@ -31,7 +31,7 @@ interface CommandPaletteProps {
 
 /** Machines whose host, client, notes or IP contain every word typed. */
 function matches(m: Machine, words: string[]): boolean {
-  const text = `${m.host} ${m.client ?? ''} ${m.notes} ${m.ip ?? ''}`.toLowerCase()
+  const text = `${m.host} ${m.displayName} ${m.client ?? ''} ${m.notes} ${m.ip ?? ''}`.toLowerCase()
   return words.every((w) => text.includes(w))
 }
 
@@ -78,13 +78,13 @@ export default function CommandPalette({ open, onClose, isAdmin }: CommandPalett
 
     const found = machines.filter((m) => words.length === 0 ? m.configured : matches(m, words))
     // Online first: those are the ones you can work on right now
-    found.sort((a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host))
+    found.sort((a, b) => Number(b.online) - Number(a.online) || byName(machineLabel(a), machineLabel(b)))
 
     const machineResults: Result[] = found.slice(0, MAX_RESULTS).map((m) => ({
       key     : `m-${m.host}`,
       icon    : <Terminal size={16} />,
-      title   : m.host,
-      subtitle: [m.client ?? t.common.unassigned, m.online ? t.common.online : t.common.offline, m.notes].filter(Boolean).join(' · '),
+      title   : machineLabel(m),
+      subtitle: [m.displayName ? m.host : '', m.client ?? t.common.unassigned, m.online ? t.common.online : t.common.offline, m.notes].filter(Boolean).join(' · '),
       online  : m.online,
       run     : m.configured
         ? () => { onClose(); window.location.href = launcherLink(m) }

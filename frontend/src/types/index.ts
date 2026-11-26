@@ -3,7 +3,8 @@
 // ---------------------------------------------------------------------------
 
 export interface Machine {
-  host      : string
+  host      : string          // tailnet name: the key, used for SSH and history
+  displayName: string         // friendly name for the team ('' = none)
   client    : string | null   // null = not assigned to a client yet
   sshUser   : string | null
   notes     : string
@@ -14,6 +15,7 @@ export interface Machine {
   os        : string | null
   lastSeen  : string | null
   lastSessionAt: string | null   // newest helpdesk session on this machine
+  addedAt   : string | null   // configured in the dashboard (or joined the tailnet, if unassigned)
 }
 
 export interface MachineList {
@@ -24,6 +26,7 @@ export interface MachineList {
 
 export interface MachineConfigInput {
   client : string
+  displayName: string
   sshUser: string
   notes  : string
 }
@@ -89,6 +92,7 @@ export interface Session {
   id        : number
   host      : string
   client    : string | null
+  machineName: string        // friendly name of the machine ('' = none)
   technician: { id: number; name: string } | null
   summary   : string
   problem   : string
@@ -122,6 +126,7 @@ export interface SessionFilters {
 
 export interface MachineDetail {
   host          : string
+  displayName   : string
   client        : string
   sshUser       : string
   notes         : string

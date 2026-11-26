@@ -16,7 +16,7 @@ import { usePersistentState } from '../hooks/usePersistentState'
 import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
 import type { Machine } from '../types'
-import { claudePrompt } from '../utils/machine'
+import { claudePrompt, isNew, machineLabel } from '../utils/machine'
 import { byName } from '../utils/time'
 
 /** Group key for machines without a client (never a real client name: those can't start with a NUL). */
@@ -25,33 +25,38 @@ const UNASSIGNED = '\u0000unassigned'
 /** Above this many machines, client groups start collapsed (each can still be opened). */
 const COLLAPSE_ABOVE = 40
 
-type StatusFilter = 'all' | 'online' | 'offline' | 'unassigned'
+type StatusFilter = 'all' | 'online' | 'offline' | 'new' | 'unassigned'
 type SortOrder    = 'name' | 'online' | 'recent'
 
 const STATUS_OPTIONS: { value: StatusFilter; label: (t: Messages) => string }[] = [
   { value: 'all', label: (t) => t.dashboard.all },
   { value: 'online', label: (t) => t.common.online },
   { value: 'offline', label: (t) => t.common.offline },
+  { value: 'new', label: (t) => t.dashboard.statusNew },
   { value: 'unassigned', label: (t) => t.common.unassigned },
 ]
 
 const SORTS: Record<SortOrder, { label: (t: Messages) => string; compare: (a: Machine, b: Machine) => number }> = {
-  name  : { label: (t) => t.dashboard.sortName, compare: (a, b) => byName(a.host, b.host) },
-  online: { label: (t) => t.dashboard.sortOnline, compare: (a, b) => Number(b.online) - Number(a.online) || byName(a.host, b.host) },
+  name  : { label: (t) => t.dashboard.sortName, compare: (a, b) => byName(machineLabel(a), machineLabel(b)) },
+  online: {
+    label  : (t) => t.dashboard.sortOnline,
+    compare: (a, b) => Number(b.online) - Number(a.online) || byName(machineLabel(a), machineLabel(b)),
+  },
   recent: {
     label  : (t) => t.dashboard.sortRecent,
-    compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || byName(a.host, b.host),
+    compare: (a, b) => (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '') || byName(machineLabel(a), machineLabel(b)),
   },
 }
 
 function matchesText(m: Machine, text: string): boolean {
-  return [m.host, m.client ?? '', m.notes, m.ip ?? ''].some((field) => field.toLowerCase().includes(text))
+  return [m.host, m.displayName, m.client ?? '', m.notes, m.ip ?? ''].some((field) => field.toLowerCase().includes(text))
 }
 
 function matchesStatus(m: Machine, status: StatusFilter): boolean {
   if (status === 'online') return m.online
   if (status === 'offline') return !m.online
   if (status === 'unassigned') return !m.configured
+  if (status === 'new') return isNew(m)
   return true
 }
 
@@ -114,6 +119,7 @@ export default function DashboardPage() {
   const counts = useMemo(() => ({
     online    : machines.filter((m) => m.online).length,
     unassigned: machines.filter((m) => !m.configured).length,
+    new       : machines.filter(isNew).length,
   }), [machines])
 
   const defaultOpen = machines.length <= COLLAPSE_ABOVE
@@ -134,10 +140,10 @@ export default function DashboardPage() {
   }
 
   async function remove(m: Machine) {
-    if (!confirm(t.dashboard.removeConfirm(m.host, m.client ?? '', t.common.unassigned))) return
+    if (!confirm(t.dashboard.removeConfirm(machineLabel(m), m.client ?? '', t.common.unassigned))) return
     try {
       await deleteMachine(m.host)
-      toast.show(t.dashboard.removed(m.host))
+      toast.show(t.dashboard.removed(machineLabel(m)))
       reload()
     } catch (e) {
       toast.show((e as Error).message)
@@ -180,7 +186,7 @@ export default function DashboardPage() {
           </label>
 
           <div role="radiogroup" aria-label={t.dashboard.status} className="flex flex-wrap gap-0.5 rounded-lg border border-slate-200 bg-surface-card p-0.5 dark:border-slate-700 dark:bg-surface-card-dark">
-            {STATUS_OPTIONS.filter((o) => o.value !== 'unassigned' || counts.unassigned > 0).map((o) => (
+            {STATUS_OPTIONS.filter((o) => (o.value !== 'unassigned' || counts.unassigned > 0) && (o.value !== 'new' || counts.new > 0)).map((o) => (
               <button
                 key={o.value}
                 type="button"
@@ -193,6 +199,7 @@ export default function DashboardPage() {
               >
                 {o.label(t)}
                 {o.value === 'unassigned' && <span className="ml-1 tabular-nums">({counts.unassigned})</span>}
+                {o.value === 'new' && <span className="ml-1 tabular-nums">({counts.new})</span>}
               </button>
             ))}
           </div>

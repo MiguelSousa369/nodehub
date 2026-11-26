@@ -45,7 +45,7 @@ export default function SessionItem({ session: s, showHost = false, timeOnly = f
           {showHost && (
             <>
               <Link to={machinePath(s.host)} className="font-medium text-slate-700 hover:underline dark:text-slate-300"
-                    onClick={(e) => e.stopPropagation()}>{s.host}</Link>
+                    onClick={(e) => e.stopPropagation()} title={s.machineName ? s.host : undefined}>{s.machineName || s.host}</Link>
               {s.client ? ` (${s.client})` : ''} ·{' '}
             </>
           )}

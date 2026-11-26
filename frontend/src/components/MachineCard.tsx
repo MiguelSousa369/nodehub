@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router'
 
 import { useI18n } from '../i18n'
 import type { Machine } from '../types'
-import { launcherLink, machinePath } from '../utils/machine'
-import { fullDate, timeAgo } from '../utils/time'
+import { isNew, launcherLink, machineLabel, machinePath } from '../utils/machine'
+import { formatDate, fullDate, timeAgo } from '../utils/time'
 import Menu from './Menu'
 
 interface MachineCardProps {
@@ -47,7 +47,7 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
 
   return (
     <article
-      aria-label={m.host}
+      aria-label={machineLabel(m)}
       className={`card group flex flex-col gap-2 px-4 py-3.5 transition hover:-translate-y-px hover:shadow-lg
                   hover:shadow-slate-900/5 dark:hover:shadow-black/30
                   ${m.configured ? '' : 'border-dashed !border-warn dark:!border-warn-dark'}`}
@@ -59,15 +59,27 @@ export default function MachineCard({ machine: m, onConfigure, onRemove, onCopy 
             ? 'beat bg-online dark:bg-online-dark'
             : 'bg-slate-300 dark:bg-slate-600'}`}
         />
-        <h3 className="min-w-0 flex-1 truncate text-base font-semibold" title={m.host}>
-          {m.configured
-            ? <Link to={machinePath(m.host)} className="hover:text-brand hover:underline dark:hover:text-brand-dark">{m.host}</Link>
-            : m.host}
-        </h3>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-base font-semibold" title={machineLabel(m)}>
+            {m.configured
+              ? <Link to={machinePath(m.host)} className="hover:text-brand hover:underline dark:hover:text-brand-dark">{machineLabel(m)}</Link>
+              : machineLabel(m)}
+          </h3>
+          {m.displayName && (
+            <div className="truncate font-mono text-[12px] text-slate-500 dark:text-slate-400" title={t.card.tailnetName}>{m.host}</div>
+          )}
+        </div>
+        {isNew(m) && (
+          <span className="flex-none rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand
+                           dark:bg-brand-dark/15 dark:text-brand-dark"
+                title={m.addedAt ? t.card.added(formatDate(m.addedAt)) : undefined}>
+            {t.card.new}
+          </span>
+        )}
 
         {m.configured && (
           <Menu
-            label={t.card.moreActions(m.host)}
+            label={t.card.moreActions(machineLabel(m))}
             trigger={<MoreHorizontal size={18} />}
             triggerClass="rounded-md p-1 text-slate-500 opacity-70 transition hover:bg-surface hover:opacity-100
                           group-hover:opacity-100 dark:hover:bg-surface-dark"

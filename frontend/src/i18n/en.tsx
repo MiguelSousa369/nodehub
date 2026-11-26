@@ -77,6 +77,7 @@ export const en = {
     searchPlaceholder: 'Search machine, client, notes, IP…',
     status           : 'Status',
     all              : 'All',
+    statusNew        : 'New',
     sort             : 'Sort',
     sortName         : 'Name',
     sortOnline       : 'Online first',
@@ -123,6 +124,9 @@ export const en = {
     historyProfile  : 'History & profile',
     moreActions     : (host: string) => `More actions for ${host}`,
     copyTitle       : 'Copy a prompt to paste into Claude Code',
+    new             : 'New',
+    added           : (date: string) => `Added ${date}`,
+    tailnetName     : 'Name in the tailnet (used for SSH and history)',
   },
 
   machine: {
@@ -268,6 +272,9 @@ export const en = {
     configureTitle   : (host: string) => `Configure ${host}`,
     client           : 'Client',
     clientPlaceholder: 'Pick from the list or type a new client',
+    displayName      : 'Name (optional)',
+    displayNamePlaceholder: 'e.g. PC-PEDRO',
+    displayNameHelp  : (host: string) => `How the team calls it. The name in the tailnet (${host}) and the history stay the same.`,
     sshUser          : 'SSH user',
     notes            : 'Notes',
     notesPlaceholder : 'e.g. Front desk PC',

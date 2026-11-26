@@ -13,7 +13,7 @@ import { useI18n } from '../i18n'
 import { useToast } from '../hooks/useToast'
 import { ApiError, getMachine, listMachines, listSessions, updateProfile } from '../services/api'
 import type { Machine, MachineDetail, Session } from '../types'
-import { claudePrompt, launcherLink } from '../utils/machine'
+import { claudePrompt, launcherLink, machineLabel } from '../utils/machine'
 import { fullDate, timeAgo } from '../utils/time'
 
 const PAGE_SIZE = 20
@@ -92,9 +92,9 @@ export default function MachinePage() {
 
   // The edit dialog works on the dashboard's Machine shape (memoised: the dialog resets its form when it changes)
   const asMachine = useMemo<Machine | null>(() => detail && {
-    host: detail.host, client: detail.client, sshUser: detail.sshUser, notes: detail.notes, configured: true,
+    host: detail.host, displayName: detail.displayName, client: detail.client, sshUser: detail.sshUser, notes: detail.notes, configured: true,
     inTailnet: live?.inTailnet ?? false, online: live?.online ?? false, ip: live?.ip ?? null, os: live?.os ?? null,
-    lastSeen: live?.lastSeen ?? null, lastSessionAt: live?.lastSessionAt ?? null,
+    lastSeen: live?.lastSeen ?? null, lastSessionAt: live?.lastSessionAt ?? null, addedAt: live?.addedAt ?? null,
   }, [detail, live])
 
   return (
@@ -117,8 +117,11 @@ export default function MachinePage() {
                 <div className="flex items-center gap-2.5">
                   <span aria-hidden="true" className={`h-3 w-3 flex-none rounded-full ${live?.online
                     ? 'beat bg-online dark:bg-online-dark' : 'bg-slate-300 dark:bg-slate-600'}`} />
-                  <h1 className="truncate text-2xl font-semibold">{detail.host}</h1>
+                  <h1 className="truncate text-2xl font-semibold">{machineLabel(detail)}</h1>
                 </div>
+                {detail.displayName && (
+                  <div className="mt-0.5 font-mono text-[13px] text-slate-500 dark:text-slate-400" title={t.card.tailnetName}>{detail.host}</div>
+                )}
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   <Link to={`/?q=${encodeURIComponent(detail.client)}`} className="font-medium hover:underline">{detail.client}</Link>
                   {' · '}
