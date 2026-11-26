@@ -1,6 +1,6 @@
 import type {
   AccessToken, AuthUser, CliLoginRequest, InstallerStatus, LoginResponse, MachineConfigInput, MachineDetail, MachineList,
-  SessionFilters, SessionList, SshTestResult, User, UserInput,
+  SessionFilters, SessionList, SshTestResult, Technician, User, UserInput,
 } from '../types'
 
 const BASE = '/api'
@@ -116,6 +116,11 @@ export async function listSessions(filters: SessionFilters = {}): Promise<Sessio
     if (value !== undefined && value !== '') params.set(key, String(value))
   }
   return handleResponse(await fetch(`${BASE}/sessions?${params}`, { headers: headers() }))
+}
+
+/** Users who recorded at least one session, for the history's technician filter. */
+export async function listTechnicians(): Promise<Technician[]> {
+  return handleResponse(await fetch(`${BASE}/sessions/technicians`, { headers: headers() }))
 }
 
 // ---------------------------------------------------------------------------

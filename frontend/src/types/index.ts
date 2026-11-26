@@ -89,6 +89,12 @@ export interface Session {
   createdAt : string
 }
 
+/** A user who recorded sessions (history filter). */
+export interface Technician {
+  id  : number
+  name: string
+}
+
 export interface SessionList {
   sessions: Session[]
   total   : number

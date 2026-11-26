@@ -168,9 +168,16 @@ export default function MachinePage() {
 
             {/* Sessions */}
             <section aria-labelledby="sessions-title">
-              <h2 id="sessions-title" className="mb-2.5 font-semibold">
-                Sessions <span className="font-normal text-slate-500">({detail.totalSessions})</span>
-              </h2>
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 id="sessions-title" className="font-semibold">
+                  Sessions <span className="font-normal text-slate-500">({detail.totalSessions})</span>
+                </h2>
+                {detail.totalSessions > 0 && (
+                  <Link to={`/history?host=${encodeURIComponent(detail.host)}`} className="text-sm text-brand hover:underline dark:text-brand-dark">
+                    Search in history
+                  </Link>
+                )}
+              </div>
               {sessions.length === 0 ? (
                 <EmptyState icon={<ClipboardList size={22} />} title="No sessions recorded yet">
                   Claude records a session here at the end of each helpdesk session on this machine.
