@@ -13,6 +13,7 @@ export interface Machine {
   ip        : string | null
   os        : string | null
   lastSeen  : string | null
+  lastSessionAt: string | null   // newest helpdesk session on this machine
 }
 
 export interface MachineList {

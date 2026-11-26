@@ -92,3 +92,15 @@
 @media (prefers-reduced-motion: reduce) {
   .backdrop-glow { animation: none; }
 }
+
+/* Heartbeat ring on "online" dots (MachineCard) */
+@keyframes beat {
+  0%   { box-shadow: 0 0 0 0 rgb(31 157 85 / 0.5); }
+  70%  { box-shadow: 0 0 0 7px rgb(31 157 85 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(31 157 85 / 0); }
+}
+.beat { animation: beat 2.4s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .beat { animation: none; }
+}

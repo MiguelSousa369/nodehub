@@ -2,19 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { listTokens, revokeToken } from '../services/api'
 import type { AccessToken } from '../types'
+import { timeAgo } from '../utils/time'
 import Dialog from './Dialog'
 
 interface ConnectedPcsDialogProps {
   open   : boolean
   onClose: () => void
-}
-
-function timeAgo(iso: string): string {
-  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (min < 1) return 'just now'
-  if (min < 60) return `${min} min ago`
-  if (min < 1440) return `${Math.round(min / 60)} h ago`
-  return `${Math.round(min / 1440)} days ago`
 }
 
 /** PCs where the nodehub CLI (used by Claude Code) is connected with your account. */
