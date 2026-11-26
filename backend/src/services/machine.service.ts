@@ -24,11 +24,14 @@ export async function listMachines(): Promise<MachineList> {
     tailscaleError = `Could not read Tailscale status: ${(err as Error).message}`;
   }
 
-  const [stored, clients] = await Promise.all([
+  const [stored, clients, lastSessions] = await Promise.all([
     prisma.machine.findMany({ include: { client: true } }),
     prisma.client.findMany({ select: { name: true } }),
+    prisma.session.groupBy({ by: ['host'], _max: { createdAt: true } }),
   ]);
   const storedByHost = new Map(stored.map((m) => [m.host.toLowerCase(), m]));
+  const lastSessionByHost = new Map(lastSessions.map((s) => [s.host.toLowerCase(), s._max.createdAt]));
+  const lastSessionAt = (host: string) => lastSessionByHost.get(host.toLowerCase()) ?? null;
 
   const machines: Machine[] = [];
   const seen = new Set<string>();
@@ -48,6 +51,7 @@ export async function listMachines(): Promise<MachineList> {
       ip        : peer.ip,
       os        : peer.os,
       lastSeen  : peer.lastSeen,
+      lastSessionAt: lastSessionAt(peer.host),
     });
   }
 
@@ -56,6 +60,7 @@ export async function listMachines(): Promise<MachineList> {
     machines.push({
       host: m.host, client: m.client.name, sshUser: m.sshUser, notes: m.notes,
       configured: true, inTailnet: false, online: false, ip: null, os: null, lastSeen: null,
+      lastSessionAt: lastSessionAt(m.host),
     });
   }
 

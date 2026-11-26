@@ -52,4 +52,5 @@ export interface Machine {
   ip        : string | null;
   os        : string | null;
   lastSeen  : string | null;
+  lastSessionAt: Date | null;   // newest helpdesk session on this host
 }

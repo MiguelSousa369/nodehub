@@ -13,6 +13,7 @@ components:
         ip:         { type: string, nullable: true, example: 100.98.12.4 }
         os:         { type: string, nullable: true, example: windows }
         lastSeen:   { type: string, nullable: true, format: date-time }
+        lastSessionAt: { type: string, nullable: true, format: date-time, description: Newest helpdesk session on this machine. }
     MachineConfig:
       type: object
       required: [client]

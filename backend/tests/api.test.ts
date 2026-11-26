@@ -361,6 +361,15 @@ describe('sessions', () => {
     expect(byTech.body.sessions[0].technician.name).toBe('Admin');
   });
 
+  it('shows the newest session date in the machine list', async () => {
+    const before = await request(app).get('/api/machines').set(as(techToken));
+    expect(before.body.machines.find((m: { host: string }) => m.host === 'srv-a').lastSessionAt).toBeNull();
+
+    await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
+    const after = await request(app).get('/api/machines').set(as(techToken));
+    expect(after.body.machines.find((m: { host: string }) => m.host === 'srv-a').lastSessionAt).toEqual(expect.any(String));
+  });
+
   it('keeps the history when the machine is removed and added back', async () => {
     await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
     await request(app).delete('/api/machines/srv-a').set(as(techToken));
