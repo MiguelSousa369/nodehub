@@ -466,6 +466,38 @@ describe('sessions', () => {
     expect(after.body.machines.find((m: { host: string }) => m.host === 'srv-a').lastSessionAt).toEqual(expect.any(String));
   });
 
+  it('lets the technician who recorded a session correct it later', async () => {
+    const token = await createToken(techToken);   // Claude on the technician's PC
+    const created = await request(app).post('/api/machines/srv-a/sessions').set(as(token))
+      .send({ ...session, result: 'partial', pending: 'Confirm whether the remote tool was installed by us' });
+    expect(created.body.updatedAt).toBeNull();
+
+    const res = await request(app).patch(`/api/sessions/${created.body.id}`).set(as(token))
+      .send({ result: 'fixed', pending: '' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ result: 'FIXED', pending: '', summary: 'Disk full', problem: 'Slow PC' });
+    expect(res.body.updatedAt).toEqual(expect.any(String));
+
+    const detail = await request(app).get('/api/machines/srv-a').set(as(token));
+    expect(detail.body.recentSessions[0]).toMatchObject({ result: 'FIXED', pending: '' });
+  });
+
+  it('only lets the author or an admin change a session, and validates the changes', async () => {
+    const created = await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
+    const url = `/api/sessions/${created.body.id}`;
+
+    // Another technician can't; an admin can
+    await prisma.user.create({ data: { username: 'tech2', name: 'Tech 2', role: 'TECHNICIAN', passwordHash: await hashPassword(TECH_PW) } });
+    const other = await request(app).patch(url).set(as(await signIn('tech2', TECH_PW))).send({ pending: '' });
+    expect(other.status).toBe(403);
+    expect((await request(app).patch(url).set(as(adminToken)).send({ pending: 'Check again next week' })).status).toBe(200);
+
+    expect((await request(app).patch(url).set(as(techToken)).send({})).body.code).toBe('VALIDATION_ERROR');
+    expect((await request(app).patch(url).set(as(techToken)).send({ result: 'maybe' })).body.code).toBe('VALIDATION_ERROR');
+    expect((await request(app).patch(url).set(as(techToken)).send({ host: 'other-pc' })).body.code).toBe('VALIDATION_ERROR');
+    expect((await request(app).patch('/api/sessions/999999').set(as(techToken)).send({ pending: '' })).body.code).toBe('SESSION_NOT_FOUND');
+  });
+
   it('keeps the history when the machine is removed and added back', async () => {
     await request(app).post('/api/machines/srv-a/sessions').set(as(techToken)).send(session);
     await request(app).delete('/api/machines/srv-a').set(as(techToken));

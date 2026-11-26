@@ -1,6 +1,7 @@
 import { Prisma } from '../generated/prisma/client';
 import prisma from '../lib/prisma';
-import { CreateSessionInput, SessionQuery, SessionView } from '../schemas/session.schema';
+import { CreateSessionInput, SessionQuery, SessionView, UpdateSessionInput } from '../schemas/session.schema';
+import { Role } from '../schemas/user.schema';
 import { HttpError } from '../utils/http-error';
 
 type SessionRow = Prisma.SessionGetPayload<{ include: { technician: { select: { id: true; name: true } } } }>;
@@ -61,6 +62,27 @@ export async function listTechnicians(): Promise<{ id: number; name: string }[]>
 export async function createSession(host: string, input: CreateSessionInput, technicianId: number): Promise<SessionView> {
   const row = await prisma.session.create({
     data   : { host: await canonicalHost(host), technicianId, ...input },
+    include: { technician: { select: { id: true, name: true } } },
+  });
+  return (await toViews([row]))[0];
+}
+
+/**
+ * Corrects a recorded session (e.g. something "pending" was confirmed later in the conversation).
+ * Only the technician who recorded it, or an admin, may change it; the edit time is kept.
+ */
+export async function updateSession(
+  id: number, input: UpdateSessionInput, actor: { id: number; role: Role },
+): Promise<SessionView> {
+  const existing = await prisma.session.findUnique({ where: { id } });
+  if (!existing) throw new HttpError(404, 'SESSION_NOT_FOUND', `Session #${id} does not exist.`);
+  if (existing.technicianId !== actor.id && actor.role !== 'ADMIN') {
+    throw new HttpError(403, 'FORBIDDEN', 'Only the technician who recorded this session, or an admin, can change it.');
+  }
+
+  const row = await prisma.session.update({
+    where  : { id },
+    data   : { ...input, updatedAt: new Date() },
     include: { technician: { select: { id: true, name: true } } },
   });
   return (await toViews([row]))[0];

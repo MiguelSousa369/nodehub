@@ -129,6 +129,8 @@ model Session {
   result       SessionResult
   pending      String        @default("")
   createdAt    DateTime      @default(now()) @map("created_at")
+  /// Set when the record is corrected afterwards (nodehub update / PATCH); null = never edited
+  updatedAt    DateTime?     @map("updated_at")
 
   @@index([host, createdAt])
   @@index([technicianId])

@@ -18,6 +18,7 @@ export type AuditEvent =
   | 'pc.approved' | 'pc.denied' | 'pc.connected' | 'pc.disconnected'
   | 'installer.downloaded'
   | 'machine.saved' | 'machine.removed'
+  | 'session.updated'
   | 'request.forbidden';
 
 const auditLog = winston.createLogger({

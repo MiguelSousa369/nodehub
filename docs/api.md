@@ -46,6 +46,7 @@ token.
 | `POST` | `/api/machines/:host/ssh-test` | session | `{ sshUser? }` → `{ ok, message }` |
 | **Sessions** | | | |
 | `GET` | `/api/sessions` | any | All sessions; filters `host`, `technicianId`, `result`, `q`, `limit`, `offset` |
+| `PATCH` | `/api/sessions/:id` | any (author or admin) | Correct a session: only the fields sent change (`summary`, `problem`, `diagnosis`, `actions`, `result`, `pending`) |
 | `GET` | `/api/sessions/technicians` | any | Users who recorded at least one session (history filter) |
 | `GET` | `/api/machines/:host/sessions` | any | Sessions of one machine (`limit`, `offset`) |
 | `POST` | `/api/machines/:host/sessions` | any | Record a session as the caller |
@@ -72,6 +73,7 @@ Every error has the same shape; branch on `code`, not on the message:
 | `SESSION_REQUIRED` | 403 | Action reserved for the dashboard (account, users, machine list, installer) attempted with a PC token |
 | `LOGIN_DENIED` | 403 | The PC connection request was denied |
 | `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
+| `SESSION_NOT_FOUND` | 404 | No session with that number |
 | `TOO_MANY_ATTEMPTS` | 429 | 5 wrong passwords for this username in 15 minutes: wait and try again |
 | `FORBIDDEN_ORIGIN` | 403 | Request sent by a page from another site (its `Origin` is not `127.0.0.1`/`localhost`) |
 | `NOT_FOUND` | 404 | Unknown route, or machine/user/connected PC not found |

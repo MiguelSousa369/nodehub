@@ -112,7 +112,22 @@ At the end of every session, record it. Write the session as JSON to a temporary
 .\nodehub.cmd log <host> --file %TEMP%\nodehub-session.json
 ```
 
-Then delete the temporary file. The session is recorded under the technician this PC is connected as.
+Then delete the temporary file. The session is recorded under the technician this PC is connected as,
+and the command prints its number (`Session #12 recorded ...`).
+
+**If something changes after recording** (the technician confirms a pending point, or the problem
+turns out to be fixed), correct the session instead of leaving it out of date. Write only the fields
+that change and update it:
+
+```json
+{ "result": "fixed", "pending": "" }
+```
+
+```
+.\nodehub.cmd update <id> --file %TEMP%\nodehub-session.json
+```
+
+`nodehub machine` and `nodehub history` show each session's number (`### #12 ...`).
 
 **Keep the profile up to date.** If you learned something lasting about the machine (role, hardware, important software, quirks), update its profile. Start from the current profile shown by `nodehub machine`, edit it, and write it back:
 

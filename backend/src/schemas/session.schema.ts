@@ -27,6 +27,18 @@ export const CreateSessionSchema = z.object({
   pending  : LongText,
 });
 
+/** Correcting a recorded session: only the fields sent change (at least one). */
+export const UpdateSessionSchema = z.object({
+  summary  : z.string().trim().min(1).max(200).optional(),
+  problem  : z.string().trim().max(10_000).optional(),
+  diagnosis: z.string().trim().max(10_000).optional(),
+  actions  : z.string().trim().max(10_000).optional(),
+  result   : SessionResultSchema.optional(),
+  pending  : z.string().trim().max(10_000).optional(),
+}).strict().refine((v) => Object.values(v).some((x) => x !== undefined), 'Send at least one field to change.');
+
+export const SessionIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
+
 export const SessionQuerySchema = z.object({
   host        : HostnameSchema.optional(),
   technicianId: z.coerce.number().int().positive().optional(),
@@ -42,6 +54,7 @@ export const ProfileSchema = z.object({
 
 export type SessionResult      = z.infer<typeof SessionResultSchema>;
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
+export type UpdateSessionInput = z.infer<typeof UpdateSessionSchema>;
 export type SessionQuery       = z.infer<typeof SessionQuerySchema>;
 
 // ---------------------------------------------------------------------------
@@ -60,4 +73,5 @@ export interface SessionView {
   result    : SessionResult;
   pending   : string;
   createdAt : Date;
+  updatedAt : Date | null;                           // last correction, null if never edited
 }

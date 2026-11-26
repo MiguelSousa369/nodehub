@@ -52,6 +52,8 @@ PC forget its token.
 | `history <host> [--limit 50] [--json]` | Session history of a machine |
 | `log <host> --file session.json` | Record a session from a JSON file |
 | `log <host> --summary "..." --result fixed [--problem ...] [--diagnosis ...] [--actions ...] [--pending ...]` | Record a session from flags |
+| `update <id> --file changes.json` | Correct a recorded session: only the fields in the file change, e.g. `{"pending": "", "result": "fixed"}` |
+| `update <id> --pending "" --result fixed` | The same with flags |
 | `profile <host> --file profile.md` | Replace the machine profile (Markdown) |
 | `profile <host> --text "..."` | Same, from text |
 

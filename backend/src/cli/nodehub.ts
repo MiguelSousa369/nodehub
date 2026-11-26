@@ -5,6 +5,7 @@
  *   nodehub machine <host>             configuration, profile and recent sessions
  *   nodehub history <host>             full session history
  *   nodehub log <host> --file s.json   record a session
+ *   nodehub update <id> --file s.json  correct a recorded session (only the fields given)
  *   nodehub profile <host> --file p.md replace the machine profile
  *
  * Run through nodehub.cmd at the repository root. See docs/cli.md.
@@ -124,11 +125,12 @@ const date = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('
 
 interface Session {
   id: number; host: string; client: string | null; technician: { name: string } | null;
-  summary: string; problem: string; diagnosis: string; actions: string; result: string; pending: string; createdAt: string;
+  summary: string; problem: string; diagnosis: string; actions: string; result: string; pending: string;
+  createdAt: string; updatedAt: string | null;
 }
 
 function printSession(s: Session): void {
-  console.log(`\n### ${date(s.createdAt)}: ${s.summary}`);
+  console.log(`\n### #${s.id} ${date(s.createdAt)}: ${s.summary}${s.updatedAt ? ` (edited ${date(s.updatedAt)})` : ''}`);
   console.log(`- Technician: ${s.technician?.name ?? '(deleted user)'}`);
   for (const [label, value] of [['Problem', s.problem], ['Diagnosis', s.diagnosis], ['Actions', s.actions]] as const) {
     if (value) console.log(`- ${label}: ${value}`);
@@ -215,13 +217,24 @@ async function cmdHistory(host: string, flags: Record<string, string | true>) {
 }
 
 async function cmdLog(host: string, flags: Record<string, string | true>) {
-  const file = flag(flags, 'file');
-  const body = file
-    ? JSON.parse(fs.readFileSync(file, 'utf-8').replace(/^﻿/, ''))
-    : Object.fromEntries(['summary', 'problem', 'diagnosis', 'actions', 'result', 'pending']
-      .flatMap((k) => (flag(flags, k) !== undefined ? [[k, flag(flags, k)]] : [])));
+  const body = sessionFields(flags);
   const s = await api<Session>('POST', `/api/machines/${encodeURIComponent(host)}/sessions`, body);
   console.log(`Session #${s.id} recorded for ${s.host} (${s.result.toLowerCase()}).`);
+}
+
+/** Session fields from --file (JSON) or from flags; only what's given is sent. */
+function sessionFields(flags: Record<string, string | true>): Record<string, string> {
+  const file = flag(flags, 'file');
+  if (file) return JSON.parse(fs.readFileSync(file, 'utf-8').replace(/^\uFEFF/, ''));
+  return Object.fromEntries(['summary', 'problem', 'diagnosis', 'actions', 'result', 'pending']
+    .flatMap((k) => (flag(flags, k) !== undefined ? [[k, flag(flags, k)!]] : [])));
+}
+
+async function cmdUpdate(positional: string[], flags: Record<string, string | true>) {
+  const id = Number(String(positional[1] ?? '').replace(/^#/, ''));
+  if (!Number.isInteger(id) || id < 1) throw new CliError('Missing or invalid session number (e.g. nodehub update 12 ...).');
+  const s = await api<Session>('PATCH', `/api/sessions/${id}`, sessionFields(flags));
+  console.log(`Session #${s.id} on ${s.host} updated (${s.result.toLowerCase()}${s.pending ? ', pending: ' + s.pending : ', nothing pending'}).`);
 }
 
 async function cmdProfile(host: string, flags: Record<string, string | true>) {
@@ -244,6 +257,9 @@ const HELP = `nodehub CLI
   nodehub log <host> --file session.json   record a session (JSON with summary, problem,
                                            diagnosis, actions, result, pending)
   nodehub log <host> --summary "..." --result fixed|partial|unresolved [--problem ...] ...
+  nodehub update <id> --file changes.json  correct a recorded session: only the fields given
+                                           change (e.g. {"pending": "", "result": "fixed"})
+  nodehub update <id> --pending "" --result fixed
   nodehub profile <host> --file profile.md replace the machine profile (Markdown)
 
 Docs: docs/cli.md`;
@@ -261,6 +277,7 @@ async function main() {
     case 'machine': return cmdMachine(requireHost(positional), Boolean(flags.json));
     case 'history': return cmdHistory(requireHost(positional), flags);
     case 'log'    : return cmdLog(requireHost(positional), flags);
+    case 'update' : return cmdUpdate(positional, flags);
     case 'profile': return cmdProfile(requireHost(positional), flags);
     default       : return console.log(HELP);
   }

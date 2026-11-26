@@ -20,6 +20,7 @@ components:
         result:     { type: string, enum: [FIXED, PARTIAL, UNRESOLVED] }
         pending:    { type: string }
         createdAt:  { type: string, format: date-time }
+        updatedAt:  { type: string, format: date-time, nullable: true, description: Last correction; null if never edited. }
     SessionInput:
       type: object
       required: [summary, result]
@@ -58,6 +59,49 @@ paths:
               schema: { $ref: '#/components/schemas/SessionList' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/sessions/{id}:
+    patch:
+      summary: Correct a recorded session (its author or an admin)
+      description: |
+        Only the fields sent change, e.g. `{ "pending": "", "result": "fixed" }` once something left
+        pending was confirmed. PC tokens may use it (Claude corrects the session it recorded).
+        The session keeps its date and gets `updatedAt`.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: false
+              properties:
+                summary:   { type: string, maxLength: 200 }
+                problem:   { type: string, maxLength: 10000 }
+                diagnosis: { type: string, maxLength: 10000 }
+                actions:   { type: string, maxLength: 10000 }
+                result:    { type: string, enum: [fixed, partial, unresolved] }
+                pending:   { type: string, maxLength: 10000 }
+      responses:
+        '200':
+          description: The corrected session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: FORBIDDEN (not the author and not an admin)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: SESSION_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /api/sessions/technicians:
     get:

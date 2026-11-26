@@ -20,6 +20,12 @@ the client, profile and history with `nodehub machine`.
 **By hand:** open Claude Code in the nodehub folder, click **Copy** on the machine card and paste
 (the copied message also names the client).
 
+## Correcting a session
+
+If something is confirmed after the session was recorded (e.g. a point left *pending*), just tell
+Claude; it corrects the record with `nodehub update <id>`. Only the technician who recorded a
+session, or an admin, can change it, and the dashboard marks it as *edited*.
+
 ## What happens
 
 ```mermaid

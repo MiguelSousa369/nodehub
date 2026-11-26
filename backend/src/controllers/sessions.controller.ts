@@ -1,8 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { HostParamsSchema } from '../schemas/machine.schema';
-import { CreateSessionSchema, ProfileSchema, SessionQuerySchema } from '../schemas/session.schema';
+import {
+  CreateSessionSchema, ProfileSchema, SessionIdParamsSchema, SessionQuerySchema, UpdateSessionSchema,
+} from '../schemas/session.schema';
 import * as sessionService from '../services/session.service';
+import { audit } from '../utils/audit';
 
 // ---------------------------------------------------------------------------
 // GET /api/sessions  (history across all machines, with filters)
@@ -50,6 +53,22 @@ export async function create(req: Request, res: Response, next: NextFunction) {
     const { host } = HostParamsSchema.parse(req.params);
     const input = CreateSessionSchema.parse(req.body ?? {});
     res.status(201).json(await sessionService.createSession(host, input, req.user!.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PATCH /api/sessions/:id  (correct a recorded session: its author or an admin)
+// ---------------------------------------------------------------------------
+
+export async function update(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = SessionIdParamsSchema.parse(req.params);
+    const input = UpdateSessionSchema.parse(req.body ?? {});
+    const session = await sessionService.updateSession(id, input, req.user!);
+    audit('session.updated', req.user!, { sessionId: id, host: session.host, changed: Object.keys(input) });
+    res.json(session);
   } catch (err) {
     next(err);
   }
