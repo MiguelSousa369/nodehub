@@ -3,7 +3,7 @@
     Opens Claude Code connected to a nodehub machine.
 
 .EXAMPLE
-    .\open.ps1 "nodehub://open?host=srv-bakery&client=Silva%20Bakery&user=nodehub"
+    .\open.ps1 "nodehub://open?host=srv-bakery&user=nodehub"
 
     Called by the nodehub:// protocol (see register-protocol.ps1); the dashboard builds the link.
 #>
@@ -23,16 +23,17 @@ function Get-Param([string]$name) {
     return ''
 }
 
-# 1. Read and validate the link. Links can come from any web page, so every value is
-#    checked and the host must be a client machine in our tailnet (step 2).
-if ($Target -notmatch '^nodehub://open/?\?') { Show-Error "Invalid link: $Target" }
+# 1. Read and validate the link. Links can come from any web page, so only two strictly
+#    checked values are used, and the host must be a client machine in our tailnet (step 2).
+#    No free text from the link reaches Claude: the client name comes from nodehub itself
+#    ("nodehub machine <host>", the first step in CLAUDE.md). Older links with &client= still work;
+#    that value is ignored.
+if ($Target -notmatch '^nodehub://open/?\?') { Show-Error 'Invalid nodehub link.' }
 $hostName = Get-Param 'host'
-$client   = Get-Param 'client'
 $sshUser  = Get-Param 'user'
 
-if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error "Invalid machine name: $hostName" }
-if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error "Invalid SSH user: $sshUser" }
-if ($client.Length -lt 1 -or $client.Length -gt 100 -or $client -match '["`;$\r\n]') { Show-Error 'Invalid client name.' }
+if ($hostName -notmatch '^[A-Za-z0-9-]{1,63}$') { Show-Error 'Invalid machine name in the link.' }
+if ($sshUser  -notmatch '^[A-Za-z0-9._-]{1,64}$') { Show-Error 'Invalid SSH user in the link.' }
 
 # 2. The host must be in the tailnet with the client tag (CLIENT_TAG in backend/.env, default tag:client)
 $clientTag = 'tag:client'
@@ -66,7 +67,7 @@ if (Test-Path $cli) {
 }
 
 # 4. Open Claude Code in the repository folder with the machine context
-$prompt = "Helpdesk: client $client, machine $hostName ($ip, user $sshUser). " +
+$prompt = "Helpdesk: machine $hostName ($ip, user $sshUser). " +
           "Start the session as described in CLAUDE.md, then ask me what the problem is."
 
 $wt = Get-Command wt.exe -ErrorAction SilentlyContinue

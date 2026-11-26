@@ -36,7 +36,8 @@ protects against and how, and the responsibilities that stay with you.
 A `nodehub://` link can be triggered by any web page (the browser asks for confirmation first). The
 launcher therefore:
 
-- validates the host, client and SSH user against strict patterns;
+- takes only the host and SSH user from the link, both checked against strict patterns: no free
+  text from a web page can reach Claude's prompt (the client name comes from `nodehub machine`);
 - **checks with the local Tailscale client that the host is in the tailnet with `CLIENT_TAG`**,
   so a link can't point Claude at an arbitrary machine;
 - only starts Claude Code in the nodehub folder with a fixed start message.

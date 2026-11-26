@@ -9,10 +9,14 @@ interface SessionTarget {
   ip?    : string | null
 }
 
-/** nodehub:// link handled by launcher/open.ps1 (which re-checks the host against Tailscale). */
+/**
+ * nodehub:// link handled by launcher/open.ps1, which re-checks the host against Tailscale.
+ * Only the host and SSH user: links can come from any web page, so the launcher takes no free text
+ * (Claude gets the client name from "nodehub machine").
+ */
 export function launcherLink(m: SessionTarget): string {
-  const params = new URLSearchParams({ host: m.host, client: m.client ?? '', user: m.sshUser ?? '' })
-  return `nodehub://open?${params.toString().replace(/\+/g, '%20')}`
+  const params = new URLSearchParams({ host: m.host, user: m.sshUser ?? '' })
+  return `nodehub://open?${params}`
 }
 
 /** Text to paste into Claude Code when the nodehub:// launcher isn't available. */

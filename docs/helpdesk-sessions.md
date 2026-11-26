@@ -10,13 +10,15 @@ automatically.
 `nodehub://` link opens Windows Terminal in the nodehub folder with Claude Code and a start message:
 
 ```
-Helpdesk: client Silva Bakery, machine srv-bakery (100.98.12.4, user nodehub).
+Helpdesk: machine srv-bakery (100.98.12.4, user nodehub).
 Start the session as described in CLAUDE.md, then ask me what the problem is.
 ```
 
-The first time, your browser asks whether to open the `nodehub` link: allow it.
+The first time, your browser asks whether to open the `nodehub` link: allow it. Claude then reads
+the client, profile and history with `nodehub machine`.
 
-**By hand:** open Claude Code in the nodehub folder, click **Copy** on the machine card and paste.
+**By hand:** open Claude Code in the nodehub folder, click **Copy** on the machine card and paste
+(the copied message also names the client).
 
 ## What happens
 

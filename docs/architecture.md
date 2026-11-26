@@ -134,7 +134,7 @@ sequenceDiagram
 
 ### Opening a session
 
-1. The dashboard builds `nodehub://open?host=…&client=…&user=…`.
+1. The dashboard builds `nodehub://open?host=…&user=…` (no free text: the client name comes from `nodehub machine`).
 2. Windows runs `launcher/open.ps1` with the link.
 3. The launcher validates every value **and checks with the local Tailscale client that the host
    exists and carries `CLIENT_TAG`**: a link from an arbitrary web page can't point Claude at

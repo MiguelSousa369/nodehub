@@ -8,11 +8,16 @@ This repository is used to give **remote support** to client PCs on the support 
 
 ## Starting a session
 
-A session usually starts with a message like:
+A session usually starts with a message like one of these (the first comes from **Open in Claude**,
+the second from **Copy**):
 
 ```
+Helpdesk: machine <host> (<IP>, user <user>).
 Helpdesk: client <Client>, machine <host> (<IP>, user <user>).
 ```
+
+The client, profile and history always come from `nodehub machine <host>` (step 1), not from the
+start message.
 
 When that happens:
 
