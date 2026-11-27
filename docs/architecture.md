@@ -33,7 +33,7 @@ flowchart TB
 | **Backend** | `backend/` | REST API, authentication, business rules; serves the built dashboard on the same origin. |
 | **Dashboard** | `frontend/` | React single-page app: machines, history, users, team settings, SSH keys, connected PCs, PC approval page. English or Portuguese. |
 | **Database** | `docker-compose.yml` | PostgreSQL 17 with Prisma migrations (`backend/prisma/`). |
-| **Tailscale** | technician PC | Source of truth for which machines exist and whether they're online. No Tailscale API token is needed. |
+| **Tailscale** | the PC running the backend | Source of truth for which machines exist and whether they're online. No Tailscale API token is needed. |
 | **Launcher** | `launcher/` | Handles `nodehub://` links: `open` validates the link and opens Claude Code with the machine context; `keys-sync` opens the SSH key sync window. |
 | **CLI** | `backend/src/cli/` → `nodehub.cmd` | Lets Claude (and technicians) read profiles/history and record or correct sessions; technicians also sync SSH keys with it. |
 | **Installer** | `installer/` | Template of the script that prepares client PCs; the backend fills in the secrets. |

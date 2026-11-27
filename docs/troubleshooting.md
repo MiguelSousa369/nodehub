@@ -16,7 +16,7 @@
 
 | Symptom | Cause / fix |
 |---|---|
-| *Could not read Tailscale status* | Tailscale isn't running or signed in on this PC. Check `tailscale status`. Set `TAILSCALE_BIN` if it's installed elsewhere. |
+| *Could not read Tailscale status* | Tailscale isn't running or signed in on the PC running nodehub (the server, on an office server). Check `tailscale status`. Set `TAILSCALE_BIN` if it's installed elsewhere. |
 | A new machine doesn't appear | It needs the client tag: check the auth key has `CLIENT_TAG`, and that `CLIENT_TAG` in `.env` matches. In the Tailscale console, check the device and its tags. |
 | *Download installer* is disabled | The dialog lists what's missing: `TAILSCALE_AUTHKEY`, at least one active SSH key (**My SSH keys**), or a valid `CLIENT_TAG`. |
 | *Open in Claude* does nothing | Register the protocol: `.\launcher\register-protocol.ps1`. Allow the browser's "open nodehub?" prompt. |

@@ -74,7 +74,7 @@ How nodehub stands against each category, reviewed on 2026-11-26.
 | **A09 Logging and Monitoring Failures** | ✅ | Security audit log (`backend/logs/audit.log`) and error log; every helpdesk session is recorded with its technician. |
 | **A10 Server-Side Request Forgery** | ✅ | The backend only connects to Tailscale (local CLI) and, for the SSH test, to client machines it has checked are in the tailnet with `CLIENT_TAG`. |
 
-**Known limits** (accepted for a tool that runs on the technician's own PC):
+**Known limits:**
 
 - The PostgreSQL password defaults to `nodehub`. The database only listens on `127.0.0.1`; set
   `POSTGRES_PASSWORD` (and `DATABASE_URL`) if other people use the same PC.
@@ -95,4 +95,5 @@ How nodehub stands against each category, reviewed on 2026-11-26.
 - **Protect `backend/.env`**: it holds the JWT secret and the Tailscale auth key.
 - **Client consent:** permanent remote access must be agreed with each client (e.g. in the support
   contract).
-- **Keep the technician PC secure:** it holds the keys to every client.
+- **Keep the technicians' PCs secure:** they hold the keys to every client. On an office server,
+  keep the server secure too: it holds the database and the Tailscale auth key.
