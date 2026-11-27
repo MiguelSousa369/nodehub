@@ -13,6 +13,7 @@ import { useI18n } from '../i18n'
 import { useToast } from '../hooks/useToast'
 import { ApiError, getMachine, listMachines, listSessions, updateProfile } from '../services/api'
 import type { Machine, MachineDetail, Session } from '../types'
+import { copyText } from '../utils/clipboard'
 import { claudePrompt, launcherLink, machineLabel } from '../utils/machine'
 import { fullDate, timeAgo } from '../utils/time'
 
@@ -83,7 +84,7 @@ export default function MachinePage() {
   async function copy() {
     if (!detail) return
     try {
-      await navigator.clipboard.writeText(claudePrompt({ ...detail, ip: live?.ip }))
+      await copyText(claudePrompt({ ...detail, ip: live?.ip }))
       toast.show(t.common.copied)
     } catch {
       toast.show(t.common.copyFailed)

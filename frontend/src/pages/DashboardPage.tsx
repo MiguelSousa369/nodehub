@@ -16,6 +16,7 @@ import { usePersistentState } from '../hooks/usePersistentState'
 import { useToast } from '../hooks/useToast'
 import { deleteMachine } from '../services/api'
 import type { Machine } from '../types'
+import { copyText } from '../utils/clipboard'
 import { claudePrompt, isNew, machineLabel } from '../utils/machine'
 import { byName } from '../utils/time'
 
@@ -132,7 +133,7 @@ export default function DashboardPage() {
 
   async function copy(m: Machine) {
     try {
-      await navigator.clipboard.writeText(claudePrompt(m))
+      await copyText(claudePrompt(m))
       toast.show(t.common.copied)
     } catch {
       toast.show(t.common.copyFailed)
