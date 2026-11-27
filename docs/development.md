@@ -50,7 +50,8 @@ nodehub/
 ├── installer/                 client installer template
 ├── launcher/                  nodehub:// handler and registration
 ├── public-keys/               *.pub files imported into the database at startup (not committed)
-└── docs/
+├── scripts/readme-gifs/       records the README GIFs with fictional demo data
+└── docs/                      documentation; media/ holds the logo and README GIFs
 ```
 
 ## Running in development
@@ -131,6 +132,23 @@ docker exec nodehub-db psql -U nodehub -c "CREATE DATABASE nodehub_test OWNER no
   comes from `GET /api/settings`; API errors are translated by `code`. To add a text, add it to both
   files. The CLI's texts are in `backend/src/cli/messages.ts`, the installer's and launcher's in a
   `$Messages` table at the top of each script.
+
+## README GIFs
+
+The GIFs in `docs/media/` are recorded from the real dashboard with **fictional demo data**:
+`scripts/readme-gifs/record.cjs` answers every `/api` request from `demo-data.cjs`, so nothing is read
+from or written to the database. With the app running (`start.cmd`):
+
+```
+cd scripts/readme-gifs
+npm install
+npm run record                     # every scene
+npm run record -- dashboard        # one scene
+```
+
+It drives Chrome or Edge (set `BROWSER` if it isn't found) and `NODEHUB_URL` points it at another
+instance. Each scene is a short script in `record.cjs`; after a UI change, re-record the scenes it
+affects.
 
 ## Conventions
 
