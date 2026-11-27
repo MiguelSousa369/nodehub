@@ -29,7 +29,7 @@ nodehub/
 │   │   ├── schemas/           *.schema.ts (Zod)
 │   │   ├── middlewares/       *.middleware.ts
 │   │   ├── lib/               prisma, tailscale, swagger
-│   │   ├── utils/             logger, password, http-error
+│   │   ├── utils/             logger, audit log, login throttle, password, http-error
 │   │   ├── docs/              OpenAPI YAML per resource
 │   │   ├── cli/               nodehub CLI
 │   │   └── generated/         Prisma client (generated, gitignored)
@@ -70,6 +70,7 @@ cd frontend; npm install; npm run dev      # Vite on http://127.0.0.1:5173 (prox
 |---|---|
 | `npm run dev` | Start with reload (`tsx watch`) |
 | `npm run build` | Generate the Prisma client and compile to `dist/` (including the CLI) |
+| `npm run build:cli` | Compile only the CLI (technician PCs that use an office server) |
 | `npm start` | Run the compiled server |
 | `npm test` | API tests against `nodehub_test` |
 | `npm run lint` | Type-check |
@@ -139,7 +140,7 @@ The GIFs in `docs/media/` are recorded from the real dashboard with **fictional 
 `scripts/readme-gifs/record.cjs` answers every `/api` request from `demo-data.cjs`, so nothing is read
 from or written to the database. With the app running (`start.cmd`):
 
-```
+```powershell
 cd scripts/readme-gifs
 npm install
 npm run record                     # every scene
