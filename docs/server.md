@@ -82,7 +82,7 @@ Claude connects to client PCs from **your** PC, so it needs:
 4. **The nodehub folder**, with only the CLI built (no database or `.env` needed on this PC):
 
    ```powershell
-   git clone <repository> nodehub
+   git clone https://github.com/MiguelSousa369/nodehub.git
    cd nodehub\backend
    npm install
    npm run build:cli

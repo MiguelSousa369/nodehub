@@ -98,7 +98,7 @@ account. (Keys dropped in `public-keys\*.pub` are imported at startup, see
 ## 4. Technician PC
 
 ```powershell
-git clone <your fork of this repository> nodehub
+git clone https://github.com/MiguelSousa369/nodehub.git
 cd nodehub
 copy backend\.env.example backend\.env
 ```

@@ -103,7 +103,7 @@ flowchart LR
 > Requirements: Windows, Node.js 20+, Docker Desktop, Tailscale, Claude Code.
 
 ```powershell
-git clone <your fork of this repository> nodehub
+git clone https://github.com/MiguelSousa369/nodehub.git
 cd nodehub
 copy backend\.env.example backend\.env     # then fill in JWT_SECRET, CLIENT_TAG, TAILSCALE_AUTHKEY
 .\launcher\register-protocol.ps1           # once per technician PC
