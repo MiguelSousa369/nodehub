@@ -1,7 +1,8 @@
 # Using the dashboard
 
-The dashboard runs at **http://127.0.0.1:8737** (start it with `start.cmd`). Sign in with your
-nodehub account.
+Open the dashboard at **http://127.0.0.1:8737** on a one-PC installation, or at the server's
+address (e.g. **http://192.168.1.50:8737**) on an office server, and sign in with your nodehub
+account.
 
 - [Machines](#machines)
 - [Quick search](#quick-search)
@@ -41,9 +42,8 @@ Machines with the client tag that aren't assigned to a client yet appear at the 
 
 The toolbar above the list is built for a large number of clients:
 
-- **Search** by machine, client, notes or IP.
+- **Search** by machine (tailnet or friendly name), client, notes or IP.
 - **All / Online / Offline / New / Unassigned** narrows the list by status.
-- **Search** also finds machines by their friendly name.
 - **Sort** machines by name (natural order: `pc2` before `pc10`), online first, or most recent session.
 - **Expand all / Collapse all.** With more than 40 machines, clients start collapsed; nodehub
   remembers which ones you opened. While searching or filtering, every matching client is open.
@@ -124,15 +124,10 @@ Each session shows who did it: the technician the PC running Claude is connected
 
 *Admins only.* The **Users** tab manages who can sign in, the team language and the team's SSH keys.
 
-**SSH keys** lists every key with its owner: who can reach client PCs. Admins can add a key for
-anyone, or a *service key* (no owner), and remove any key. Keys of deactivated accounts are marked
-*not applied*. After a change, **Sync keys** updates every online client PC (details in
-[Installation → Adding or removing a technician](installation.md#6-adding-or-removing-a-technician)). New installers always include the active keys.
-
 | Role | Can |
 |---|---|
-| **Technician** | Everything with machines, clients, sessions and their own connected PCs |
-| **Admin** | The same, plus managing users |
+| **Technician** | Everything with machines, clients and sessions; their own SSH keys and connected PCs |
+| **Admin** | The same, plus users, the team language and everyone's SSH keys |
 
 - **+ Add user:** username (lowercase letters, digits, `.` `_` `-`), name, initial password (at
   least 10 characters) and role. Share the password privately; the user changes it on first sign-in.
@@ -143,6 +138,14 @@ anyone, or a *service key* (no owner), and remove any key. Keys of deactivated a
 
 Safety rules: you can't remove your own admin access or delete yourself, and there is always at
 least one active admin.
+
+**Team settings** sets the [team language](#language-english-or-portuguese).
+
+**SSH keys** lists every key with its owner: who can reach client PCs. Admins can add a key for
+anyone, or a *service key* (no owner), and remove any key. Keys of deactivated accounts are marked
+*not applied*. After a change, **Sync keys** updates every online client PC (details in
+[Installation → Adding or removing a technician](installation.md#6-adding-or-removing-a-technician)).
+New installers always include the active keys.
 
 ---
 
