@@ -1,7 +1,7 @@
 # API
 
 The backend exposes a REST API under `/api`. The interactive reference (Swagger UI) is at
-**http://127.0.0.1:8737/api/docs**; the OpenAPI source is in
+**http://127.0.0.1:8737/api/docs** (or the server's address on an office server); the OpenAPI source is in
 [`backend/src/docs/`](../backend/src/docs/).
 
 ## Authentication
@@ -74,23 +74,22 @@ Every error has the same shape; branch on `code`, not on the message:
 | `VALIDATION_ERROR` | 400 | Invalid body, params or query (Zod issues in `details`) |
 | `INVALID_JSON` | 400 | Malformed JSON body |
 | `WRONG_PASSWORD` | 400 | Current password is wrong when changing it |
+| `INVALID_KEY` | 400 | Not a valid SSH public key |
+| `PRIVATE_KEY` | 400 | A private key was pasted instead of the `.pub` |
 | `UNAUTHORIZED` | 401 | No token, expired session, revoked token or deactivated user |
 | `INVALID_CREDENTIALS` | 401 | Wrong username or password |
 | `FORBIDDEN` | 403 | Admin-only action |
 | `SESSION_REQUIRED` | 403 | Action reserved for the dashboard (account, users, machine list, installer) attempted with a PC token |
 | `LOGIN_DENIED` | 403 | The PC connection request was denied |
-| `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`/`localhost` |
+| `FORBIDDEN_HOST` | 403 | Request not addressed to `127.0.0.1`, `localhost` or one of `ALLOWED_HOSTS` |
+| `FORBIDDEN_ORIGIN` | 403 | Request sent by a page from another site (its `Origin` is not nodehub's own address) |
 | `SESSION_NOT_FOUND` | 404 | No session with that number |
-| `INVALID_KEY` | 400 | Not a valid SSH public key |
-| `PRIVATE_KEY` | 400 | A private key was pasted instead of the `.pub` |
-| `KEY_EXISTS` | 409 | That key is already in the list |
 | `KEY_NOT_FOUND` | 404 | No key with that id |
-| `TOO_MANY_ATTEMPTS` | 429 | 5 wrong passwords for this username in 15 minutes: wait and try again |
-| `FORBIDDEN_ORIGIN` | 403 | Request sent by a page from another site (its `Origin` is not `127.0.0.1`/`localhost`) |
 | `NOT_FOUND` | 404 | Unknown route, or machine/user/connected PC not found |
 | `LOGIN_NOT_FOUND` | 404 | Unknown or expired PC connection request (dashboard) |
 | `MACHINE_NOT_IN_TAILNET` | 404 | Configuring a machine that isn't in the tailnet with `CLIENT_TAG` |
 | `MACHINE_NOT_CONFIGURED` | 404 | Recording a session or profile for an unconfigured machine |
+| `KEY_EXISTS` | 409 | That key is already in the list |
 | `USERNAME_TAKEN` | 409 | Username already exists |
 | `LAST_ADMIN` | 409 | The change would leave no active admin |
 | `CANNOT_DEMOTE_SELF` | 409 | Removing your own admin access |
@@ -98,6 +97,7 @@ Every error has the same shape; branch on `code`, not on the message:
 | `LOGIN_ALREADY_DECIDED` | 409 | The PC connection request was already approved or denied |
 | `INSTALLER_NOT_CONFIGURED` | 409 | Missing auth key, public keys or client tag |
 | `LOGIN_EXPIRED` | 410 | PC connection request expired, unknown, or token already collected (CLI) |
+| `TOO_MANY_ATTEMPTS` | 429 | Too many wrong passwords: 5 for one username, or 20 from one address, in 15 minutes |
 | `TOO_MANY_REQUESTS` | 429 | Too many pending PC connection requests |
-| `TAILSCALE_UNAVAILABLE` | 503 | Tailscale status couldn't be read |
 | `INTERNAL_ERROR` | 500 | Anything else |
+| `TAILSCALE_UNAVAILABLE` | 503 | Tailscale status couldn't be read |
