@@ -31,8 +31,8 @@ if [ "$use_docker" = 1 ]; then
   docker compose up -d --wait || fail "Could not start the database (is the Docker service running?)."
 fi
 
-[ -d backend/node_modules ]  || (cd backend && npm install)
-[ -d frontend/node_modules ] || (cd frontend && npm install)
+[ -d backend/node_modules ]  || (cd backend && npm ci)
+[ -d frontend/node_modules ] || (cd frontend && npm ci)
 
 cd backend
 npx prisma migrate deploy
