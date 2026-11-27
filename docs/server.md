@@ -1,8 +1,14 @@
-# Running nodehub on an office server
+# Office server mode
 
-By default nodehub runs on one technician's PC and only that PC can open it. To share it with the
-whole team, run it on a server (or any always-on PC) on the office network, and open the dashboard
-at the server's address, e.g. **http://192.168.1.50:8737**.
+nodehub has two modes (see [Installation → Choose a mode](installation.md#choose-a-mode)):
+
+- **One PC:** everything on one technician's PC; only that PC opens the dashboard.
+- **Office server** (this guide): the dashboard and the database run on a server (or any always-on
+  PC) on the office network, and the team opens it at the server's address, e.g.
+  **http://192.168.1.50:8737**. Each technician's PC only runs Claude Code and the nodehub CLI.
+
+Before starting, do [Installation](installation.md) steps 1-3 (requirements, Tailscale, SSH keys).
+Then set up **the server once** (part 1) and **each technician's PC** (part 2).
 
 ```mermaid
 flowchart LR
@@ -29,7 +35,9 @@ flowchart LR
 Docker Desktop, Node.js 20+, Git, and **Tailscale signed in to the support tailnet** as a team device
 (not with the client tag). nodehub reads machine status from it.
 
-1. Install nodehub as in [installation.md](installation.md) (clone, `backend\.env`, `start.cmd`).
+1. Install nodehub on the server as in [Installation step 4](installation.md#4-install-nodehub-one-pc)
+   (clone, `backend\.env`); don't run `start.cmd` yet. `register-protocol.ps1` is only needed if
+   someone will also run helpdesk sessions on the server itself.
 2. In `backend\.env`, let the office network in:
 
    ```ini

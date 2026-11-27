@@ -1,13 +1,29 @@
 # Installation
 
-This guide sets up nodehub from scratch: the Tailscale network, the technicians' SSH keys, the
-technician PC and the first run. Adding client machines is covered in
-[Using the dashboard](usage.md#adding-a-machine).
+This guide sets up nodehub from scratch: the Tailscale network, the technicians' SSH keys and
+nodehub itself. Adding client machines is covered in [Using the dashboard](usage.md#adding-a-machine).
+
+## Choose a mode
+
+| | **One PC** | **Office server** |
+|---|---|---|
+| For | Trying it out, or a single technician | A team: everyone shares the same machines and history |
+| Dashboard + database | On your PC, at `http://127.0.0.1:8737` | On the server, at its IP, e.g. `http://192.168.1.50:8737` |
+| Who opens the dashboard | Only that PC | Every PC on the office network |
+| Claude Code (helpdesk sessions) | On that PC | On each technician's PC |
+| Guide | [Installation](installation.md) | [Installation](installation.md) steps 1-3, then [Office server](server.md) |
+
+In both modes, Claude always connects to client PCs **from the technician's PC**, with that
+technician's SSH key; the server only keeps the dashboard and the data.
+
+- **One PC:** follow this whole guide on that PC.
+- **Office server:** do steps 1-3 here (requirements, Tailscale, SSH keys), then continue in
+  [Office server](server.md): it covers the server and each technician's PC.
 
 - [1. Requirements](#1-requirements)
 - [2. Tailscale](#2-tailscale)
 - [3. SSH keys](#3-ssh-keys)
-- [4. Technician PC](#4-technician-pc)
+- [4. Install nodehub (one PC)](#4-install-nodehub-one-pc)
 - [5. First run](#5-first-run)
 - [6. More technicians](#6-more-technicians)
 
@@ -95,7 +111,9 @@ account. (Keys dropped in `public-keys\*.pub` are imported at startup, see
 
 ---
 
-## 4. Technician PC
+## 4. Install nodehub (one PC)
+
+On the PC that will run nodehub *and* the helpdesk sessions.
 
 ```powershell
 git clone https://github.com/MiguelSousa369/nodehub.git
@@ -149,7 +167,7 @@ For each new technician:
 1. An admin creates their account (**Users → + Add user**).
 2. They add their public key (account menu → **My SSH keys**), and someone with access clicks
    **Sync keys** so existing client machines accept it.
-3. They set up their own PC (step 4); it connects to their account the first time they click
-   **Open in Claude**.
-
-> To share one nodehub between the whole team, run it on an [office server](server.md).
+3. **One PC mode:** they sign in on that same PC. For technicians working from their own PCs,
+   switch to the [office server](server.md) mode: the dashboard and history then live on the
+   server, and each technician's PC only needs Claude Code and the nodehub CLI
+   ([Each technician PC](server.md#2-each-technician-pc)).
