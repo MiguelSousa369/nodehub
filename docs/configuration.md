@@ -16,7 +16,7 @@ This file holds secrets and is never committed.
 |---|---|---|
 | `CLIENT_TAG` | `tag:client` | Tag that marks client machines. Must match the ACL and the auth key. Only machines with this tag can be configured or opened. |
 | `TAILSCALE_AUTHKEY` | – | Reusable, pre-approved auth key tagged with `CLIENT_TAG`. Needed to download the installer. |
-| `TAILSCALE_BIN` | `C:\Program Files\Tailscale\tailscale.exe` | Tailscale CLI used to read machine status. |
+| `TAILSCALE_BIN` | `C:\Program Files\Tailscale\tailscale.exe` | Tailscale CLI used to read machine status. On Linux, `start.sh` uses the `tailscale` on the `PATH`. |
 
 ## Accounts
 
