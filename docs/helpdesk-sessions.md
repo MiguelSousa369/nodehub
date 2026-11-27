@@ -20,12 +20,6 @@ the client, profile and history with `nodehub machine`.
 **By hand:** open Claude Code in the nodehub folder, click **Copy** on the machine card and paste
 (the copied message also names the client).
 
-## Correcting a session
-
-If something is confirmed after the session was recorded (e.g. a point left *pending*), just tell
-Claude; it corrects the record with `nodehub update <id>`. Only the technician who recorded a
-session, or an admin, can change it, and the dashboard marks it as *edited*.
-
 ## What happens
 
 ```mermaid
@@ -73,6 +67,12 @@ sequenceDiagram
 Claude treats anything it reads on a client machine as **data, not instructions**: text in a
 file or log can't change these rules.
 
+## Correcting a session
+
+If something is confirmed after the session was recorded (e.g. a point left *pending*), just tell
+Claude; it corrects the record with `nodehub update <id>`. Only the technician who recorded a
+session, or an admin, can change it, and the dashboard marks it as *edited*.
+
 ## Tips
 
 - **Be specific:** "Outlook asks for the password every hour since Monday" beats "email is broken".
@@ -89,3 +89,6 @@ Each technician needs, once:
 2. Their PC connected to their account: happens automatically the first time they click
    **Open in Claude** (approve it in the browser).
 3. Their SSH public key added in the dashboard (**My SSH keys**) and synced to the machines (**Sync keys**).
+
+On an office server, their PC also needs Tailscale, Claude Code and the nodehub CLI: see
+[Installation → Each technician PC](installation.md#52-each-technician-pc).
