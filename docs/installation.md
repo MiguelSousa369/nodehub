@@ -32,7 +32,7 @@ move to B later (see [Moving from one PC to a server](#moving-from-one-pc-to-a-s
 
 ## 1. Requirements
 
-| | Windows 10/11 | [Node.js](https://nodejs.org) 20+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | [Tailscale](https://tailscale.com/download) | [Claude Code](https://docs.anthropic.com/claude-code) | Git |
+| | Windows 10/11 | [Node.js](https://nodejs.org) 22+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | [Tailscale](https://tailscale.com/download) | [Claude Code](https://docs.anthropic.com/claude-code) | Git |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
 | **A.** The one PC | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **B.** The server | ✓ | ✓ | ✓ | ✓ | | ✓ |
@@ -239,7 +239,7 @@ history, users and the installer all work from the browser.
 
 **Helpdesk sessions ("Open in Claude"):** Claude connects to client PCs from **your** PC, so it needs:
 
-1. **Tailscale** signed in to the support tailnet, **Claude Code**, **Node.js 20+**, **Git** and
+1. **Tailscale** signed in to the support tailnet, **Claude Code**, **Node.js 22+**, **Git** and
    Windows Terminal.
 2. **Your SSH key** (step 3) added in the dashboard, then someone who already has access clicks
    **Sync keys** (see [6](#6-adding-or-removing-a-technician)).

@@ -120,7 +120,7 @@ technician's SSH key; the server only keeps the dashboard and the data.
 This sets up the **one PC** mode, the quickest way to try nodehub. For a team, see
 [Mode B: office server](docs/installation.md#5-mode-b-office-server).
 
-You need, on that PC: **Windows 10/11**, [Node.js](https://nodejs.org) 20+,
+You need, on that PC: **Windows 10/11**, [Node.js](https://nodejs.org) 22+,
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running),
 [Tailscale](https://tailscale.com/download), [Claude Code](https://docs.anthropic.com/claude-code)
 and Git.
