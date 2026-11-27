@@ -3,7 +3,9 @@
 `nodehub.cmd` (at the repository root) reads and records machine history through the nodehub API.
 Claude Code uses it during [helpdesk sessions](helpdesk-sessions.md); technicians can use it too.
 
-The CLI is built together with the backend (`start.cmd` or `npm run build` in `backend/`).
+The CLI is built together with the backend (`start.cmd` or `npm run build` in `backend/`). On a
+technician PC that uses an office server, only the CLI is built: see
+[On an office server](#on-an-office-server).
 
 ## Connecting a PC
 
@@ -54,12 +56,12 @@ PC forget its token.
 | `log <host> --summary "..." --result fixed [--problem ...] [--diagnosis ...] [--actions ...] [--pending ...]` | Record a session from flags |
 | `update <id> --file changes.json` | Correct a recorded session: only the fields in the file change, e.g. `{"pending": "", "result": "fixed"}` |
 | `update <id> --pending "" --result fixed` | The same with flags |
+| `profile <host> --file profile.md` | Replace the machine profile (Markdown) |
+| `profile <host> --text "..."` | Same, from text |
 | `keys` | List the team's SSH keys with owner, and which are not applied (inactive accounts) |
 | `keys sync [--host <h>] [--dry-run] [--yes] [--force]` | Make every online client PC accept exactly the active keys, over SSH from this PC. In a terminal it previews the changes and asks first (`--yes` skips the question); `--dry-run` only shows them; `--host` limits it to one machine; `--force` skips the "your own key must stay" check. The dashboard's **Sync keys** button opens this in a window. Not for Claude: the technician runs it |
 | `language` | Print the team language (`en` or `pt`) |
 | `launcher-info` | Print the team language and client tag (`pt tag:client`); used by the `nodehub://` launcher |
-| `profile <host> --file profile.md` | Replace the machine profile (Markdown) |
-| `profile <host> --text "..."` | Same, from text |
 
 ### Session JSON
 
@@ -88,9 +90,12 @@ Sessions can only be recorded for machines that are configured in the dashboard.
 > .\nodehub.cmd machine srv-bakery
 # srv-bakery
 
-Client:   Silva Bakery
+Records language: English. Write the session record (nodehub log / update) and the profile in English.
+
+Name: Server
+Client: Silva Bakery
 SSH user: nodehub
-Notes:    Back office server
+Notes: Back office server
 
 ## Profile
 
@@ -100,19 +105,20 @@ Notes:    Back office server
 
 ## Recent sessions (1 of 1)
 
-### 2026-11-20 10:12: Disk almost full
-- Technician: Ana Costa
+### #12 2026-11-20 10:12: Disk almost full
+- Technician: Ana Ribeiro
 - Problem: PC very slow since yesterday
 - Diagnosis: C: at 98%: 40 GB of Windows Update cache and temp files
 - Actions: Cleaned the update cache and temp files
 - Result: fixed
 ```
 
-## Using a nodehub server
+## On an office server
 
-On a technician PC that uses a [office server](installation.md#52-each-technician-pc), only the CLI is needed:
-`npm install` and `npm run build:cli` in `backend\`, then
-`.\nodehub.cmd login --url http://<server-ip>:8737`. The address is remembered.
+On a technician PC that uses an office server, only the CLI is needed: `npm install` and
+`npm run build:cli` in `backend\`, then `.\nodehub.cmd login --url http://<server-ip>:8737`. The
+address is remembered, and every command uses it. Full steps:
+[Installation → Each technician PC](installation.md#52-each-technician-pc).
 
 ## Language
 
@@ -130,4 +136,4 @@ Claude writes session records and profiles in that language. JSON keys and `resu
 | *The connection request expired* / *was denied* | Run `.\nodehub.cmd login` again and approve within 10 minutes |
 | *Cannot reach nodehub* | Start the dashboard (`start.cmd`) or check `--url` |
 | *Machine ... is not configured* | Configure the machine in the dashboard first |
-| *The nodehub CLI is not built yet* | Run `start.cmd` or `npm run build` in `backend/` |
+| *The nodehub CLI is not built yet* | Run `start.cmd` or `npm run build` in `backend/` (`npm run build:cli` on a technician PC that uses an office server) |
