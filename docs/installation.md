@@ -6,7 +6,7 @@ technician PC and the first run. Adding client machines is covered in
 
 - [1. Requirements](#1-requirements)
 - [2. Tailscale](#2-tailscale)
-- [3. SSH keys](#ssh-keys)
+- [3. SSH keys](#3-ssh-keys)
 - [4. Technician PC](#4-technician-pc)
 - [5. First run](#5-first-run)
 - [6. More technicians](#6-more-technicians)
@@ -79,7 +79,7 @@ step 4. Tagged devices don't expire, so machines stay connected after the key ex
 
 ---
 
-## SSH keys
+## 3. SSH keys
 
 Every technician needs an SSH key pair. The **public** key goes to every client machine through
 the installer and **Sync keys**.
