@@ -34,7 +34,9 @@ powershell -ExecutionPolicy Bypass -File nodehub-install.ps1 -NoPause
 
 The messages on the client PC are in the **team language** (English or Portuguese), set by an admin in the dashboard.
 
-It is safe to run again: use that to add a new technician's key to a machine that is already set up.
+It is safe to run again. To add or remove technicians' keys on machines that are already set up,
+use **Sync keys** instead (see
+[Installation → Adding or removing a technician](installation.md#6-adding-or-removing-a-technician)).
 
 ## Requirements and known limitations
 
