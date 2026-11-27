@@ -1,6 +1,9 @@
 <div align="center">
 
-# nodehub
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/logo-dark.svg">
+  <img src="docs/media/logo-light.svg" alt="nodehub" width="300">
+</picture>
 
 **Remote helpdesk for your clients' PCs, powered by Tailscale and Claude Code.**
 
