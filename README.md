@@ -55,6 +55,11 @@ knowledge that lives in one technician's head. nodehub changes that:
 
 ![Theme and language](docs/media/theme-language.gif)
 
+**SSH keys belong to accounts.** A deactivated technician's key stops being applied; *Sync keys*
+updates every client PC.
+
+![SSH keys](docs/media/ssh-keys.gif)
+
 ## Features
 
 | | |
