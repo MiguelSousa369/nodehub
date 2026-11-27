@@ -136,3 +136,7 @@ Tailscale setup: **[docs/installation.md](docs/installation.md)**.
 Backend: Node.js, Express, TypeScript, Zod, Prisma, PostgreSQL, Winston, Swagger.
 Frontend: React, Vite, TypeScript, Tailwind CSS.
 Follows [fullstack-ts-standards](https://github.com/MiguelSousa369/fullstack-ts-standards).
+
+## License
+
+[MIT](LICENSE)
