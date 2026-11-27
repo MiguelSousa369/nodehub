@@ -29,7 +29,12 @@ const HOST = process.env.HOST ?? '127.0.0.1';
 const FRONTEND_DIST = path.resolve(process.env.FRONTEND_DIST ?? path.join(__dirname, '../../frontend/dist'));
 
 app.use(localHostOnly);   // only this PC: right Host, and no requests from other sites' pages
-app.use(helmet());
+// nodehub is served over plain HTTP (127.0.0.1, or an office server at its IP): no HTTPS upgrade
+// or HSTS, or browsers would load the dashboard's scripts from an https:// address that isn't there.
+app.use(helmet({
+  contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } },
+  strictTransportSecurity: false,
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // ---------------------------------------------------------------------------

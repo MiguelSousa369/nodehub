@@ -162,6 +162,13 @@ describe('auth', () => {
     }
   });
 
+  it('works over plain HTTP: no HTTPS upgrade or HSTS', async () => {
+    const res = await request(app).get('/api/health').set(HOST);
+    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(res.headers['content-security-policy']).not.toContain('upgrade-insecure-requests');
+    expect(res.headers['strict-transport-security']).toBeUndefined();
+  });
+
   it('refuses requests sent by pages from other sites', async () => {
     const fromSite = await request(app).post('/api/auth/login').set({ ...HOST, Origin: 'https://evil.example' })
       .send({ username: 'admin', password: ADMIN_PW });
