@@ -1,0 +1,13 @@
+{
+  "name": "nodehub-readme-gifs",
+  "private": true,
+  "description": "Records the README demo GIFs from the dashboard, with fictional demo data",
+  "scripts": {
+    "record": "node record.cjs"
+  },
+  "devDependencies": {
+    "gifenc": "1.0.3",
+    "jpeg-js": "0.4.4",
+    "playwright-core": "1.57.0"
+  }
+}
