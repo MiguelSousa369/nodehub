@@ -98,9 +98,25 @@ flowchart LR
    Claude works on the machine over SSH, asking before any change.
 4. At the end Claude records the **session** and updates the machine **profile**.
 
-## Quick start
+## Two ways to run it
 
-You need, on the technician's PC: **Windows 10/11**, [Node.js](https://nodejs.org) 20+,
+| | **One PC** | **Office server** |
+|---|---|---|
+| For | Trying it out, or a single technician | A team: everyone shares the same machines and history |
+| Dashboard + database | On your PC, at `http://127.0.0.1:8737` | On the server, at its IP, e.g. `http://192.168.1.50:8737` |
+| Who opens the dashboard | Only that PC | Every PC on the office network |
+| Claude Code (helpdesk sessions) | On that PC | On each technician's PC |
+| Guide | [Installation](docs/installation.md) | [Installation](docs/installation.md) steps 1-3, then [Office server](docs/server.md) |
+
+In both modes, Claude always connects to client PCs **from the technician's PC**, with that
+technician's SSH key; the server only keeps the dashboard and the data.
+
+## Quick start (one PC)
+
+This sets up the **one PC** mode, the quickest way to try nodehub. For a team, see
+[Office server](docs/server.md).
+
+You need, on that PC: **Windows 10/11**, [Node.js](https://nodejs.org) 20+,
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running),
 [Tailscale](https://tailscale.com/download), [Claude Code](https://docs.anthropic.com/claude-code)
 and Git.
