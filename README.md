@@ -100,18 +100,48 @@ flowchart LR
 
 ## Quick start
 
-> Requirements: Windows, Node.js 20+, Docker Desktop, Tailscale, Claude Code.
+You need, on the technician's PC: **Windows 10/11**, [Node.js](https://nodejs.org) 20+,
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (running),
+[Tailscale](https://tailscale.com/download), [Claude Code](https://docs.anthropic.com/claude-code)
+and Git.
+
+**1. Get the code**
 
 ```powershell
 git clone https://github.com/MiguelSousa369/nodehub.git
 cd nodehub
-copy backend\.env.example backend\.env     # then fill in JWT_SECRET, CLIENT_TAG, TAILSCALE_AUTHKEY
-.\launcher\register-protocol.ps1           # once per technician PC
-.\start.cmd                                # starts PostgreSQL, builds and opens the dashboard
 ```
 
-The first run creates an `admin` user and prints its password. Full walkthrough, including the
-Tailscale setup: **[docs/installation.md](docs/installation.md)**.
+**2. Create the settings file**
+
+```powershell
+copy backend\.env.example backend\.env
+```
+
+Only one setting is required to start: `JWT_SECRET`, a random secret that signs the logins.
+Generate one and paste it after `JWT_SECRET=` in `backend\.env`:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+**3. Let the dashboard open Claude Code** (once per technician PC, no admin rights needed)
+
+```powershell
+.\launcher\register-protocol.ps1
+```
+
+**4. Start it**
+
+```powershell
+.\start.cmd
+```
+
+It starts the database, builds everything and opens **http://127.0.0.1:8737**. The first run creates
+an `admin` user and **prints its password once**: note it down and sign in.
+
+**Next:** to add client machines, set up Tailscale (client tag, access rules and an auth key in
+`TAILSCALE_AUTHKEY`). The full walkthrough is in **[docs/installation.md](docs/installation.md)**.
 
 ## Documentation
 
