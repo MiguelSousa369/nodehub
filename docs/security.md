@@ -18,7 +18,7 @@ protects against and how, and the responsibilities that stay with you.
 
 | Protection | How |
 |---|---|
-| **Local by default** | The backend listens on `127.0.0.1`; PostgreSQL always does. On an [office server](server.md) it listens on the network, answering only at the addresses in `ALLOWED_HOSTS`, with the firewall rule limited to the local subnet. |
+| **Local by default** | The backend listens on `127.0.0.1`; PostgreSQL always does. On an [office server](installation.md#5-mode-b-office-server) it listens on the network, answering only at the addresses in `ALLOWED_HOSTS`, with the firewall rule limited to the local subnet. |
 | **DNS rebinding** | Requests whose `Host` isn't `127.0.0.1`/`localhost` or one of `ALLOWED_HOSTS` are rejected. |
 | **Other websites** | A page from another site, open in a technician's browser, can still send requests to nodehub's address. Every request with an `Origin` that isn't nodehub itself is refused (`FORBIDDEN_ORIGIN`), and there is no CORS: such a page can't sign in, guess passwords or read anything. |
 | **Accounts** | Every technician has their own account. Passwords are hashed with scrypt (random salt). Login errors and response times don't reveal whether a username exists. |

@@ -7,7 +7,7 @@ SSH keys are now managed **in the dashboard**, and each key belongs to a user ac
 - keys of deactivated accounts are no longer applied to client PCs.
 
 After a change, **Sync keys** (in either place) updates every online client PC. See
-[docs/server.md → Adding or removing a technician](../docs/server.md#adding-or-removing-a-technician).
+[docs/installation.md → Adding or removing a technician](../docs/installation.md#6-adding-or-removing-a-technician).
 
 ## This folder
 

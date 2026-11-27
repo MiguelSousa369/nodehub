@@ -110,7 +110,7 @@ Notes:    Back office server
 
 ## Using a nodehub server
 
-On a technician PC that uses a [shared server](server.md), only the CLI is needed:
+On a technician PC that uses a [office server](installation.md#52-each-technician-pc), only the CLI is needed:
 `npm install` and `npm run build:cli` in `backend\`, then
 `.\nodehub.cmd login --url http://<server-ip>:8737`. The address is remembered.
 

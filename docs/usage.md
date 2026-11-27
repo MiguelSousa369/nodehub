@@ -127,7 +127,7 @@ Each session shows who did it: the technician the PC running Claude is connected
 **SSH keys** lists every key with its owner: who can reach client PCs. Admins can add a key for
 anyone, or a *service key* (no owner), and remove any key. Keys of deactivated accounts are marked
 *not applied*. After a change, **Sync keys** updates every online client PC (details in
-[server.md](server.md#adding-or-removing-a-technician)). New installers always include the active keys.
+[Installation → Adding or removing a technician](installation.md#6-adding-or-removing-a-technician)). New installers always include the active keys.
 
 | Role | Can |
 |---|---|

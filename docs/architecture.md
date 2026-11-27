@@ -2,7 +2,7 @@
 
 ## Components
 
-nodehub runs either on one technician's PC (below) or on an [office server](server.md) that the team
+nodehub runs either on one technician's PC (below) or on an [office server](installation.md#5-mode-b-office-server) that the team
 opens at its IP. In both cases Claude Code, the CLI and the launcher run on each technician's PC.
 
 ```mermaid

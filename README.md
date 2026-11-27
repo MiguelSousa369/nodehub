@@ -73,7 +73,7 @@ updates every client PC.
 | **English or Portuguese** | One switch for the team: dashboard, records written by Claude, CLI and client installer. Each person can also pick their own dashboard language. |
 | **Team accounts** | Users with Admin / Technician roles. PCs connect to an account with one click in the browser, no tokens to copy. |
 | **SSH key management** | Each technician adds their own key; deactivating an account takes its keys off every client PC with one *Sync keys* click. |
-| **Office server** | Run it on one server and open it at its IP from every PC ([guide](docs/server.md)). |
+| **Office server** | Run it on one server and open it at its IP from every PC ([guide](docs/installation.md#5-mode-b-office-server)). |
 | **Secure by default** | Reviewed against the OWASP Top 10: audit log, sign-in lockout, least-privilege PC tokens ([security](docs/security.md)). |
 | **API** | Documented REST API with Swagger at `/api/docs`. |
 
@@ -106,7 +106,7 @@ flowchart LR
 | Dashboard + database | On your PC, at `http://127.0.0.1:8737` | On the server, at its IP, e.g. `http://192.168.1.50:8737` |
 | Who opens the dashboard | Only that PC | Every PC on the office network |
 | Claude Code (helpdesk sessions) | On that PC | On each technician's PC |
-| Guide | [Installation](docs/installation.md) | [Installation](docs/installation.md) steps 1-3, then [Office server](docs/server.md) |
+| Guide | [Installation → Mode A](docs/installation.md#4-mode-a-one-pc) | [Installation → Mode B](docs/installation.md#5-mode-b-office-server) |
 
 In both modes, Claude always connects to client PCs **from the technician's PC**, with that
 technician's SSH key; the server only keeps the dashboard and the data.
@@ -114,7 +114,7 @@ technician's SSH key; the server only keeps the dashboard and the data.
 ## Quick start (one PC)
 
 This sets up the **one PC** mode, the quickest way to try nodehub. For a team, see
-[Office server](docs/server.md).
+[Mode B: office server](docs/installation.md#5-mode-b-office-server).
 
 You need, on that PC: **Windows 10/11**, [Node.js](https://nodejs.org) 20+,
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running),
@@ -163,9 +163,8 @@ an `admin` user and **prints its password once**: note it down and sign in.
 
 | Guide | |
 |---|---|
-| [Installation](docs/installation.md) | Tailscale (tags, ACL, auth key), SSH keys, technician PC, first run |
+| [Installation](docs/installation.md) | Both modes (one PC or office server): Tailscale, SSH keys, server and technician PCs, adding technicians |
 | [Configuration](docs/configuration.md) | Every setting in `backend/.env` |
-| [Office server](docs/server.md) | Run nodehub on a server so the whole team opens it at the server's IP |
 | [Using the dashboard](docs/usage.md) | Machines, adding clients, history, users, connected PCs |
 | [Helpdesk sessions with Claude](docs/helpdesk-sessions.md) | How a session runs, what Claude may and may not do |
 | [nodehub CLI](docs/cli.md) | The command-line tool Claude uses to read and record history |

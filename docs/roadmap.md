@@ -3,7 +3,7 @@
 ## Next
 
 - [x] **Shared server for the team.** nodehub can run on an office server, opened at its IP
-  ([server.md](server.md)).
+  ([Mode B: office server](installation.md#5-mode-b-office-server)).
 - [x] **Manage and distribute SSH keys.** Users → SSH keys, and `nodehub keys sync`.
 - [ ] **HTTPS on the office server.** Built-in certificate or a documented reverse proxy.
 - [ ] **Containers for the backend.** Backend and frontend in Docker like PostgreSQL, with machine
