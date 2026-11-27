@@ -8,7 +8,7 @@
 **Remote helpdesk for your clients' PCs, powered by Tailscale and Claude Code.**
 
 [![CI](https://github.com/MiguelSousa369/nodehub/actions/workflows/ci.yml/badge.svg)](https://github.com/MiguelSousa369/nodehub/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/MiguelSousa369/nodehub)](https://github.com/MiguelSousa369/nodehub/releases)
+[![Release](https://img.shields.io/github/v/release/MiguelSousa369/nodehub?sort=semver)](https://github.com/MiguelSousa369/nodehub/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 One dashboard with every client machine, organised by client. Pick a machine, and Claude Code
