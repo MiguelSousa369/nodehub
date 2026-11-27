@@ -7,7 +7,7 @@
 | Backend | Node.js 22+, Express 5, TypeScript, Zod, Prisma 7 (`@prisma/adapter-pg`), PostgreSQL 17, Winston, Swagger UI, helmet |
 | Frontend | React 19, React Router 7, Vite, TypeScript, Tailwind CSS 3, lucide-react (icons), react-markdown |
 | Tests | Vitest + Supertest against a real PostgreSQL test database |
-| Scripts | PowerShell (installer, launcher), Windows batch (`start.cmd`, `nodehub.cmd`) |
+| Scripts | PowerShell (installer, launcher), Windows batch (`start.cmd`, `nodehub.cmd`), Bash (`start.sh`) |
 
 Conventions follow [fullstack-ts-standards](https://github.com/MiguelSousa369/fullstack-ts-standards).
 
@@ -19,6 +19,7 @@ nodehub/
 ├── README.md
 ├── docker-compose.yml         PostgreSQL (127.0.0.1:5433)
 ├── start.cmd                  database + build + run
+├── start.sh                   the same, on a Linux server
 ├── nodehub.cmd                CLI entry point
 ├── backend/
 │   ├── src/
