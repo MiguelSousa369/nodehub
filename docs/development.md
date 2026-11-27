@@ -94,6 +94,10 @@ by `backend/prisma/init/01-test-db.sql` on the container's first start. The test
 migrations and refuses to run against any database not named `nodehub_test` (unless
 `DATABASE_URL_TEST` is set explicitly). Tailscale is mocked.
 
+**CI** ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs on every push and pull request:
+the backend type-check, tests and build on Node 22 and 24 (with a PostgreSQL service), the frontend
+build, and `npm audit` for both.
+
 If the container was created before the init script existed, create the database once:
 
 ```powershell
