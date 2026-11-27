@@ -35,12 +35,14 @@ move to B later (see [Moving from one PC to a server](#moving-from-one-pc-to-a-s
 | | Windows 10/11 | [Node.js](https://nodejs.org) 22+ | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | [Tailscale](https://tailscale.com/download) | [Claude Code](https://docs.anthropic.com/claude-code) | Git |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|
 | **A.** The one PC | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **B.** The server | ✓ | ✓ | ✓ | ✓ | | ✓ |
+| **B.** The server | ✓ or Linux | ✓ | ✓ | ✓ | | ✓ |
 | **B.** Each technician PC | ✓ | ✓ | | ✓ | ✓ | ✓ |
 
 What each one is for: Docker runs PostgreSQL; Tailscale reaches the client machines (and gives the
 server their online status); Claude Code does the helpdesk work; Node.js runs nodehub and its CLI.
-The server in mode B should be always on, with a **fixed IP** (or a DHCP reservation).
+The server in mode B should be always on, with a **fixed IP** (or a DHCP reservation). It can also
+run Linux (e.g. Ubuntu): see [Server on Linux](#server-on-linux); on Linux, Docker Engine replaces
+Docker Desktop, or PostgreSQL can be installed directly.
 
 Client machines need Windows 10 1809+ / Windows Server 2019+ (for the built-in OpenSSH Server)
 and internet access during installation.
@@ -190,6 +192,9 @@ flowchart LR
 
 ### 5.1 The server (once)
 
+These steps are for a Windows server. For Ubuntu or another Linux, see
+[Server on Linux](#server-on-linux).
+
 1. Get the code and create the settings file, as in [4.1](#41-install):
 
    ```powershell
@@ -273,6 +278,78 @@ history, users and the installer all work from the browser.
 - **Team language, users and history** are shared: everyone sees the same machines and sessions,
   each session under the technician whose PC recorded it.
 
+### Server on Linux
+
+The server can run on Linux (e.g. Ubuntu, also in an LXC container or a VM); technician PCs stay on
+Windows. Install Node.js 22+, Git, Tailscale (signed in as a team device, as in 2.1) and either
+Docker Engine or PostgreSQL 17. Then:
+
+1. Get the code and fill in `backend/.env` as in 5.1, steps 1 and 2:
+
+   ```bash
+   git clone https://github.com/MiguelSousa369/nodehub.git
+   cd nodehub
+   cp backend/.env.example backend/.env
+   ```
+
+2. Allow the port only from the local network (with `ufw`; adjust the subnet):
+
+   ```bash
+   sudo ufw allow from 192.168.1.0/24 to any port 8737 proto tcp
+   ```
+
+3. Run **`./start.sh`**, the Linux counterpart of `start.cmd` (same steps as [4.2](#42-first-run),
+   without opening a browser). It uses the `tailscale` on the `PATH`, so `TAILSCALE_BIN` isn't
+   needed. Note the `admin` password it prints the first time.
+
+   Without Docker, use **`./start.sh --no-docker`**: nodehub then uses the PostgreSQL in
+   `DATABASE_URL` as is. Create its user and database first:
+
+   ```bash
+   sudo -u postgres psql -c "CREATE USER nodehub WITH PASSWORD '<password>';"
+   sudo -u postgres psql -c "CREATE DATABASE nodehub OWNER nodehub;"
+   ```
+
+   and set `DATABASE_URL=postgresql://nodehub:<password>@127.0.0.1:5432/nodehub` in `backend/.env`.
+
+4. Keep it running after reboots with a systemd service. Create
+   `/etc/systemd/system/nodehub.service` (with the folder where you cloned nodehub, and the Linux
+   user that runs it; with Docker, that user must be in the `docker` group):
+
+   ```ini
+   [Unit]
+   Description=nodehub
+   After=network-online.target docker.service tailscaled.service
+   Wants=network-online.target
+
+   [Service]
+   WorkingDirectory=/opt/nodehub
+   ExecStart=/opt/nodehub/start.sh
+   Restart=on-failure
+   User=nodehub
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   ```bash
+   sudo systemctl enable --now nodehub
+   journalctl -u nodehub -f        # the log, including the first admin password
+   ```
+
+**In a container:** Tailscale needs the TUN device (on Proxmox LXC: enable *nesting* and pass
+`/dev/net/tun`), or run it with `tailscaled --tun=userspace-networking`, which is enough for nodehub
+(it only reads `tailscale status`). Docker inside an LXC container needs *nesting* too; otherwise use
+PostgreSQL directly (`--no-docker`).
+
+**Backups** on Linux, e.g. a daily cron job:
+
+```bash
+docker exec nodehub-db pg_dump -U nodehub -Fc nodehub > /backups/nodehub-$(date +%F).dump
+# without Docker:
+pg_dump -h 127.0.0.1 -U nodehub -Fc nodehub > /backups/nodehub-$(date +%F).dump
+```
+
 ### Moving from one PC to a server
 
 Set up the server as in 5.1, then move the data from the old PC (users, machines, history, keys):
@@ -281,7 +358,7 @@ Set up the server as in 5.1, then move the data from the old PC (users, machines
 # on the old PC
 docker exec nodehub-db pg_dump -U nodehub -Fc -f /tmp/nodehub.dump nodehub
 docker cp nodehub-db:/tmp/nodehub.dump nodehub.dump
-# copy nodehub.dump to the server, then there (after its first start.cmd)
+# copy nodehub.dump to the server, then there (after its first start.cmd or start.sh)
 docker cp nodehub.dump nodehub-db:/tmp/nodehub.dump
 docker exec nodehub-db pg_restore -U nodehub -d nodehub --clean --if-exists /tmp/nodehub.dump
 ```
