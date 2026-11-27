@@ -43,7 +43,7 @@ model ApiToken {
   id         Int       @id @default(autoincrement())
   userId     Int       @map("user_id")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String    // PC name reported by the CLI, e.g. MIGUEL-LAPTOP
+  name       String    // PC name reported by the CLI, e.g. ANA-LAPTOP
   prefix     String    // first characters, to recognise the token
   tokenHash  String    @unique @map("token_hash")
   createdAt  DateTime  @default(now()) @map("created_at")

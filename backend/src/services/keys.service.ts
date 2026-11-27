@@ -147,8 +147,8 @@ export function publicKeysDir(): string {
 }
 
 /**
- * Imports keys from public-keys/*.pub: a file named like a username (e.g. miguel.sousa.pub, or
- * miguel.pub when only one username starts with "miguel.") belongs to that user; anything else
+ * Imports keys from public-keys/*.pub: a file named like a username (e.g. ana.ribeiro.pub, or
+ * ana.pub when only one username starts with "ana.") belongs to that user; anything else
  * becomes a service key. Imported files are renamed to *.pub.imported
  * so a key removed in the dashboard doesn't come back on the next start.
  */
@@ -159,7 +159,7 @@ export async function importKeyFiles(): Promise<number> {
 
   for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.pub'))) {
     const base = file.slice(0, -4);
-    // "miguel.sousa.pub" → user miguel.sousa; "miguel.pub" → the only user named miguel.* (if just one)
+    // "ana.ribeiro.pub" → user ana.ribeiro; "ana.pub" → the only user named ana.* (if just one)
     const exact = await prisma.user.findFirst({ where: { username: { equals: base, mode: 'insensitive' } } });
     const prefixed = exact ? [] : await prisma.user.findMany({ where: { username: { startsWith: `${base}.`, mode: 'insensitive' } } });
     const owner = exact ?? (prefixed.length === 1 ? prefixed[0] : null);

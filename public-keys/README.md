@@ -12,7 +12,7 @@ After a change, **Sync keys** (in either place) updates every online client PC. 
 ## This folder
 
 Older installations kept keys here as `<name>.pub`. When the backend starts, it imports any `*.pub`
-file into the database (a file named like a username, e.g. `miguel.sousa.pub`, belongs to that user)
+file into the database (a file named like a username, e.g. `ana.ribeiro.pub`, belongs to that user)
 and renames it to `*.pub.imported`. You can still drop a `.pub` file here to import it, but the
 dashboard is easier.
 

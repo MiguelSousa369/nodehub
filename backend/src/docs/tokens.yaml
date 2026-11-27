@@ -5,7 +5,7 @@ components:
       description: A PC connected with `nodehub login` (its access token, without the secret).
       properties:
         id:         { type: integer }
-        name:       { type: string, example: MIGUEL-LAPTOP }
+        name:       { type: string, example: ANA-LAPTOP }
         prefix:     { type: string, example: nhk_4fJ2kQ9x, description: First characters of the token. }
         createdAt:  { type: string, format: date-time }
         lastUsedAt: { type: string, format: date-time, nullable: true }

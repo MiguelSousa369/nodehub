@@ -20,14 +20,14 @@ By hand:
 ```
 
 ```text
-Connecting "MIGUEL-LAPTOP" to nodehub.
+Connecting "ANA-LAPTOP" to nodehub.
 
   Approve it in the browser: http://127.0.0.1:8737/connect?code=WDJB-MJHT
   Code: WDJB-MJHT
 
 Waiting for approval... (Ctrl+C to cancel)
 
-Connected. This PC now works as Miguel Sousa (miguel.sousa).
+Connected. This PC now works as Ana Ribeiro (ana.ribeiro).
 ```
 
 1. The browser opens the dashboard (sign in if needed) on **Connect this PC?**

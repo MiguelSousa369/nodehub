@@ -4,7 +4,7 @@ components:
       type: object
       properties:
         userCode:   { type: string, example: WDJB-MJHT }
-        deviceName: { type: string, example: MIGUEL-LAPTOP }
+        deviceName: { type: string, example: ANA-LAPTOP }
         status:     { type: string, enum: [PENDING, APPROVED, DENIED, CONSUMED] }
         createdAt:  { type: string, format: date-time }
         expiresAt:  { type: string, format: date-time }
@@ -32,7 +32,7 @@ paths:
               type: object
               required: [deviceName]
               properties:
-                deviceName: { type: string, maxLength: 64, example: MIGUEL-LAPTOP }
+                deviceName: { type: string, maxLength: 64, example: ANA-LAPTOP }
       responses:
         '201':
           description: Request created.
